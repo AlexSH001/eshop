@@ -183,7 +183,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
           </div>
 
           {/* Product Details Section */}
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6 bg-white">
             {/* Header */}
             <div className="space-y-2">
               <Badge variant="secondary" className="text-xs">
@@ -268,7 +268,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
 
               <div className="flex gap-3">
                 <Button
-                  className="flex-1 bg-black hover:bg-gray-800"
+                  className="flex-1 bg-gray-50 hover:bg-gray-800"
                   onClick={handleAddToCart}
                   disabled={!productDetails.inStock}
                 >

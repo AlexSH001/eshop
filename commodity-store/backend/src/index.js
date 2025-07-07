@@ -17,7 +17,7 @@ const adminRoutes = require('./routes/admin');
 const searchRoutes = require('./routes/search');
 const uploadRoutes = require('./routes/upload');
 
-const errorHandler = require('./middleware/errorHandler');
+const { errorHandler } = require('./middleware/errorHandler');
 const { initializeDatabase } = require('./database/init');
 
 const app = express();
@@ -97,3 +97,4 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+

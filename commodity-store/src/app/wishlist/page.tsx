@@ -185,7 +185,7 @@ export default function WishlistPage() {
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      className="flex-1 bg-black hover:bg-gray-800"
+                      className="flex-1 bg-gray-50 hover:bg-gray-800"
                       onClick={() => {
                         addItem({
                           id: product.id,

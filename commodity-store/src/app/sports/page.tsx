@@ -105,7 +105,7 @@ export default function SportsPage() {
                     <span className="text-sm text-gray-500 line-through">${product.originalPrice}</span>
                   )}
                 </div>
-                <Button size="sm" className="w-full bg-black hover:bg-gray-800">
+                <Button size="sm" className="w-full bg-gray-50 hover:bg-gray-800">
                   Add to Cart
                 </Button>
               </CardContent>

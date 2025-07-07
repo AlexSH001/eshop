@@ -190,7 +190,7 @@ export default function SearchBar({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-xs px-2 py-1 h-auto"
+                    className="text-xs bg-gray-200 px-2 py-1 h-auto"
                     onClick={(e) => handleQuickAdd(product, e)}
                   >
                     Add to Cart
