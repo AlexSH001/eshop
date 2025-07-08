@@ -51,67 +51,15 @@ interface Product {
 export default function AdminProductsPage() {
   const { isAuthenticated, isLoading } = useAdmin();
   const router = useRouter();
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: 1,
-      name: "Wireless Bluetooth Headphones",
-      price: 89.99,
-      originalPrice: 129.99,
-      category: "Electronics",
-      stock: 45,
-      description: "High-quality wireless headphones with noise cancellation",
-      image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop",
-      status: "active",
-      createdAt: "2024-01-15",
-      sales: 245
-    },
-    {
-      id: 2,
-      name: "Smart Phone",
-      price: 699.99,
-      originalPrice: 799.99,
-      category: "Electronics",
-      stock: 23,
-      description: "Latest smartphone with advanced features",
-      image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&h=300&fit=crop",
-      status: "active",
-      createdAt: "2024-01-14",
-      sales: 89
-    },
-    {
-      id: 3,
-      name: "Cotton T-Shirt",
-      price: 24.99,
-      originalPrice: 39.99,
-      category: "Fashion",
-      stock: 156,
-      description: "Comfortable cotton t-shirt in various colors",
-      image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop",
-      status: "active",
-      createdAt: "2024-01-13",
-      sales: 356
-    },
-    {
-      id: 4,
-      name: "Gaming Mouse",
-      price: 79.99,
-      originalPrice: 99.99,
-      category: "Gaming",
-      stock: 0,
-      description: "High-precision gaming mouse with RGB lighting",
-      image: "https://images.unsplash.com/photo-1527814050087-3793815479db?w=300&h=300&fit=crop",
-      status: "inactive",
-      createdAt: "2024-01-12",
-      sales: 178
-    }
-  ]);
-
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [newProduct, setNewProduct] = useState({
+  const [formData, setFormData] = useState<any>({
     name: "",
     price: "",
     originalPrice: "",
@@ -119,8 +67,9 @@ export default function AdminProductsPage() {
     stock: "",
     description: "",
     image: "",
-    status: "active" as "active" | "inactive"
+    status: "active"
   });
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -129,7 +78,183 @@ export default function AdminProductsPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  if (isLoading) {
+  // Fetch products from backend
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch('http://localhost:3001/api/products');
+        if (!res.ok) throw new Error('Failed to fetch products');
+        const data = await res.json();
+        const mappedProducts: Product[] = data.products.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          originalPrice: p.original_price,
+          category: p.category_name || '',
+          stock: p.stock,
+          description: p.description,
+          image: p.featured_image || (p.images && p.images[0]) || '',
+          status: p.status,
+          createdAt: p.created_at,
+          sales: p.sales_count || 0
+        }));
+        setProducts(mappedProducts);
+      } catch (err: any) {
+        setError(err.message || 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
+    const matchesStatus = statusFilter === 'all' || product.status === statusFilter;
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  const handleAddProduct = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('http://localhost:3001/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description,
+          price: parseFloat(formData.price),
+          originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
+          categoryId: 1, // TODO: Map category name to ID
+          stock: parseInt(formData.stock),
+          status: formData.status,
+          featuredImage: formData.image,
+        })
+      });
+      if (!res.ok) throw new Error('Failed to add product');
+      const { product } = await res.json();
+      setProducts(prev => [
+        {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          originalPrice: product.original_price,
+          category: product.category_name || '',
+          stock: product.stock,
+          description: product.description,
+          image: product.featured_image || (product.images && product.images[0]) || '',
+          status: product.status,
+          createdAt: product.created_at,
+          sales: product.sales_count || 0
+        },
+        ...prev
+      ]);
+      setIsAddModalOpen(false);
+      setFormData({
+        name: "",
+        price: "",
+        originalPrice: "",
+        category: "",
+        stock: "",
+        description: "",
+        image: "",
+        status: "active"
+      });
+      toast.success('Product added successfully');
+    } catch (err: any) {
+      setError(err.message || 'Unknown error');
+      toast.error('Failed to add product');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditProduct = async () => {
+    if (!editingProduct) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`http://localhost:3001/api/products/${editingProduct.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description,
+          price: parseFloat(formData.price),
+          originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
+          stock: parseInt(formData.stock),
+          status: formData.status,
+          featuredImage: formData.image,
+        })
+      });
+      if (!res.ok) throw new Error('Failed to update product');
+      const { product } = await res.json();
+      setProducts(prev => prev.map(p =>
+        p.id === editingProduct.id
+          ? {
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              originalPrice: product.original_price,
+              category: product.category_name || '',
+              stock: product.stock,
+              description: product.description,
+              image: product.featured_image || (product.images && product.images[0]) || '',
+              status: product.status,
+              createdAt: product.created_at,
+              sales: product.sales_count || 0
+            }
+          : p
+      ));
+      setEditingProduct(null);
+      setFormData({
+        name: "",
+        price: "",
+        originalPrice: "",
+        category: "",
+        stock: "",
+        description: "",
+        image: "",
+        status: "active"
+      });
+      toast.success('Product updated successfully');
+    } catch (err: any) {
+      setError(err.message || 'Unknown error');
+      toast.error('Failed to update product');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!deletingProduct) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`http://localhost:3001/api/products/${deletingProduct.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to delete product');
+      setProducts(prev => prev.filter(p => p.id !== deletingProduct.id));
+      setDeletingProduct(null);
+      toast.success('Product deleted successfully');
+    } catch (err: any) {
+      setError(err.message || 'Unknown error');
+      toast.error('Failed to delete product');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (isLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900" />
@@ -147,10 +272,297 @@ export default function AdminProductsPage() {
         <h1 className="text-2xl font-bold mb-6">Products Management</h1>
         <p className="text-gray-600 mb-8">Manage your product catalog</p>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-center text-gray-500">Product management interface would go here.</p>
-          <p className="text-center text-sm text-gray-400 mt-2">This is a demo admin panel.</p>
+        <div className="flex justify-between items-center mb-4">
+          <Input
+            placeholder="Search products..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-1/3"
+          />
+          <Button onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" /> Add Product
+          </Button>
         </div>
+
+        {error && <div className="text-red-600 mb-4">{error}</div>}
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white rounded-lg shadow">
+            <thead>
+              <tr>
+                <th className="px-4 py-2">Image</th>
+                <th className="px-4 py-2">Name</th>
+                <th className="px-4 py-2">Category</th>
+                <th className="px-4 py-2">Price</th>
+                <th className="px-4 py-2">Stock</th>
+                <th className="px-4 py-2">Status</th>
+                <th className="px-4 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProducts.map(product => (
+                <tr key={product.id} className="border-t">
+                  <td className="px-4 py-2">
+                    {product.image && (
+                      <img src={product.image} alt={product.name} className="h-10 w-10 rounded object-cover" />
+                    )}
+                  </td>
+                  <td className="px-4 py-2 font-medium">{product.name}</td>
+                  <td className="px-4 py-2">{product.category}</td>
+                  <td className="px-4 py-2">${product.price}</td>
+                  <td className="px-4 py-2">{product.stock}</td>
+                  <td className="px-4 py-2">
+                    <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
+                      {product.status}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-2">
+                    <Button size="sm" variant="outline" onClick={() => {
+                      setEditingProduct(product);
+                      setFormData({
+                        name: product.name,
+                        price: product.price.toString(),
+                        originalPrice: product.originalPrice?.toString() || '',
+                        category: product.category,
+                        stock: product.stock.toString(),
+                        description: product.description,
+                        image: product.image,
+                        status: product.status
+                      });
+                    }}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" className="ml-2 text-red-600" onClick={() => setDeletingProduct(product)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Add Product Modal */}
+        <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add New Product</DialogTitle>
+            </DialogHeader>
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                handleAddProduct();
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <Label htmlFor="name">Product Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="price">Price</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={e => setFormData({ ...formData, price: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="originalPrice">Original Price</Label>
+                  <Input
+                    id="originalPrice"
+                    type="number"
+                    step="0.01"
+                    value={formData.originalPrice}
+                    onChange={e => setFormData({ ...formData, originalPrice: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="stock">Stock</Label>
+                  <Input
+                    id="stock"
+                    type="number"
+                    value={formData.stock}
+                    onChange={e => setFormData({ ...formData, stock: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="category">Category</Label>
+                  <Input
+                    id="category"
+                    value={formData.category}
+                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="image">Image URL</Label>
+                <Input
+                  id="image"
+                  value={formData.image}
+                  onChange={e => setFormData({ ...formData, image: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select value={formData.status} onValueChange={value => setFormData({ ...formData, status: value as 'active' | 'inactive' })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-purple-600">
+                Add Product
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Product Modal */}
+        <Dialog open={!!editingProduct} onOpenChange={() => setEditingProduct(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Product</DialogTitle>
+            </DialogHeader>
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                handleEditProduct();
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <Label htmlFor="name">Product Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="price">Price</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={e => setFormData({ ...formData, price: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="originalPrice">Original Price</Label>
+                  <Input
+                    id="originalPrice"
+                    type="number"
+                    step="0.01"
+                    value={formData.originalPrice}
+                    onChange={e => setFormData({ ...formData, originalPrice: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="stock">Stock</Label>
+                  <Input
+                    id="stock"
+                    type="number"
+                    value={formData.stock}
+                    onChange={e => setFormData({ ...formData, stock: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="category">Category</Label>
+                  <Input
+                    id="category"
+                    value={formData.category}
+                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="image">Image URL</Label>
+                <Input
+                  id="image"
+                  value={formData.image}
+                  onChange={e => setFormData({ ...formData, image: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select value={formData.status} onValueChange={value => setFormData({ ...formData, status: value as 'active' | 'inactive' })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-purple-600">
+                Update Product
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Product Modal */}
+        <Dialog open={!!deletingProduct} onOpenChange={() => setDeletingProduct(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delete Product</DialogTitle>
+            </DialogHeader>
+            <div className="mb-4">Are you sure you want to delete <span className="font-bold">{deletingProduct?.name}</span>?</div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setDeletingProduct(null)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteProduct}>
+                Delete
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );

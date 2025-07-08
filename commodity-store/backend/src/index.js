@@ -23,6 +23,12 @@ const { initializeDatabase } = require('./database/init');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// CORS middleware in test environment
+app.use(cors({
+  origin: 'http://localhost:3000', // <-- set this to your frontend's URL
+  credentials: true, // if you use cookies/auth
+}));
+
 // Initialize database
 initializeDatabase().catch(console.error);
 
