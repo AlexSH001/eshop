@@ -25,7 +25,8 @@ export default function AuthModal({ children }: AuthModalProps) {
   });
 
   const [signupData, setSignupData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -68,12 +69,12 @@ export default function AuthModal({ children }: AuthModalProps) {
     setIsLoading(true);
 
     try {
-      const result = await signup(signupData.email, signupData.password, signupData.name);
+      const result = await signup(signupData.email, signupData.password, signupData.firstName, signupData.lastName);
 
       if (result.success) {
         toast.success('Account created successfully!');
         setIsOpen(false);
-        setSignupData({ name: '', email: '', password: '', confirmPassword: '' });
+        setSignupData({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
       } else {
         toast.error(result.error || 'Signup failed');
       }
@@ -89,7 +90,7 @@ export default function AuthModal({ children }: AuthModalProps) {
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-white">
         <DialogHeader>
           <DialogTitle>Welcome to Shop</DialogTitle>
         </DialogHeader>
@@ -136,7 +137,7 @@ export default function AuthModal({ children }: AuthModalProps) {
 
               <Button
                 type="submit"
-                className="w-full bg-black hover:bg-gray-800"
+                className="w-full bg-gray-50 hover:bg-gray-800"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -158,15 +159,31 @@ export default function AuthModal({ children }: AuthModalProps) {
           <TabsContent value="signup" className="space-y-4">
             <form onSubmit={handleSignup} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="signup-name">Full Name</Label>
+                <Label htmlFor="signup-first-name">First Name</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <Input
-                    id="signup-name"
+                    id="signup-first-name"
                     type="text"
-                    placeholder="Enter your full name"
-                    value={signupData.name}
-                    onChange={(e) => setSignupData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter your first name"
+                    value={signupData.firstName}
+                    onChange={(e) => setSignupData(prev => ({ ...prev, firstName: e.target.value }))}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signup-last-name">Last Name</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    id="signup-last-name"
+                    type="text"
+                    placeholder="Enter your last name"
+                    value={signupData.lastName}
+                    onChange={(e) => setSignupData(prev => ({ ...prev, lastName: e.target.value }))}
                     className="pl-10"
                     required
                   />
@@ -223,7 +240,7 @@ export default function AuthModal({ children }: AuthModalProps) {
 
               <Button
                 type="submit"
-                className="w-full bg-black hover:bg-gray-800"
+                className="w-full bg-gray-50 hover:bg-gray-800"
                 disabled={isLoading}
               >
                 {isLoading ? (

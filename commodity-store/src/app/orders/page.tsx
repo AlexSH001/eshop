@@ -134,7 +134,7 @@ export default function OrdersPage() {
             Please sign in to view your order history
           </p>
           <AuthModal>
-            <Button size="lg" className="bg-black hover:bg-gray-800">
+            <Button size="lg" className="bg-gray-50 hover:bg-gray-800">
               Sign In
             </Button>
           </AuthModal>

@@ -87,7 +87,7 @@ export default function ProfilePage() {
             Please sign in to view your profile
           </p>
           <AuthModal>
-            <Button size="lg" className="bg-black hover:bg-gray-800">
+            <Button size="lg" className="bg-gray-50 hover:bg-gray-800">
               Sign In
             </Button>
           </AuthModal>

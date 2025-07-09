@@ -344,7 +344,7 @@ export default function AdminProductsPage() {
 
         {/* Add Product Modal */}
         <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle>Add New Product</DialogTitle>
             </DialogHeader>
@@ -446,7 +446,7 @@ export default function AdminProductsPage() {
 
         {/* Edit Product Modal */}
         <Dialog open={!!editingProduct} onOpenChange={() => setEditingProduct(null)}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle>Edit Product</DialogTitle>
             </DialogHeader>
@@ -548,7 +548,7 @@ export default function AdminProductsPage() {
 
         {/* Delete Product Modal */}
         <Dialog open={!!deletingProduct} onOpenChange={() => setDeletingProduct(null)}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle>Delete Product</DialogTitle>
             </DialogHeader>

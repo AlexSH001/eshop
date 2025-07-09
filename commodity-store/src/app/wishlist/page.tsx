@@ -54,7 +54,7 @@ export default function WishlistPage() {
             Create an account or sign in to save your favorite products
           </p>
           <AuthModal>
-            <Button size="lg" className="bg-black hover:bg-gray-800">
+            <Button size="lg" className="bg-gray-50 hover:bg-gray-800">
               Sign In
             </Button>
           </AuthModal>
@@ -136,7 +136,7 @@ export default function WishlistPage() {
               Browse our categories and save items you love
             </p>
             <Link href="/categories">
-              <Button className="bg-black hover:bg-gray-800">
+              <Button className="bg-gray-50 hover:bg-gray-800">
                 Browse Categories
               </Button>
             </Link>

@@ -123,7 +123,7 @@ export default function AdminLoginPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-black hover:bg-gray-800"
+                className="w-full bg-gray-50 hover:bg-gray-800"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
