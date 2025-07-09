@@ -108,7 +108,7 @@ export const productsApi = {
     const searchParams = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
+        if (value !== undefined && value !== null) {
           searchParams.append(key, value.toString());
         }
       });
@@ -224,7 +224,7 @@ export const searchApi = {
     const searchParams = new URLSearchParams({ q: query });
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined) {
+        if (value !== undefined && value !== null) {
           searchParams.append(key, value.toString());
         }
       });

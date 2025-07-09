@@ -123,9 +123,6 @@ export default function SearchBar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Popular searches (mock data)
-  const popularSearches = ["headphones", "laptop", "gaming", "smartphone", "fashion"];
-
   return (
     <div className="relative">
       <div className="relative">
@@ -254,28 +251,6 @@ export default function SearchBar({
                   <span className="text-sm text-gray-700">{searchTerm}</span>
                 </div>
               ))}
-            </div>
-          )}
-
-          {/* Popular Searches */}
-          {!state.query && (
-            <div className="p-2 border-t">
-              <div className="text-xs font-medium text-gray-500 mb-2 px-2 flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" />
-                Popular
-              </div>
-              <div className="flex flex-wrap gap-1 px-2">
-                {popularSearches.map((term, index) => (
-                  <Badge
-                    key={index}
-                    variant="secondary"
-                    className="text-xs cursor-pointer hover:bg-gray-200"
-                    onClick={() => handleRecentSearchClick(term)}
-                  >
-                    {term}
-                  </Badge>
-                ))}
-              </div>
             </div>
           )}
         </div>

@@ -59,11 +59,30 @@ export default function AdminProductsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  // Add state for categories
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+
+  // Fetch categories from backend
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('http://localhost:3001/api/categories');
+        if (!res.ok) throw new Error('Failed to fetch categories');
+        const data = await res.json();
+        setCategories(data.categories.map((c: any) => ({ id: c.id, name: c.name })));
+      } catch (err) {
+        setCategories([]);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Update formData to use categoryId instead of category name
   const [formData, setFormData] = useState<any>({
     name: "",
     price: "",
     originalPrice: "",
-    category: "",
+    categoryId: "",
     stock: "",
     description: "",
     image: "",
@@ -131,7 +150,7 @@ export default function AdminProductsPage() {
           description: formData.description,
           price: parseFloat(formData.price),
           originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
-          categoryId: 1, // TODO: Map category name to ID
+          categoryId: formData.categoryId, // Use categoryId from formData
           stock: parseInt(formData.stock),
           status: formData.status,
           featuredImage: formData.image,
@@ -160,7 +179,7 @@ export default function AdminProductsPage() {
         name: "",
         price: "",
         originalPrice: "",
-        category: "",
+        categoryId: "",
         stock: "",
         description: "",
         image: "",
@@ -218,7 +237,7 @@ export default function AdminProductsPage() {
         name: "",
         price: "",
         originalPrice: "",
-        category: "",
+        categoryId: "",
         stock: "",
         description: "",
         image: "",
@@ -323,7 +342,7 @@ export default function AdminProductsPage() {
                         name: product.name,
                         price: product.price.toString(),
                         originalPrice: product.originalPrice?.toString() || '',
-                        category: product.category,
+                        categoryId: product.category, // Set categoryId for editing
                         stock: product.stock.toString(),
                         description: product.description,
                         image: product.image,
@@ -407,13 +426,19 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Input
-                    id="category"
-                    value={formData.category}
-                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                  <Label htmlFor="categoryId">Category</Label>
+                  <select
+                    id="categoryId"
+                    value={formData.categoryId}
+                    onChange={e => setFormData({ ...formData, categoryId: e.target.value })}
                     required
-                  />
+                    className="w-full border rounded p-2"
+                  >
+                    <option value="">Select category</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div>
@@ -509,13 +534,19 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Input
-                    id="category"
-                    value={formData.category}
-                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                  <Label htmlFor="categoryId">Category</Label>
+                  <select
+                    id="categoryId"
+                    value={formData.categoryId}
+                    onChange={e => setFormData({ ...formData, categoryId: e.target.value })}
                     required
-                  />
+                    className="w-full border rounded p-2"
+                  >
+                    <option value="">Select category</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div>

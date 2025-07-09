@@ -1,5 +1,18 @@
 # Commodity Store Backend API
 
+## 🧪 Inserting Mock Data (Seeding the Database)
+
+To populate your local database with sample data for development or testing, run:
+
+```bash
+npm run seed
+```
+
+This will clear existing data and insert sample categories, products, users, and orders as defined in `src/database/seed.js`.
+
+- You can modify `src/database/seed.js` to adjust the sample data as needed.
+- **Warning:** This will erase all existing data in your development database.
+
 A comprehensive e-commerce backend built with Node.js, Express, and SQLite. This API supports user authentication, product management, shopping cart, orders, wishlists, and admin functionality.
 
 ## 🚀 Features

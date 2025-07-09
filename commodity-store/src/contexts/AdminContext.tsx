@@ -56,29 +56,30 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Demo admin credentials
-      if ((email === 'admin@shop.com' && password === 'admin123') ||
-          (email === 'superadmin@shop.com' && password === 'super123')) {
-        const user: AdminUser = {
-          id: Math.random().toString(36).substr(2, 9),
-          email,
-          name: email.includes('super') ? 'Super Admin' : 'Admin User',
-          role: email.includes('super') ? 'super_admin' : 'admin',
-        };
-
-        localStorage.setItem('admin_user', JSON.stringify(user));
-        setState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-
-        return { success: true };
+      const res = await fetch('http://localhost:3001/api/auth/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        return { success: false, error: data.error || 'Invalid admin credentials' };
       }
-      return { success: false, error: 'Invalid admin credentials' };
+      const data = await res.json();
+      const user: AdminUser = {
+        id: data.admin.id,
+        email: data.admin.email,
+        name: data.admin.name,
+        role: data.admin.role,
+      };
+      localStorage.setItem('admin_user', JSON.stringify(user));
+      localStorage.setItem('admin_token', data.token);
+      setState({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+      return { success: true };
     } catch (error) {
       return { success: false, error: 'Login failed. Please try again.' };
     }

@@ -150,10 +150,6 @@ export default function AuthModal({ children }: AuthModalProps) {
                 )}
               </Button>
             </form>
-
-            <div className="text-center text-sm text-gray-600">
-              <p>Demo: Use any email and password (6+ characters)</p>
-            </div>
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-4">

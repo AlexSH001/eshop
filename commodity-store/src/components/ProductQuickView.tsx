@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,42 +41,26 @@ export default function ProductQuickView({ product, children }: ProductQuickView
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
 
-  // Initialize random values once when component mounts
-  const [productStats] = useState(() => ({
-    reviews: Math.floor(Math.random() * 500) + 50,
-    stockCount: Math.floor(Math.random() * 50) + 10
-  }));
+  // State for additional product details
+  const [details, setDetails] = useState<any>(null);
+  const [images, setImages] = useState<string[]>([product.image]);
 
-  // Mock additional data for demo purposes
-  const productImages = [
-    product.image,
-    product.image.replace('?w=300&h=300', '?w=300&h=300&sig=1'),
-    product.image.replace('?w=300&h=300', '?w=300&h=300&sig=2'),
-    product.image.replace('?w=300&h=300', '?w=300&h=300&sig=3')
-  ];
-
-  const productDetails = {
-    description: `Premium quality ${product.name.toLowerCase()} designed for modern lifestyle. Features advanced technology and superior materials for exceptional performance and durability.`,
-    specifications: {
-      "Brand": "Premium Brand",
-      "Model": product.name,
-      "Category": product.category,
-      "Warranty": "2 Years",
-      "Shipping": "Free Shipping",
-      "Return Policy": "30 Days"
-    },
-    features: [
-      "Premium materials and construction",
-      "Advanced technology integration",
-      "Ergonomic design for comfort",
-      "Environmentally friendly",
-      "Easy maintenance and care"
-    ],
-    rating: 4.5,
-    reviews: productStats.reviews,
-    inStock: true,
-    stockCount: productStats.stockCount
-  };
+  useEffect(() => {
+    // Fetch additional product details from backend if needed
+    const fetchDetails = async () => {
+      try {
+        const res = await fetch(`http://localhost:3001/api/products/${product.id}`);
+        if (!res.ok) throw new Error('Failed to fetch product details');
+        const data = await res.json();
+        setDetails(data.product);
+        setImages(data.product.images && data.product.images.length > 0 ? data.product.images : [product.image]);
+      } catch {
+        setDetails(null);
+        setImages([product.image]);
+      }
+    };
+    fetchDetails();
+  }, [product.id, product.image]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isZoomed) return;
@@ -123,7 +107,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                 onMouseLeave={() => setIsZoomed(false)}
               >
                 <img
-                  src={productImages[selectedImage]}
+                  src={images[selectedImage]}
                   alt={product.name}
                   className={`w-full h-full object-cover transition-transform duration-200 ${
                     isZoomed ? 'scale-150' : 'scale-100'
@@ -143,17 +127,17 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                 )}
 
                 {/* Image Navigation */}
-                {productImages.length > 1 && (
+                {images.length > 1 && (
                   <>
                     <button
                       className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg"
-                      onClick={() => setSelectedImage(selectedImage > 0 ? selectedImage - 1 : productImages.length - 1)}
+                      onClick={() => setSelectedImage(selectedImage > 0 ? selectedImage - 1 : images.length - 1)}
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
                     <button
                       className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg"
-                      onClick={() => setSelectedImage(selectedImage < productImages.length - 1 ? selectedImage + 1 : 0)}
+                      onClick={() => setSelectedImage(selectedImage < images.length - 1 ? selectedImage + 1 : 0)}
                     >
                       <ChevronRight className="h-4 w-4" />
                     </button>
@@ -163,7 +147,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
 
               {/* Thumbnail Images */}
               <div className="flex space-x-2 overflow-x-auto">
-                {productImages.map((image, index) => (
+                {images.map((image: any, index: number) => (
                   <button
                     key={index}
                     className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
@@ -200,7 +184,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                     <Star
                       key={i}
                       className={`h-4 w-4 ${
-                        i < Math.floor(productDetails.rating)
+                        i < Math.floor(details?.rating ?? 0)
                           ? 'text-yellow-400 fill-current'
                           : 'text-gray-300'
                       }`}
@@ -208,7 +192,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                   ))}
                 </div>
                 <span className="text-sm text-gray-600">
-                  {productDetails.rating} ({productDetails.reviews} reviews)
+                  {details?.rating ?? 0} ({details?.reviews ?? 0} reviews)
                 </span>
               </div>
             </div>
@@ -230,9 +214,9 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                   </>
                 )}
               </div>
-              {productDetails.inStock ? (
+              {details?.inStock ? (
                 <p className="text-green-600 text-sm font-medium">
-                  ✓ In Stock ({productDetails.stockCount} available)
+                  ✓ In Stock ({details?.stockCount ?? 0} available)
                 </p>
               ) : (
                 <p className="text-red-600 text-sm font-medium">
@@ -258,8 +242,8 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                   <span className="px-4 py-2 border-x">{quantity}</span>
                   <button
                     className="p-2 hover:bg-gray-100"
-                    onClick={() => setQuantity(Math.min(productDetails.stockCount, quantity + 1))}
-                    disabled={quantity >= productDetails.stockCount}
+                    onClick={() => setQuantity(Math.min(details?.stockCount ?? 1, quantity + 1))}
+                    disabled={quantity >= (details?.stockCount ?? 1)}
                   >
                     <Plus className="h-4 w-4" />
                   </button>
@@ -270,7 +254,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                 <Button
                   className="flex-1 bg-gray-50 hover:bg-gray-800"
                   onClick={handleAddToCart}
-                  disabled={!productDetails.inStock}
+                  disabled={!details?.inStock}
                 >
                   Add to Cart - ${(product.price * quantity).toFixed(2)}
                 </Button>
@@ -295,27 +279,29 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                 <div>
                   <h3 className="font-semibold mb-2">Description</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">
-                    {productDetails.description}
+                    {details?.description ?? ''}
                   </p>
                 </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Key Features</h3>
-                  <ul className="space-y-1">
-                    {productDetails.features.map((feature, index) => (
-                      <li key={index} className="text-sm text-gray-600 flex items-start gap-2">
-                        <span className="text-green-500 mt-1">•</span>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                {details?.features && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Key Features</h3>
+                    <ul className="space-y-1">
+                      {details.features.map((feature: any, index: number) => (
+                        <li key={index} className="text-sm text-gray-600 flex items-start gap-2">
+                          <span className="text-green-500 mt-1">•</span>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="specs" className="space-y-2">
-                {Object.entries(productDetails.specifications).map(([key, value]) => (
+                {Object.entries(details?.specifications ?? {}).map(([key, value]) => (
                   <div key={key} className="flex justify-between py-2 border-b border-gray-100 last:border-0">
                     <span className="text-sm font-medium text-gray-600">{key}:</span>
-                    <span className="text-sm text-gray-900">{value}</span>
+                    <span className="text-sm text-gray-900">{value as string}</span>
                   </div>
                 ))}
               </TabsContent>

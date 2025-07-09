@@ -21,79 +21,33 @@ import AuthModal from "@/components/AuthModal";
 import UserDropdown from "@/components/UserDropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
-
-// Mock order data
-const mockOrders = [
-  {
-    id: "ORD-001",
-    date: "2024-01-15",
-    status: "delivered",
-    total: 299.97,
-    items: [
-      {
-        id: 1,
-        name: "Wireless Bluetooth Headphones",
-        price: 89.99,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop"
-      },
-      {
-        id: 2,
-        name: "Smart Phone",
-        price: 199.98,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&h=300&fit=crop"
-      }
-    ],
-    tracking: "TRK123456789",
-    estimatedDelivery: "2024-01-20"
-  },
-  {
-    id: "ORD-002",
-    date: "2024-01-10",
-    status: "shipped",
-    total: 449.99,
-    items: [
-      {
-        id: 3,
-        name: "Laptop",
-        price: 449.99,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=300&h=300&fit=crop"
-      }
-    ],
-    tracking: "TRK987654321",
-    estimatedDelivery: "2024-01-18"
-  },
-  {
-    id: "ORD-003",
-    date: "2024-01-05",
-    status: "processing",
-    total: 79.99,
-    items: [
-      {
-        id: 4,
-        name: "Cotton T-Shirt",
-        price: 24.99,
-        quantity: 2,
-        image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop"
-      },
-      {
-        id: 5,
-        name: "Plant Pot",
-        price: 29.99,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=300&h=300&fit=crop"
-      }
-    ],
-    tracking: null,
-    estimatedDelivery: "2024-01-22"
-  }
-];
+import { useEffect, useState } from "react";
 
 export default function OrdersPage() {
   const { isAuthenticated } = useAuth();
   const { state: wishlistState } = useWishlist();
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fetchOrders = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch('http://localhost:3001/api/orders', { credentials: 'include' });
+        if (!res.ok) throw new Error('Failed to fetch orders');
+        const data = await res.json();
+        setOrders(data.orders);
+      } catch (err: any) {
+        setError(err.message || 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, [isAuthenticated]);
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
@@ -227,14 +181,14 @@ export default function OrdersPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-gray-900">{mockOrders.length}</div>
+              <div className="text-2xl font-bold text-gray-900">{orders.length}</div>
               <div className="text-sm text-gray-600">Total Orders</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-6 text-center">
               <div className="text-2xl font-bold text-green-600">
-                {mockOrders.filter(order => order.status === 'delivered').length}
+                {orders.filter(order => order.status === 'delivered').length}
               </div>
               <div className="text-sm text-gray-600">Delivered</div>
             </CardContent>
@@ -242,7 +196,7 @@ export default function OrdersPage() {
           <Card>
             <CardContent className="p-6 text-center">
               <div className="text-2xl font-bold text-gray-900">
-                ${mockOrders.reduce((sum, order) => sum + order.total, 0).toFixed(2)}
+                ${orders.reduce((sum, order) => sum + order.total, 0).toFixed(2)}
               </div>
               <div className="text-sm text-gray-600">Total Spent</div>
             </CardContent>
@@ -250,7 +204,27 @@ export default function OrdersPage() {
         </div>
 
         {/* Orders List */}
-        {mockOrders.length === 0 ? (
+        {loading ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <Package className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading orders...</h2>
+              <p className="text-gray-600 mb-6">
+                Please wait while we fetch your order history.
+              </p>
+            </CardContent>
+          </Card>
+        ) : error ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <Package className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Error: {error}</h2>
+              <p className="text-gray-600 mb-6">
+                Failed to load your order history. Please try again later.
+              </p>
+            </CardContent>
+          </Card>
+        ) : orders.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
               <Package className="mx-auto h-16 w-16 text-gray-300 mb-4" />
@@ -267,97 +241,99 @@ export default function OrdersPage() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {mockOrders.map((order) => (
-              <Card key={order.id} className="overflow-hidden">
-                <CardHeader className="bg-gray-50 px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <CardTitle className="text-lg">Order {order.id}</CardTitle>
-                        <p className="text-sm text-gray-600">
-                          Placed on {new Date(order.date).toLocaleDateString()}
-                        </p>
+            {orders.map((order: any) => {
+              return (
+                <Card key={order.id} className="overflow-hidden">
+                  <CardHeader className="bg-gray-50 px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <CardTitle className="text-lg">Order {order.id}</CardTitle>
+                          <p className="text-sm text-gray-600">
+                            Placed on {new Date(order.date).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(order.status)}
+                          <Badge className={getStatusColor(order.status)}>
+                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(order.status)}
-                        <Badge className={getStatusColor(order.status)}>
-                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                        </Badge>
+                      <div className="text-right">
+                        <div className="text-lg font-semibold">${order.total}</div>
+                        {order.tracking && (
+                          <p className="text-sm text-gray-600">
+                            Tracking: {order.tracking}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-semibold">${order.total}</div>
-                      {order.tracking && (
-                        <p className="text-sm text-gray-600">
-                          Tracking: {order.tracking}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
+                  </CardHeader>
 
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    {/* Order Items */}
-                    <div className="space-y-3">
-                      {order.items.map((item, index) => (
-                        <div key={index} className="flex items-center gap-4">
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{item.name}</h4>
-                            <p className="text-sm text-gray-600">
-                              Quantity: {item.quantity} • ${item.price}
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      {/* Order Items */}
+                      <div className="space-y-3">
+                        {order.items.map((item: any, index: number) => (
+                          <div key={index} className="flex items-center gap-4">
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-16 h-16 object-cover rounded-lg"
+                            />
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">{item.name}</h4>
+                              <p className="text-sm text-gray-600">
+                                Quantity: {item.quantity} • ${item.price}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Order Status */}
+                      <div className="border-t pt-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              Estimated Delivery: {new Date(order.estimatedDelivery).toLocaleDateString()}
                             </p>
+                            {order.status === 'shipped' && order.tracking && (
+                              <p className="text-sm text-gray-600">
+                                Your order is on its way!
+                              </p>
+                            )}
+                            {order.status === 'processing' && (
+                              <p className="text-sm text-gray-600">
+                                We're preparing your order for shipment
+                              </p>
+                            )}
+                            {order.status === 'delivered' && (
+                              <p className="text-sm text-green-600">
+                                Your order has been delivered
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </Button>
+                            {order.status === 'delivered' && (
+                              <Button variant="outline" size="sm">
+                                <RotateCcw className="h-4 w-4 mr-2" />
+                                Return
+                              </Button>
+                            )}
                           </div>
                         </div>
-                      ))}
-                    </div>
-
-                    {/* Order Status */}
-                    <div className="border-t pt-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            Estimated Delivery: {new Date(order.estimatedDelivery).toLocaleDateString()}
-                          </p>
-                          {order.status === 'shipped' && order.tracking && (
-                            <p className="text-sm text-gray-600">
-                              Your order is on its way!
-                            </p>
-                          )}
-                          {order.status === 'processing' && (
-                            <p className="text-sm text-gray-600">
-                              We're preparing your order for shipment
-                            </p>
-                          )}
-                          {order.status === 'delivered' && (
-                            <p className="text-sm text-green-600">
-                              Your order has been delivered
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </Button>
-                          {order.status === 'delivered' && (
-                            <Button variant="outline" size="sm">
-                              <RotateCcw className="h-4 w-4 mr-2" />
-                              Return
-                            </Button>
-                          )}
-                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

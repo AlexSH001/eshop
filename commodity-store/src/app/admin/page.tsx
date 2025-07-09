@@ -136,14 +136,6 @@ export default function AdminLoginPage() {
                 )}
               </Button>
             </form>
-
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <h3 className="text-sm font-medium text-blue-900 mb-2">Demo Credentials:</h3>
-              <div className="text-xs text-blue-800 space-y-1">
-                <div>Admin: admin@shop.com / admin123</div>
-                <div>Super Admin: superadmin@shop.com / super123</div>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
