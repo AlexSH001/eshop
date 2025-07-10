@@ -217,7 +217,7 @@ router.get('/my-orders', authenticateUser, paginationValidation, async (req, res
       WHERE oi.order_id = ?
     `, [order.id]);
 
-    order.items = items.map(item => ({
+    order.items = items ? items.map(item => ({
       id: item.id,
       productId: item.product_id,
       name: item.product_name,
@@ -225,7 +225,199 @@ router.get('/my-orders', authenticateUser, paginationValidation, async (req, res
       price: item.price,
       total: item.total,
       image: item.featured_image
-    }));
+    })) : [];
+  }
+
+  res.json({
+    orders,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total: parseInt(total),
+      pages: Math.ceil(total / limit)
+    }
+  });
+});
+
+// Get all orders (public for admin portal)
+router.get('/', paginationValidation, async (req, res) => {
+  const {
+    page = 1,
+    limit = 20,
+    status,
+    paymentStatus,
+    search,
+    sortBy = 'created_at',
+    sortOrder = 'DESC'
+  } = req.query;
+
+  const offset = (page - 1) * limit;
+
+  let whereConditions = [];
+  let params = [];
+
+  // Status filter
+  if (status && status !== 'all') {
+    whereConditions.push('status = ?');
+    params.push(status);
+  }
+
+  // Payment status filter
+  if (paymentStatus && paymentStatus !== 'all') {
+    whereConditions.push('payment_status = ?');
+    params.push(paymentStatus);
+  }
+
+  // Search filter
+  if (search) {
+    whereConditions.push('(order_number LIKE ? OR email LIKE ? OR billing_first_name LIKE ? OR billing_last_name LIKE ?)');
+    const searchTerm = `%${search}%`;
+    params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+  }
+
+  const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+  // Validate sort
+  const validSortColumns = ['created_at', 'total', 'status', 'order_number'];
+  const validSortOrder = ['ASC', 'DESC'];
+  const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
+  const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
+
+  const orders = await database.query(`
+    SELECT * FROM orders
+    ${whereClause}
+    ORDER BY ${sortColumn} ${sortDirection}
+    LIMIT ? OFFSET ?
+  `, [...params, parseInt(limit), offset]);
+
+  const [{ total }] = await database.query(`
+    SELECT COUNT(*) as total FROM orders ${whereClause}
+  `, params);
+
+  // Get order items for each order
+  for (const order of orders) {
+    // Set default empty array for items
+    order.items = [];
+    
+    try {
+      const items = await database.query(`
+        SELECT oi.*, p.featured_image
+        FROM order_items oi
+        LEFT JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = ?
+      `, [order.id]);
+
+      if (items && Array.isArray(items) && items.length > 0) {
+        order.items = items.map(item => ({
+          id: item.id,
+          productId: item.product_id,
+          name: item.product_name,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.total,
+          image: item.featured_image
+        }));
+      }
+    } catch (error) {
+      console.error(`Error fetching items for order ${order.id}:`, error);
+      // items already set to empty array above
+    }
+  }
+
+  res.json({
+    orders,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total: parseInt(total),
+      pages: Math.ceil(total / limit)
+    }
+  });
+});
+
+// Admin: Get all orders (authenticated)
+router.get('/authenticated', authenticateAdmin, paginationValidation, async (req, res) => {
+  const {
+    page = 1,
+    limit = 20,
+    status,
+    paymentStatus,
+    search,
+    sortBy = 'created_at',
+    sortOrder = 'DESC'
+  } = req.query;
+
+  const offset = (page - 1) * limit;
+
+  let whereConditions = [];
+  let params = [];
+
+  // Status filter
+  if (status && status !== 'all') {
+    whereConditions.push('status = ?');
+    params.push(status);
+  }
+
+  // Payment status filter
+  if (paymentStatus && paymentStatus !== 'all') {
+    whereConditions.push('payment_status = ?');
+    params.push(paymentStatus);
+  }
+
+  // Search filter
+  if (search) {
+    whereConditions.push('(order_number LIKE ? OR email LIKE ? OR billing_first_name LIKE ? OR billing_last_name LIKE ?)');
+    const searchTerm = `%${search}%`;
+    params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+  }
+
+  const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+  // Validate sort
+  const validSortColumns = ['created_at', 'total', 'status', 'order_number'];
+  const validSortOrder = ['ASC', 'DESC'];
+  const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
+  const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
+
+  const orders = await database.query(`
+    SELECT * FROM orders
+    ${whereClause}
+    ORDER BY ${sortColumn} ${sortDirection}
+    LIMIT ? OFFSET ?
+  `, [...params, parseInt(limit), offset]);
+
+  const [{ total }] = await database.query(`
+    SELECT COUNT(*) as total FROM orders ${whereClause}
+  `, params);
+
+  // Get order items for each order
+  for (const order of orders) {
+    // Set default empty array for items
+    order.items = [];
+    
+    try {
+      const items = await database.query(`
+        SELECT oi.*, p.featured_image
+        FROM order_items oi
+        LEFT JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = ?
+      `, [order.id]);
+
+      if (items && Array.isArray(items) && items.length > 0) {
+        order.items = items.map(item => ({
+          id: item.id,
+          productId: item.product_id,
+          name: item.product_name,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.total,
+          image: item.featured_image
+        }));
+      }
+    } catch (error) {
+      console.error(`Error fetching items for order ${order.id}:`, error);
+      // items already set to empty array above
+    }
   }
 
   res.json({
@@ -280,72 +472,6 @@ router.get('/:id', idValidation, async (req, res) => {
         total: item.total,
         image: item.featured_image
       }))
-    }
-  });
-});
-
-// Admin: Get all orders
-router.get('/', authenticateAdmin, paginationValidation, async (req, res) => {
-  const {
-    page = 1,
-    limit = 20,
-    status,
-    paymentStatus,
-    search,
-    sortBy = 'created_at',
-    sortOrder = 'DESC'
-  } = req.query;
-
-  const offset = (page - 1) * limit;
-
-  let whereConditions = [];
-  let params = [];
-
-  // Status filter
-  if (status && status !== 'all') {
-    whereConditions.push('status = ?');
-    params.push(status);
-  }
-
-  // Payment status filter
-  if (paymentStatus && paymentStatus !== 'all') {
-    whereConditions.push('payment_status = ?');
-    params.push(paymentStatus);
-  }
-
-  // Search filter
-  if (search) {
-    whereConditions.push('(order_number LIKE ? OR email LIKE ? OR billing_first_name LIKE ? OR billing_last_name LIKE ?)');
-    const searchTerm = `%${search}%`;
-    params.push(searchTerm, searchTerm, searchTerm, searchTerm);
-  }
-
-  const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-
-  // Validate sort
-  const validSortColumns = ['created_at', 'total', 'status', 'order_number'];
-  const validSortOrder = ['ASC', 'DESC'];
-  const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
-  const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
-
-  const orders = await database.query(`
-    SELECT * FROM orders
-    ${whereClause}
-    ORDER BY ${sortColumn} ${sortDirection}
-    LIMIT ? OFFSET ?
-  `, [...params, parseInt(limit), offset]);
-
-  const [{ total }] = await database.query(`
-    SELECT COUNT(*) as total FROM orders ${whereClause}
-  `, params);
-
-  res.json({
-    orders,
-    pagination: {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      total: parseInt(total),
-      pages: Math.ceil(total / limit)
     }
   });
 });

@@ -90,6 +90,12 @@ export default function AdminProductsPage() {
   });
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
+  // Helper function to get category ID by name
+  const getCategoryIdByName = (categoryName: string) => {
+    const category = categories.find(cat => cat.name === categoryName);
+    return category ? category.id.toString() : '';
+  };
+
   // Redirect if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -208,6 +214,7 @@ export default function AdminProductsPage() {
           description: formData.description,
           price: parseFloat(formData.price),
           originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
+          categoryId: formData.categoryId, // Add categoryId to the update request
           stock: parseInt(formData.stock),
           status: formData.status,
           featuredImage: formData.image,
@@ -342,7 +349,7 @@ export default function AdminProductsPage() {
                         name: product.name,
                         price: product.price.toString(),
                         originalPrice: product.originalPrice?.toString() || '',
-                        categoryId: product.category, // Set categoryId for editing
+                        categoryId: getCategoryIdByName(product.category), // Get category ID by name
                         stock: product.stock.toString(),
                         description: product.description,
                         image: product.image,
@@ -427,18 +434,18 @@ export default function AdminProductsPage() {
                 </div>
                 <div>
                   <Label htmlFor="categoryId">Category</Label>
-                  <select
-                    id="categoryId"
-                    value={formData.categoryId}
-                    onChange={e => setFormData({ ...formData, categoryId: e.target.value })}
-                    required
-                    className="w-full border rounded p-2"
-                  >
-                    <option value="">Select category</option>
-                    {categories.map(category => (
-                      <option key={category.id} value={category.id}>{category.name}</option>
-                    ))}
-                  </select>
+                  <Select value={formData.categoryId} onValueChange={value => setFormData({ ...formData, categoryId: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(category => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>
@@ -535,18 +542,18 @@ export default function AdminProductsPage() {
                 </div>
                 <div>
                   <Label htmlFor="categoryId">Category</Label>
-                  <select
-                    id="categoryId"
-                    value={formData.categoryId}
-                    onChange={e => setFormData({ ...formData, categoryId: e.target.value })}
-                    required
-                    className="w-full border rounded p-2"
-                  >
-                    <option value="">Select category</option>
-                    {categories.map(category => (
-                      <option key={category.id} value={category.id}>{category.name}</option>
-                    ))}
-                  </select>
+                  <Select value={formData.categoryId} onValueChange={value => setFormData({ ...formData, categoryId: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(category => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>

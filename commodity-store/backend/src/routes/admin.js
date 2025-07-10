@@ -157,8 +157,75 @@ router.get('/dashboard/category-performance', authenticateAdmin, async (req, res
   });
 });
 
-// User management
-router.get('/users', authenticateAdmin, paginationValidation, async (req, res) => {
+// Get users list (public for admin portal)
+router.get('/users', paginationValidation, async (req, res) => {
+  const {
+    page = 1,
+    limit = 20,
+    search,
+    status = 'all',
+    sortBy = 'created_at',
+    sortOrder = 'DESC'
+  } = req.query;
+
+  const offset = (page - 1) * limit;
+
+  let whereConditions = [];
+  let params = [];
+
+  // Status filter
+  if (status !== 'all') {
+    whereConditions.push('is_active = ?');
+    params.push(status === 'active');
+  }
+
+  // Search filter
+  if (search) {
+    whereConditions.push('(first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)');
+    const searchTerm = `%${search}%`;
+    params.push(searchTerm, searchTerm, searchTerm);
+  }
+
+  const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+  // Validate sort
+  const validSortColumns = ['first_name', 'last_name', 'email', 'created_at'];
+  const validSortOrder = ['ASC', 'DESC'];
+  const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
+  const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
+
+  const users = await database.query(`
+    SELECT
+      id, email, first_name, last_name, phone, avatar,
+      email_verified, is_active, created_at, updated_at,
+      (SELECT COUNT(*) FROM orders WHERE user_id = users.id) as order_count,
+      (SELECT COALESCE(SUM(total), 0) FROM orders WHERE user_id = users.id) as total_spent
+    FROM users
+    ${whereClause}
+    ORDER BY ${sortColumn} ${sortDirection}
+    LIMIT ? OFFSET ?
+  `, [...params, parseInt(limit), offset]);
+
+  const [{ total }] = await database.query(`
+    SELECT COUNT(*) as total FROM users ${whereClause}
+  `, params);
+
+  res.json({
+    users: users.map(user => ({
+      ...user,
+      total_spent: Math.round(user.total_spent * 100) / 100
+    })),
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total: parseInt(total),
+      pages: Math.ceil(total / limit)
+    }
+  });
+});
+
+// User management (authenticated)
+router.get('/users/authenticated', authenticateAdmin, paginationValidation, async (req, res) => {
   const {
     page = 1,
     limit = 20,

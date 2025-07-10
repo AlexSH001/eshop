@@ -149,31 +149,44 @@ export default function AdminCategoriesPage() {
               <Plus className="h-4 w-4 mr-2" /> Add Category
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="bg-white">
             <DialogHeader>
               <DialogTitle>Add Category</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <Input
-                placeholder="Name"
-                value={formData.name}
-                onChange={e => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
-              />
-              <Input
-                placeholder="Slug"
-                value={formData.slug}
-                onChange={e => setFormData((prev: any) => ({ ...prev, slug: e.target.value }))}
-              />
-              <Input
-                placeholder="Icon"
-                value={formData.icon}
-                onChange={e => setFormData((prev: any) => ({ ...prev, icon: e.target.value }))}
-              />
-              <Input
-                placeholder="Description"
-                value={formData.description}
-                onChange={e => setFormData((prev: any) => ({ ...prev, description: e.target.value }))}
-              />
+              <div>
+                <Label htmlFor="name">Category Name</Label>
+                <Input
+                  id="name"
+                  placeholder="Name"
+                  value={formData.name}
+                  onChange={e => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="slug">Slug</Label>
+                <Input
+                  placeholder="Slug"
+                  value={formData.slug}
+                  onChange={e => setFormData((prev: any) => ({ ...prev, slug: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="icon">Icon</Label>
+                <Input
+                  placeholder="Icon"
+                  value={formData.icon}
+                  onChange={e => setFormData((prev: any) => ({ ...prev, icon: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  placeholder="Description"
+                  value={formData.description}
+                  onChange={e => setFormData((prev: any) => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
               <Button onClick={handleAddCategory} disabled={loading}>
                 Add
               </Button>
@@ -212,31 +225,43 @@ export default function AdminCategoriesPage() {
                         <Edit className="h-4 w-4 mr-1" /> Edit
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="bg-white">
                       <DialogHeader>
                         <DialogTitle>Edit Category</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4">
-                        <Input
-                          placeholder="Name"
-                          value={formData.name}
-                          onChange={e => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
-                        />
-                        <Input
-                          placeholder="Slug"
-                          value={formData.slug}
-                          onChange={e => setFormData((prev: any) => ({ ...prev, slug: e.target.value }))}
-                        />
-                        <Input
-                          placeholder="Icon"
-                          value={formData.icon}
-                          onChange={e => setFormData((prev: any) => ({ ...prev, icon: e.target.value }))}
-                        />
-                        <Input
-                          placeholder="Description"
-                          value={formData.description}
-                          onChange={e => setFormData((prev: any) => ({ ...prev, description: e.target.value }))}
-                        />
+                        <div>
+                          <Label htmlFor="name">Category Name</Label>
+                          <Input
+                            placeholder="Name"
+                            value={formData.name}
+                            onChange={e => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="slug">Slug</Label>
+                          <Input
+                            placeholder="Slug"
+                            value={formData.slug}
+                            onChange={e => setFormData((prev: any) => ({ ...prev, slug: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="icon">Icon</Label>
+                          <Input
+                            placeholder="Icon"
+                            value={formData.icon}
+                            onChange={e => setFormData((prev: any) => ({ ...prev, icon: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="description">Description</Label>
+                          <Input
+                            placeholder="Description"
+                            value={formData.description}
+                            onChange={e => setFormData((prev: any) => ({ ...prev, description: e.target.value }))}
+                          />
+                        </div>
                         <Button onClick={handleEditCategory} disabled={loading}>
                           Save
                         </Button>
@@ -251,7 +276,7 @@ export default function AdminCategoriesPage() {
                         <Trash2 className="h-4 w-4 mr-1" /> Delete
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="bg-white">
                       <DialogHeader>
                         <DialogTitle>Delete Category</DialogTitle>
                       </DialogHeader>

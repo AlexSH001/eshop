@@ -152,7 +152,7 @@ export default function AdminUsersPage() {
               <Plus className="h-4 w-4 mr-2" /> Add User
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="bg-white">
             <DialogHeader>
               <DialogTitle>Add User</DialogTitle>
             </DialogHeader>
@@ -228,7 +228,7 @@ export default function AdminUsersPage() {
                         <Edit className="h-4 w-4 mr-1" /> Edit
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="bg-white">
                       <DialogHeader>
                         <DialogTitle>Edit User</DialogTitle>
                       </DialogHeader>
@@ -278,7 +278,7 @@ export default function AdminUsersPage() {
                         <Trash2 className="h-4 w-4 mr-1" /> Delete
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="bg-white">
                       <DialogHeader>
                         <DialogTitle>Delete User</DialogTitle>
                       </DialogHeader>

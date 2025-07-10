@@ -16,6 +16,8 @@ const wishlistRoutes = require('./routes/wishlist');
 const adminRoutes = require('./routes/admin');
 const searchRoutes = require('./routes/search');
 const uploadRoutes = require('./routes/upload');
+const categoryRoutes = require('./routes/categories');
+const userRoutes = require('./routes/users');
 
 const { errorHandler } = require('./middleware/errorHandler');
 const { initializeDatabase } = require('./database/init');
@@ -84,6 +86,8 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/users', userRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

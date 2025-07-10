@@ -146,7 +146,7 @@ export default function AdminOrdersPage() {
                         <Eye className="h-4 w-4 mr-1" /> View
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="bg-white">
                       <DialogHeader>
                         <DialogTitle>Order Details</DialogTitle>
                       </DialogHeader>
@@ -175,7 +175,7 @@ export default function AdminOrdersPage() {
                         <Edit className="h-4 w-4 mr-1" /> Edit
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="bg-white">
                       <DialogHeader>
                         <DialogTitle>Edit Order Status</DialogTitle>
                       </DialogHeader>
@@ -205,7 +205,7 @@ export default function AdminOrdersPage() {
                         <Trash2 className="h-4 w-4 mr-1" /> Delete
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="bg-white">
                       <DialogHeader>
                         <DialogTitle>Delete Order</DialogTitle>
                       </DialogHeader>
