@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -94,7 +95,8 @@ export default function ProductQuickView({ product, children }: ProductQuickView
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="max-w-6xl w-full max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="bg-white max-w-6xl w-full max-h-[90vh] overflow-y-auto p-0">
+        <DialogTitle className="bg-white px-5 py-2">Product Quick View</DialogTitle>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
           {/* Image Section */}
           <div className="relative bg-gray-50 p-6">
