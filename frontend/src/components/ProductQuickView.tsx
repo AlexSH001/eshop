@@ -64,11 +64,12 @@ export default function ProductQuickView({ product, children }: ProductQuickView
   const [details, setDetails] = useState<ProductDetails | null>(null);
   const [images, setImages] = useState<string[]>([product.image]);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasFetched, setHasFetched] = useState(false);
+  // Remove hasFetched state
+  // const [hasFetched, setHasFetched] = useState(false);
 
   // Only fetch details when modal is opened and hasn't been fetched before
   useEffect(() => {
-    if (isOpen && !hasFetched && !isLoading) {
+    if (isOpen) {
       const fetchDetails = async () => {
         setIsLoading(true);
         try {
@@ -77,21 +78,19 @@ export default function ProductQuickView({ product, children }: ProductQuickView
           const data = await res.json();
           setDetails(data.product);
           setImages(data.product.images && data.product.images.length > 0 ? data.product.images : [product.image]);
-          setHasFetched(true);
         } catch (error: unknown) {
           if (error instanceof Error) {
             console.error("Failed to fetch product details:", error.message);
           }
           setDetails(null);
           setImages([product.image]);
-          setHasFetched(true);
         } finally {
           setIsLoading(false);
         }
       };
       fetchDetails();
     }
-  }, [isOpen, hasFetched, isLoading, product.id, product.image]);
+  }, [isOpen, product.id, product.image]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isZoomed) return;

@@ -148,7 +148,9 @@ router.get('/:id', idValidation, optionalAuth, async (req, res) => {
     images: product.images ? JSON.parse(product.images) : [],
     tags: product.tags ? JSON.parse(product.tags) : [],
     attributes: product.attributes ? JSON.parse(product.attributes) : {},
-    dimensions: product.dimensions ? JSON.parse(product.dimensions) : null
+    dimensions: product.dimensions ? JSON.parse(product.dimensions) : null,
+    inStock: product.stock > 0,
+    stockCount: product.stock
   };
 
   // Get related products
