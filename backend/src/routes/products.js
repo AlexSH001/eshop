@@ -150,7 +150,9 @@ router.get('/:id', idValidation, optionalAuth, async (req, res) => {
     attributes: product.attributes ? JSON.parse(product.attributes) : {},
     dimensions: product.dimensions ? JSON.parse(product.dimensions) : null,
     inStock: product.stock > 0,
-    stockCount: product.stock
+    stockCount: product.stock,
+    specifications: product.specifications ? JSON.parse(product.specifications) : {},
+    shipping: product.shipping || ''
   };
 
   // Get related products
@@ -264,7 +266,9 @@ router.post('/', createProductValidation, async (req, res) => {
     status = 'active',
     isFeatured = false,
     metaTitle,
-    metaDescription
+    metaDescription,
+    specifications = {},
+    shipping = ''
   } = req.body;
 
   // Use categoryId or category_id, default to first available category if not provided
@@ -286,8 +290,9 @@ router.post('/', createProductValidation, async (req, res) => {
     INSERT INTO products (
       name, slug, description, short_description, sku, price, original_price,
       category_id, stock, weight, dimensions, images, featured_image, tags,
-      attributes, status, is_featured, meta_title, meta_description
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      attributes, status, is_featured, meta_title, meta_description,
+      specifications, shipping
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     name,
     slug,
@@ -307,7 +312,9 @@ router.post('/', createProductValidation, async (req, res) => {
     status,
     isFeatured,
     metaTitle || name,
-    metaDescription || shortDescription
+    metaDescription || shortDescription,
+    JSON.stringify(specifications),
+    shipping
   ]);
 
   const product = await database.get('SELECT * FROM products WHERE id = ?', [result.id]);
@@ -319,7 +326,9 @@ router.post('/', createProductValidation, async (req, res) => {
       images: JSON.parse(product.images),
       tags: JSON.parse(product.tags),
       attributes: JSON.parse(product.attributes),
-      dimensions: product.dimensions ? JSON.parse(product.dimensions) : null
+      dimensions: product.dimensions ? JSON.parse(product.dimensions) : null,
+      specifications: product.specifications ? JSON.parse(product.specifications) : {},
+      shipping: product.shipping || ''
     }
   });
 });
@@ -343,7 +352,9 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
     status = 'active',
     isFeatured = false,
     metaTitle,
-    metaDescription
+    metaDescription,
+    specifications = {},
+    shipping = ''
   } = req.body;
 
   // Generate slug and SKU
@@ -362,8 +373,9 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
     INSERT INTO products (
       name, slug, description, short_description, sku, price, original_price,
       category_id, stock, weight, dimensions, images, featured_image, tags,
-      attributes, status, is_featured, meta_title, meta_description
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      attributes, status, is_featured, meta_title, meta_description,
+      specifications, shipping
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     name,
     slug,
@@ -383,7 +395,9 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
     status,
     isFeatured,
     metaTitle || name,
-    metaDescription || shortDescription
+    metaDescription || shortDescription,
+    JSON.stringify(specifications),
+    shipping
   ]);
 
   const product = await database.get('SELECT * FROM products WHERE id = ?', [result.id]);
@@ -395,7 +409,9 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
       images: JSON.parse(product.images),
       tags: JSON.parse(product.tags),
       attributes: JSON.parse(product.attributes),
-      dimensions: product.dimensions ? JSON.parse(product.dimensions) : null
+      dimensions: product.dimensions ? JSON.parse(product.dimensions) : null,
+      specifications: product.specifications ? JSON.parse(product.specifications) : {},
+      shipping: product.shipping || ''
     }
   });
 });
@@ -420,7 +436,8 @@ router.put('/:id', updateProductValidation, async (req, res) => {
   const allowedFields = [
     'name', 'description', 'short_description', 'price', 'original_price',
     'stock', 'weight', 'dimensions', 'images', 'featured_image',
-    'tags', 'attributes', 'status', 'is_featured', 'meta_title', 'meta_description'
+    'tags', 'attributes', 'status', 'is_featured', 'meta_title', 'meta_description',
+    'specifications', 'shipping'
   ];
 
   for (const field of allowedFields) {
@@ -428,6 +445,12 @@ router.put('/:id', updateProductValidation, async (req, res) => {
       if (['dimensions', 'images', 'tags', 'attributes'].includes(field)) {
         updates.push(`${field} = ?`);
         params.push(JSON.stringify(req.body[field]));
+      } else if (field === 'specifications' && req.body[field] !== undefined) {
+        updates.push(`${field} = ?`);
+        params.push(JSON.stringify(req.body[field]));
+      } else if (field === 'shipping' && req.body[field] !== undefined) {
+        updates.push(`${field} = ?`);
+        params.push(req.body[field]);
       } else {
         updates.push(`${field} = ?`);
         params.push(req.body[field]);
@@ -468,7 +491,9 @@ router.put('/:id', updateProductValidation, async (req, res) => {
       images: JSON.parse(updatedProduct.images),
       tags: JSON.parse(updatedProduct.tags),
       attributes: JSON.parse(updatedProduct.attributes),
-      dimensions: updatedProduct.dimensions ? JSON.parse(updatedProduct.dimensions) : null
+      dimensions: updatedProduct.dimensions ? JSON.parse(updatedProduct.dimensions) : null,
+      specifications: updatedProduct.specifications ? JSON.parse(updatedProduct.specifications) : {},
+      shipping: updatedProduct.shipping || ''
     }
   });
 });

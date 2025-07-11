@@ -12,6 +12,16 @@ async function migrate() {
   }
 }
 
+// Add migration for specifications and shipping columns
+async function addProductSpecsAndShippingColumns(db) {
+  // Add specifications column if not exists
+  await db.run(`ALTER TABLE products ADD COLUMN specifications TEXT`)
+    .catch(() => {}); // Ignore if already exists
+  // Add shipping column if not exists
+  await db.run(`ALTER TABLE products ADD COLUMN shipping TEXT`)
+    .catch(() => {}); // Ignore if already exists
+}
+
 // Run migration if this file is executed directly
 if (require.main === module) {
   migrate();

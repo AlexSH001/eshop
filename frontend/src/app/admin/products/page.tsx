@@ -46,6 +46,8 @@ interface Product {
   status: 'active' | 'inactive';
   createdAt: string;
   sales: number;
+  specifications?: Record<string, string>;
+  shipping?: string;
 }
 
 type ProductFormData = {
@@ -57,7 +59,25 @@ type ProductFormData = {
   description: string;
   image: string;
   status: string;
+  specifications: Array<{ key: string; value: string }>;
+  shipping: string;
 };
+
+// Helper to robustly parse specifications
+function parseSpecifications(spec: any) {
+  if (!spec) return [{ key: '', value: '' }];
+  if (typeof spec === 'string') {
+    try {
+      spec = JSON.parse(spec);
+    } catch {
+      return [{ key: '', value: '' }];
+    }
+  }
+  if (typeof spec === 'object' && !Array.isArray(spec)) {
+    return Object.entries(spec).map(([key, value]) => ({ key, value: String(value) }));
+  }
+  return [{ key: '', value: '' }];
+}
 
 export default function AdminProductsPage() {
   const { isAuthenticated, isLoading } = useAdmin();
@@ -97,7 +117,9 @@ export default function AdminProductsPage() {
     stock: "",
     description: "",
     image: "",
-    status: "active"
+    status: "active",
+    specifications: [{ key: '', value: '' }],
+    shipping: ""
   });
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
@@ -134,7 +156,9 @@ export default function AdminProductsPage() {
           image: (p.featured_image as string) || ((p.images as string[] | undefined)?.[0] ?? ''),
           status: p.status as 'active' | 'inactive',
           createdAt: p.created_at as string,
-          sales: (p.sales_count as number) || 0
+          sales: (p.sales_count as number) || 0,
+          specifications: p.specifications as Record<string, string> | undefined,
+          shipping: p.shipping as string | undefined
         }));
         setProducts(mappedProducts);
       } catch (err) {
@@ -167,10 +191,12 @@ export default function AdminProductsPage() {
           description: formData.description,
           price: parseFloat(formData.price),
           originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
-          categoryId: formData.categoryId, // Use categoryId from formData
+          categoryId: formData.categoryId,
           stock: parseInt(formData.stock),
           status: formData.status,
           featuredImage: formData.image,
+          specifications: Object.fromEntries(formData.specifications.filter(s => s.key).map(s => [s.key, s.value])),
+          shipping: formData.shipping
         })
       });
       if (!res.ok) throw new Error('Failed to add product');
@@ -187,7 +213,9 @@ export default function AdminProductsPage() {
           image: product.featured_image || (product.images && product.images[0]) || '',
           status: product.status,
           createdAt: product.created_at,
-          sales: product.sales_count || 0
+          sales: product.sales_count || 0,
+          specifications: product.specifications,
+          shipping: product.shipping
         },
         ...prev
       ]);
@@ -200,7 +228,9 @@ export default function AdminProductsPage() {
         stock: "",
         description: "",
         image: "",
-        status: "active"
+        status: "active",
+        specifications: [{ key: '', value: '' }],
+        shipping: ""
       });
       toast.success('Product added successfully');
     } catch (err) {
@@ -225,10 +255,12 @@ export default function AdminProductsPage() {
           description: formData.description,
           price: parseFloat(formData.price),
           originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
-          categoryId: formData.categoryId, // Add categoryId to the update request
+          categoryId: formData.categoryId,
           stock: parseInt(formData.stock),
           status: formData.status,
           featuredImage: formData.image,
+          specifications: Object.fromEntries(formData.specifications.filter(s => s.key).map(s => [s.key, s.value])),
+          shipping: formData.shipping
         })
       });
       if (!res.ok) throw new Error('Failed to update product');
@@ -246,7 +278,9 @@ export default function AdminProductsPage() {
               image: product.featured_image || (product.images && product.images[0]) || '',
               status: product.status,
               createdAt: product.created_at,
-              sales: product.sales_count || 0
+              sales: product.sales_count || 0,
+              specifications: product.specifications,
+              shipping: product.shipping
             }
           : p
       ));
@@ -259,7 +293,9 @@ export default function AdminProductsPage() {
         stock: "",
         description: "",
         image: "",
-        status: "active"
+        status: "active",
+        specifications: [{ key: '', value: '' }],
+        shipping: ""
       });
       toast.success('Product updated successfully');
     } catch (err) {
@@ -360,11 +396,13 @@ export default function AdminProductsPage() {
                         name: product.name,
                         price: product.price.toString(),
                         originalPrice: product.originalPrice?.toString() || '',
-                        categoryId: getCategoryIdByName(product.category), // Get category ID by name
+                        categoryId: getCategoryIdByName(product.category),
                         stock: product.stock.toString(),
                         description: product.description,
                         image: product.image,
-                        status: product.status
+                        status: product.status,
+                        specifications: parseSpecifications(product.specifications),
+                        shipping: product.shipping || ''
                       });
                     }}>
                       <Edit className="h-4 w-4" />
@@ -381,7 +419,7 @@ export default function AdminProductsPage() {
 
         {/* Add Product Modal */}
         <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-          <DialogContent className="max-w-md bg-white">
+          <DialogContent className="max-w-md bg-white max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Product</DialogTitle>
             </DialogHeader>
@@ -480,6 +518,46 @@ export default function AdminProductsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label>Specifications</Label>
+                {formData.specifications.map((spec, idx) => (
+                  <div key={idx} className="flex gap-2 mb-2">
+                    <Input
+                      placeholder="Key"
+                      value={spec.key}
+                      onChange={e => {
+                        const newSpecs = [...formData.specifications];
+                        newSpecs[idx].key = e.target.value;
+                        setFormData({ ...formData, specifications: newSpecs });
+                      }}
+                    />
+                    <Input
+                      placeholder="Value"
+                      value={spec.value}
+                      onChange={e => {
+                        const newSpecs = [...formData.specifications];
+                        newSpecs[idx].value = e.target.value;
+                        setFormData({ ...formData, specifications: newSpecs });
+                      }}
+                    />
+                    <Button type="button" variant="outline" onClick={() => {
+                      setFormData({ ...formData, specifications: formData.specifications.filter((_, i) => i !== idx) });
+                    }}>Remove</Button>
+                  </div>
+                ))}
+                <Button type="button" variant="secondary" onClick={() => setFormData({ ...formData, specifications: [...formData.specifications, { key: '', value: '' }] })}>
+                  Add Specification
+                </Button>
+              </div>
+              <div>
+                <Label htmlFor="shipping">Shipping Info</Label>
+                <Textarea
+                  id="shipping"
+                  value={formData.shipping}
+                  onChange={e => setFormData({ ...formData, shipping: e.target.value })}
+                  placeholder="Enter shipping details..."
+                />
+              </div>
               <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-purple-600">
                 Add Product
               </Button>
@@ -489,7 +567,7 @@ export default function AdminProductsPage() {
 
         {/* Edit Product Modal */}
         <Dialog open={!!editingProduct} onOpenChange={() => setEditingProduct(null)}>
-          <DialogContent className="max-w-md bg-white">
+          <DialogContent className="max-w-md bg-white max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Product</DialogTitle>
             </DialogHeader>
@@ -587,6 +665,46 @@ export default function AdminProductsPage() {
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label>Specifications</Label>
+                {formData.specifications.map((spec, idx) => (
+                  <div key={idx} className="flex gap-2 mb-2">
+                    <Input
+                      placeholder="Key"
+                      value={spec.key}
+                      onChange={e => {
+                        const newSpecs = [...formData.specifications];
+                        newSpecs[idx].key = e.target.value;
+                        setFormData({ ...formData, specifications: newSpecs });
+                      }}
+                    />
+                    <Input
+                      placeholder="Value"
+                      value={spec.value}
+                      onChange={e => {
+                        const newSpecs = [...formData.specifications];
+                        newSpecs[idx].value = e.target.value;
+                        setFormData({ ...formData, specifications: newSpecs });
+                      }}
+                    />
+                    <Button type="button" variant="outline" onClick={() => {
+                      setFormData({ ...formData, specifications: formData.specifications.filter((_, i) => i !== idx) });
+                    }}>Remove</Button>
+                  </div>
+                ))}
+                <Button type="button" variant="secondary" onClick={() => setFormData({ ...formData, specifications: [...formData.specifications, { key: '', value: '' }] })}>
+                  Add Specification
+                </Button>
+              </div>
+              <div>
+                <Label htmlFor="shipping">Shipping Info</Label>
+                <Textarea
+                  id="shipping"
+                  value={formData.shipping}
+                  onChange={e => setFormData({ ...formData, shipping: e.target.value })}
+                  placeholder="Enter shipping details..."
+                />
               </div>
               <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-purple-600">
                 Update Product

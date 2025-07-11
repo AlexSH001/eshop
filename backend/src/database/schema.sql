@@ -71,6 +71,8 @@ CREATE TABLE IF NOT EXISTS products (
   view_count INTEGER DEFAULT 0,
   rating DECIMAL(3,2) DEFAULT 0,
   review_count INTEGER DEFAULT 0,
+  specifications TEXT, -- JSON: {key: value, ...}
+  shipping TEXT, -- JSON or plain text for shipping info
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (category_id) REFERENCES categories(id)

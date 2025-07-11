@@ -109,7 +109,14 @@ async function seedDatabase() {
         stock: 45,
         images: ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500'],
         tags: ['wireless', 'bluetooth', 'headphones', 'audio'],
-        isFeatured: true
+        isFeatured: true,
+        specifications: {
+          brand: 'TechPro',
+          model: 'BT-500',
+          color: 'Black',
+          weight: '0.5kg'
+        },
+        shipping: 'Free shipping'
       },
       {
         name: 'Smartphone Pro Max',
@@ -121,7 +128,14 @@ async function seedDatabase() {
         stock: 23,
         images: ['https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500'],
         tags: ['smartphone', 'mobile', 'phone', 'tech'],
-        isFeatured: true
+        isFeatured: true,
+        specifications: {
+          brand: 'UltraTech',
+          model: 'ProMax 2023',
+          storage: '128GB',
+          ram: '12GB'
+        },
+        shipping: 'Standard shipping'
       },
       {
         name: 'Gaming Laptop Pro',
@@ -132,7 +146,14 @@ async function seedDatabase() {
         category: 'Electronics',
         stock: 12,
         images: ['https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500'],
-        tags: ['laptop', 'gaming', 'computer', 'tech']
+        tags: ['laptop', 'gaming', 'computer', 'tech'],
+        specifications: {
+          brand: 'GamerEdge',
+          processor: 'Intel Core i7',
+          gpu: 'NVIDIA RTX 3060',
+          ram: '16GB'
+        },
+        shipping: 'Express shipping'
       },
       {
         name: 'Smart Watch Series X',
@@ -143,7 +164,14 @@ async function seedDatabase() {
         category: 'Electronics',
         stock: 67,
         images: ['https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=500'],
-        tags: ['smartwatch', 'fitness', 'health', 'wearable']
+        tags: ['smartwatch', 'fitness', 'health', 'wearable'],
+        specifications: {
+          brand: 'FitTrack',
+          model: 'Series X',
+          display: 'OLED, 1.7 inches',
+          battery: '400mAh'
+        },
+        shipping: 'Standard shipping'
       },
 
       // Fashion
@@ -157,7 +185,14 @@ async function seedDatabase() {
         stock: 156,
         images: ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500'],
         tags: ['t-shirt', 'cotton', 'casual', 'organic'],
-        isFeatured: true
+        isFeatured: true,
+        specifications: {
+          brand: 'Organic Cotton Co.',
+          material: '100% organic cotton',
+          size: 'M, L, XL',
+          color: 'Multiple'
+        },
+        shipping: 'Standard shipping'
       },
       {
         name: 'Classic Denim Jeans',
@@ -168,7 +203,14 @@ async function seedDatabase() {
         category: 'Fashion',
         stock: 89,
         images: ['https://images.unsplash.com/photo-1542272604-787c3835535d?w=500'],
-        tags: ['jeans', 'denim', 'pants', 'casual']
+        tags: ['jeans', 'denim', 'pants', 'casual'],
+        specifications: {
+          brand: 'Denim Master',
+          style: 'Straight fit',
+          wash: 'Light wash',
+          size: '32, 34, 36'
+        },
+        shipping: 'Standard shipping'
       },
       {
         name: 'Running Sneakers',
@@ -179,7 +221,14 @@ async function seedDatabase() {
         category: 'Fashion',
         stock: 34,
         images: ['https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500'],
-        tags: ['sneakers', 'running', 'shoes', 'athletic']
+        tags: ['sneakers', 'running', 'shoes', 'athletic'],
+        specifications: {
+          brand: 'RunActive',
+          type: 'Cushioned',
+          material: 'Synthetic, mesh',
+          color: 'Multiple'
+        },
+        shipping: 'Express shipping'
       },
 
       // Home & Garden
@@ -192,7 +241,14 @@ async function seedDatabase() {
         category: 'Home & Garden',
         stock: 78,
         images: ['https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500'],
-        tags: ['lamp', 'desk', 'lighting', 'office']
+        tags: ['lamp', 'desk', 'lighting', 'office'],
+        specifications: {
+          brand: 'BrightLight',
+          style: 'Modern',
+          color: 'White',
+          power: '60W'
+        },
+        shipping: 'Standard shipping'
       },
       {
         name: 'Premium Coffee Maker',
@@ -203,7 +259,14 @@ async function seedDatabase() {
         category: 'Home & Garden',
         stock: 45,
         images: ['https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=500'],
-        tags: ['coffee', 'maker', 'kitchen', 'appliance']
+        tags: ['coffee', 'maker', 'kitchen', 'appliance'],
+        specifications: {
+          brand: 'CoffeePro',
+          model: 'Thermal X',
+          capacity: '12 cups',
+          color: 'Black'
+        },
+        shipping: 'Express shipping'
       },
 
       // Gaming
@@ -217,7 +280,14 @@ async function seedDatabase() {
         stock: 56,
         images: ['https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=500'],
         tags: ['keyboard', 'gaming', 'mechanical', 'rgb'],
-        isFeatured: true
+        isFeatured: true,
+        specifications: {
+          brand: 'GamerKeys',
+          switches: 'Cherry MX Red',
+          layout: 'Full-size',
+          color: 'Black'
+        },
+        shipping: 'Express shipping'
       },
       {
         name: 'Gaming Mouse Pro',
@@ -229,7 +299,14 @@ async function seedDatabase() {
         stock: 0, // Out of stock for testing
         images: ['https://images.unsplash.com/photo-1527814050087-3793815479db?w=500'],
         tags: ['mouse', 'gaming', 'precision', 'ergonomic'],
-        status: 'inactive'
+        status: 'inactive',
+        specifications: {
+          brand: 'PrecisionPro',
+          dpi: '2000',
+          buttons: '12',
+          color: 'Black'
+        },
+        shipping: 'Express shipping'
       }
     ];
 
@@ -241,8 +318,9 @@ async function seedDatabase() {
       await database.execute(`
         INSERT INTO products (
           name, slug, description, short_description, sku, price, original_price,
-          category_id, stock, images, featured_image, tags, status, is_featured
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          category_id, stock, images, featured_image, tags, status, is_featured,
+          specifications, shipping
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         product.name,
         slug,
@@ -257,7 +335,9 @@ async function seedDatabase() {
         product.images[0],
         JSON.stringify(product.tags),
         product.status || 'active',
-        product.isFeatured || false
+        product.isFeatured || false,
+        JSON.stringify(product.specifications || {}),
+        product.shipping || ""
       ]);
     }
 
