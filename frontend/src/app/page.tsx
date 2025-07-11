@@ -49,7 +49,7 @@ export default function Home() {
       subtitle: "Up to 70% off on all electronics",
       image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&h=400&fit=crop",
       cta: "Shop Electronics",
-      link: "/category/electronics"
+      link: "/categories/electronics"
     },
     {
       id: 2,
@@ -57,7 +57,7 @@ export default function Home() {
       subtitle: "Discover the latest trends",
       image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=400&fit=crop",
       cta: "Shop Fashion",
-      link: "/category/fashion"
+      link: "/categories/fashion"
     },
     {
       id: 3,
@@ -65,7 +65,7 @@ export default function Home() {
       subtitle: "Transform your living space",
       image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&h=400&fit=crop",
       cta: "Shop Home",
-      link: "/category/home-garden"
+      link: "/categories/home-garden"
     },
     {
       id: 4,
@@ -73,7 +73,7 @@ export default function Home() {
       subtitle: "Level up your gaming experience",
       image: "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=1200&h=400&fit=crop",
       cta: "Shop Gaming",
-      link: "/category/gaming"
+      link: "/categories/gaming"
     }
   ];
 
@@ -359,7 +359,7 @@ export default function Home() {
                 {/* Category Header */}
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-gray-900">{category}</h2>
-                  <Link href={`/category/${category.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <Link href={`/categories/${category.toLowerCase().replace(' & ', '-').replace(/\s+/g, '-')}`}>
                     <Button variant="ghost" className="flex items-center gap-2 text-sm">
                       View All
                       <ChevronRight className="h-4 w-4" />

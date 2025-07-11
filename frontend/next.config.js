@@ -2,7 +2,11 @@
 const nextConfig = {
   allowedDevOrigins: [
     'local-origin.dev', 
-    '*.local-origin.dev'
+    '*.local-origin.dev',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001'
   ],
   images: {
     unoptimized: true,
