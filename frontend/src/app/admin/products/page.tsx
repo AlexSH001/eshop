@@ -207,7 +207,7 @@ export default function AdminProductsPage() {
           name: product.name,
           price: product.price,
           originalPrice: product.original_price,
-          category: product.category_name || '',
+          category: categories.find(cat => cat.id === Number(formData.categoryId))?.name || '',
           stock: product.stock,
           description: product.description,
           image: product.featured_image || (product.images && product.images[0]) || '',
@@ -272,7 +272,8 @@ export default function AdminProductsPage() {
               name: product.name,
               price: product.price,
               originalPrice: product.original_price,
-              category: product.category_name || '',
+              // Use categories state to get the category name by categoryId
+              category: categories.find(cat => cat.id === Number(formData.categoryId))?.name || '',
               stock: product.stock,
               description: product.description,
               image: product.featured_image || (product.images && product.images[0]) || '',

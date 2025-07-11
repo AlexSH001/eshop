@@ -292,7 +292,7 @@ router.post('/', createProductValidation, async (req, res) => {
       category_id, stock, weight, dimensions, images, featured_image, tags,
       attributes, status, is_featured, meta_title, meta_description,
       specifications, shipping
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     name,
     slug,
@@ -375,7 +375,7 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
       category_id, stock, weight, dimensions, images, featured_image, tags,
       attributes, status, is_featured, meta_title, meta_description,
       specifications, shipping
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     name,
     slug,
