@@ -165,8 +165,8 @@ export default function AdminSettingsPage() {
       // In a real app, you would fetch settings from the backend
       // For now, we'll use default values
       setSettings(settings);
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Unknown error');
       toast.error('Failed to fetch settings');
     } finally {
       setLoading(false);
@@ -185,14 +185,14 @@ export default function AdminSettingsPage() {
       // In a real app, you would save settings to the backend
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
       toast.success(`${section} settings saved successfully`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(`Failed to save ${section} settings`);
     } finally {
       setSaving(false);
     }
   };
 
-  const updateSettings = (section: keyof SettingsData, field: string, value: any) => {
+  const updateSettings = (section: keyof SettingsData, field: string, value: unknown) => {
     setSettings(prev => ({
       ...prev,
       [section]: {

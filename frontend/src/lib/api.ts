@@ -1,17 +1,51 @@
+import { Product } from "@/lib/types";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-interface ApiResponse<T = any> {
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+}
+
+interface OrderData {
+  // Define the shape of order data as needed
+  [key: string]: unknown;
+}
+
+interface ProductData {
+  name: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  categoryId: string;
+  stock: number;
+  status: string;
+  featuredImage?: string;
+  image?: string;
+}
+
+interface CategoryData {
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+}
+
+interface ApiResponse<T = unknown> {
   message?: string;
   data?: T;
   error?: string;
-  details?: any[];
+  details?: unknown[];
 }
 
 class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
-    public details?: any[]
+    public details?: unknown[]
   ) {
     super(message);
     this.name = 'ApiError';
@@ -202,7 +236,7 @@ export const wishlistApi = {
 
 // Orders API
 export const ordersApi = {
-  create: async (orderData: any) => {
+  create: async (orderData: OrderData) => {
     return apiRequest('/orders', {
       method: 'POST',
       body: JSON.stringify(orderData),
@@ -220,7 +254,7 @@ export const ordersApi = {
 
 // Search API
 export const searchApi = {
-  search: async (query: string, filters?: any) => {
+  search: async (query: string, filters?: Record<string, string | number | boolean>) => {
     const searchParams = new URLSearchParams({ q: query });
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
@@ -282,14 +316,14 @@ export const adminApi = {
     return apiRequest('/admin/products');
   },
 
-  createProduct: async (productData: any) => {
+  createProduct: async (productData: ProductData) => {
     return apiRequest('/admin/products', {
       method: 'POST',
       body: JSON.stringify(productData),
     });
   },
 
-  updateProduct: async (productId: number, productData: any) => {
+  updateProduct: async (productId: number, productData: ProductData) => {
     return apiRequest(`/admin/products/${productId}`, {
       method: 'PUT',
       body: JSON.stringify(productData),

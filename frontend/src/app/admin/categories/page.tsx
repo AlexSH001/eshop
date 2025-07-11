@@ -29,6 +29,13 @@ interface Category {
   icon: string;
 }
 
+type CategoryFormData = {
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+};
+
 export default function AdminCategoriesPage() {
   const { isAuthenticated, isLoading } = useAdmin();
   const router = useRouter();
@@ -37,7 +44,7 @@ export default function AdminCategoriesPage() {
   const [error, setError] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<CategoryFormData>({
     name: "",
     slug: "",
     description: "",
@@ -60,8 +67,8 @@ export default function AdminCategoriesPage() {
       if (!res.ok) throw new Error('Failed to fetch categories');
       const data = await res.json();
       setCategories(data.categories);
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -86,8 +93,8 @@ export default function AdminCategoriesPage() {
       setIsAddModalOpen(false);
       setFormData({ name: "", slug: "", description: "", icon: "" });
       fetchCategories();
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Unknown error');
       toast.error('Failed to add category');
     } finally {
       setLoading(false);
@@ -110,8 +117,8 @@ export default function AdminCategoriesPage() {
       setEditingCategory(null);
       setFormData({ name: "", slug: "", description: "", icon: "" });
       fetchCategories();
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Unknown error');
       toast.error('Failed to update category');
     } finally {
       setLoading(false);
@@ -131,8 +138,8 @@ export default function AdminCategoriesPage() {
       toast.success('Category deleted successfully');
       setDeletingCategory(null);
       fetchCategories();
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Unknown error');
       toast.error('Failed to delete category');
     } finally {
       setLoading(false);
@@ -160,7 +167,7 @@ export default function AdminCategoriesPage() {
                   id="name"
                   placeholder="Name"
                   value={formData.name}
-                  onChange={e => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
+                  onChange={e => setFormData((prev: CategoryFormData) => ({ ...prev, name: e.target.value }))}
                 />
               </div>
               <div>
@@ -168,7 +175,7 @@ export default function AdminCategoriesPage() {
                 <Input
                   placeholder="Slug"
                   value={formData.slug}
-                  onChange={e => setFormData((prev: any) => ({ ...prev, slug: e.target.value }))}
+                  onChange={e => setFormData((prev: CategoryFormData) => ({ ...prev, slug: e.target.value }))}
                 />
               </div>
               <div>
@@ -176,7 +183,7 @@ export default function AdminCategoriesPage() {
                 <Input
                   placeholder="Icon"
                   value={formData.icon}
-                  onChange={e => setFormData((prev: any) => ({ ...prev, icon: e.target.value }))}
+                  onChange={e => setFormData((prev: CategoryFormData) => ({ ...prev, icon: e.target.value }))}
                 />
               </div>
               <div>
@@ -184,7 +191,7 @@ export default function AdminCategoriesPage() {
                 <Input
                   placeholder="Description"
                   value={formData.description}
-                  onChange={e => setFormData((prev: any) => ({ ...prev, description: e.target.value }))}
+                  onChange={e => setFormData((prev: CategoryFormData) => ({ ...prev, description: e.target.value }))}
                 />
               </div>
               <Button onClick={handleAddCategory} disabled={loading}>
@@ -235,7 +242,7 @@ export default function AdminCategoriesPage() {
                           <Input
                             placeholder="Name"
                             value={formData.name}
-                            onChange={e => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
+                            onChange={e => setFormData((prev: CategoryFormData) => ({ ...prev, name: e.target.value }))}
                           />
                         </div>
                         <div>
@@ -243,7 +250,7 @@ export default function AdminCategoriesPage() {
                           <Input
                             placeholder="Slug"
                             value={formData.slug}
-                            onChange={e => setFormData((prev: any) => ({ ...prev, slug: e.target.value }))}
+                            onChange={e => setFormData((prev: CategoryFormData) => ({ ...prev, slug: e.target.value }))}
                           />
                         </div>
                         <div>
@@ -251,7 +258,7 @@ export default function AdminCategoriesPage() {
                           <Input
                             placeholder="Icon"
                             value={formData.icon}
-                            onChange={e => setFormData((prev: any) => ({ ...prev, icon: e.target.value }))}
+                            onChange={e => setFormData((prev: CategoryFormData) => ({ ...prev, icon: e.target.value }))}
                           />
                         </div>
                         <div>
@@ -259,7 +266,7 @@ export default function AdminCategoriesPage() {
                           <Input
                             placeholder="Description"
                             value={formData.description}
-                            onChange={e => setFormData((prev: any) => ({ ...prev, description: e.target.value }))}
+                            onChange={e => setFormData((prev: CategoryFormData) => ({ ...prev, description: e.target.value }))}
                           />
                         </div>
                         <Button onClick={handleEditCategory} disabled={loading}>

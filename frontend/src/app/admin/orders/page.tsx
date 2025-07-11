@@ -61,8 +61,8 @@ export default function AdminOrdersPage() {
       if (!res.ok) throw new Error('Failed to fetch orders');
       const data = await res.json();
       setOrders(data.orders);
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -88,8 +88,8 @@ export default function AdminOrdersPage() {
       setEditingOrder(null);
       setStatus("");
       fetchOrders();
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Unknown error');
       toast.error('Failed to update order');
     } finally {
       setLoading(false);
@@ -109,8 +109,8 @@ export default function AdminOrdersPage() {
       toast.success('Order deleted successfully');
       setDeletingOrder(null);
       fetchOrders();
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Unknown error');
       toast.error('Failed to delete order');
     } finally {
       setLoading(false);

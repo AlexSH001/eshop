@@ -23,10 +23,28 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useEffect, useState } from "react";
 
+interface OrderItem {
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string;
+}
+
+interface Order {
+  id: number;
+  status: string;
+  total: number;
+  createdAt: string;
+  items: OrderItem[];
+  tracking?: string;
+  estimatedDelivery?: string;
+}
+
 export default function OrdersPage() {
   const { isAuthenticated } = useAuth();
   const { state: wishlistState } = useWishlist();
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,8 +58,8 @@ export default function OrdersPage() {
         if (!res.ok) throw new Error('Failed to fetch orders');
         const data = await res.json();
         setOrders(data.orders);
-      } catch (err: any) {
-        setError(err.message || 'Unknown error');
+      } catch (err: unknown) {
+        setError((err as Error).message || 'Unknown error');
       } finally {
         setLoading(false);
       }
@@ -241,7 +259,7 @@ export default function OrdersPage() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {orders.map((order: any) => {
+            {orders.map((order: Order) => {
               return (
                 <Card key={order.id} className="overflow-hidden">
                   <CardHeader className="bg-gray-50 px-6 py-4">
@@ -250,7 +268,7 @@ export default function OrdersPage() {
                         <div>
                           <CardTitle className="text-lg">Order {order.id}</CardTitle>
                           <p className="text-sm text-gray-600">
-                            Placed on {new Date(order.date).toLocaleDateString()}
+                            Placed on {new Date(order.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -275,7 +293,7 @@ export default function OrdersPage() {
                     <div className="space-y-4">
                       {/* Order Items */}
                       <div className="space-y-3">
-                        {order.items.map((item: any, index: number) => (
+                        {order.items.map((item: OrderItem, index: number) => (
                           <div key={index} className="flex items-center gap-4">
                             <img
                               src={item.image}
@@ -297,7 +315,7 @@ export default function OrdersPage() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm font-medium text-gray-900">
-                              Estimated Delivery: {new Date(order.estimatedDelivery).toLocaleDateString()}
+                              Estimated Delivery: {order.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleDateString() : "TBD"}
                             </p>
                             {order.status === 'shipped' && order.tracking && (
                               <p className="text-sm text-gray-600">

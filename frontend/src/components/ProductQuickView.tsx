@@ -35,6 +35,23 @@ interface ProductQuickViewProps {
   children: React.ReactNode;
 }
 
+interface ProductDetails {
+  id: number;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  image: string;
+  category: string;
+  description?: string;
+  features?: string[];
+  images?: string[];
+  rating?: number;
+  reviews?: Array<{ user: string; comment: string; rating: number }>;
+  inStock?: boolean;
+  stockCount?: number;
+  specifications?: Record<string, string>;
+}
+
 export default function ProductQuickView({ product, children }: ProductQuickViewProps) {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
@@ -44,7 +61,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
   const [isOpen, setIsOpen] = useState(false);
 
   // State for additional product details
-  const [details, setDetails] = useState<any>(null);
+  const [details, setDetails] = useState<ProductDetails | null>(null);
   const [images, setImages] = useState<string[]>([product.image]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
@@ -61,7 +78,10 @@ export default function ProductQuickView({ product, children }: ProductQuickView
           setDetails(data.product);
           setImages(data.product.images && data.product.images.length > 0 ? data.product.images : [product.image]);
           setHasFetched(true);
-        } catch {
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            console.error("Failed to fetch product details:", error.message);
+          }
           setDetails(null);
           setImages([product.image]);
           setHasFetched(true);
@@ -168,7 +188,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
 
                 {/* Thumbnail Images */}
                 <div className="flex space-x-2 overflow-x-auto">
-                  {images.map((image: any, index: number) => (
+                  {images.map((image: string, index: number) => (
                     <button
                       key={index}
                       className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
@@ -213,7 +233,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                     ))}
                   </div>
                   <span className="text-sm text-gray-600">
-                    {details?.rating ?? 0} ({details?.reviews ?? 0} reviews)
+                    {details?.rating ?? 0} ({details?.reviews?.length ?? 0} reviews)
                   </span>
                 </div>
               </div>
@@ -307,7 +327,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                     <div>
                       <h3 className="font-semibold mb-2">Key Features</h3>
                       <ul className="space-y-1">
-                        {details.features.map((feature: any, index: number) => (
+                        {details.features.map((feature: string, index: number) => (
                           <li key={index} className="text-sm text-gray-600 flex items-start gap-2">
                             <span className="text-green-500 mt-1">•</span>
                             {feature}

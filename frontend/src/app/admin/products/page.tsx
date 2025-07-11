@@ -48,6 +48,17 @@ interface Product {
   sales: number;
 }
 
+type ProductFormData = {
+  name: string;
+  price: string;
+  originalPrice: string;
+  categoryId: string;
+  stock: string;
+  description: string;
+  image: string;
+  status: string;
+};
+
 export default function AdminProductsPage() {
   const { isAuthenticated, isLoading } = useAdmin();
   const router = useRouter();
@@ -69,7 +80,7 @@ export default function AdminProductsPage() {
         const res = await fetch('http://localhost:3001/api/categories');
         if (!res.ok) throw new Error('Failed to fetch categories');
         const data = await res.json();
-        setCategories(data.categories.map((c: any) => ({ id: c.id, name: c.name })));
+        setCategories(data.categories.map((c: { id: number; name: string }) => ({ id: c.id, name: c.name })));
       } catch (err) {
         setCategories([]);
       }
@@ -78,7 +89,7 @@ export default function AdminProductsPage() {
   }, []);
 
   // Update formData to use categoryId instead of category name
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<ProductFormData>({
     name: "",
     price: "",
     originalPrice: "",
@@ -112,22 +123,22 @@ export default function AdminProductsPage() {
         const res = await fetch('http://localhost:3001/api/products');
         if (!res.ok) throw new Error('Failed to fetch products');
         const data = await res.json();
-        const mappedProducts: Product[] = data.products.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          price: p.price,
-          originalPrice: p.original_price,
-          category: p.category_name || '',
-          stock: p.stock,
-          description: p.description,
-          image: p.featured_image || (p.images && p.images[0]) || '',
-          status: p.status,
-          createdAt: p.created_at,
-          sales: p.sales_count || 0
+        const mappedProducts: Product[] = data.products.map((p: Record<string, unknown>) => ({
+          id: p.id as number,
+          name: p.name as string,
+          price: p.price as number,
+          originalPrice: p.original_price as number | undefined,
+          category: (p.category_name as string) || '',
+          stock: p.stock as number,
+          description: p.description as string,
+          image: (p.featured_image as string) || ((p.images as string[] | undefined)?.[0] ?? ''),
+          status: p.status as 'active' | 'inactive',
+          createdAt: p.created_at as string,
+          sales: (p.sales_count as number) || 0
         }));
         setProducts(mappedProducts);
-      } catch (err: any) {
-        setError(err.message || 'Unknown error');
+      } catch (err) {
+        setError((err as Error).message || 'Unknown error');
       } finally {
         setLoading(false);
       }
@@ -192,8 +203,8 @@ export default function AdminProductsPage() {
         status: "active"
       });
       toast.success('Product added successfully');
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err) {
+      setError((err as Error).message || 'Unknown error');
       toast.error('Failed to add product');
     } finally {
       setLoading(false);
@@ -251,8 +262,8 @@ export default function AdminProductsPage() {
         status: "active"
       });
       toast.success('Product updated successfully');
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err) {
+      setError((err as Error).message || 'Unknown error');
       toast.error('Failed to update product');
     } finally {
       setLoading(false);
@@ -272,8 +283,8 @@ export default function AdminProductsPage() {
       setProducts(prev => prev.filter(p => p.id !== deletingProduct.id));
       setDeletingProduct(null);
       toast.success('Product deleted successfully');
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err) {
+      setError((err as Error).message || 'Unknown error');
       toast.error('Failed to delete product');
     } finally {
       setLoading(false);

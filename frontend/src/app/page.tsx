@@ -19,13 +19,22 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useEffect, useState } from "react";
 
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  image: string;
+  category: string;
+}
+
 export default function Home() {
   const { addItem } = useCart();
   const { isAuthenticated } = useAuth();
   const { state: wishlistState, toggleWishlist, isInWishlist } = useWishlist();
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
-  const [categoryProducts, setCategoryProducts] = useState<any>({});
+  const [categoryProducts, setCategoryProducts] = useState<Record<string, Product[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,23 +99,23 @@ export default function Home() {
           throw new Error('Failed to fetch products');
         }
         
-        const data = await response.json();
+        const data: { products: Record<string, unknown>[] } = await response.json();
         
         // Group products by category
-        const groupedProducts: any = {};
-        data.products.forEach((product: any) => {
-          const categoryName = product.category_name;
+        const groupedProducts: Record<string, Product[]> = {};
+        data.products.forEach((product: Record<string, unknown>) => {
+          const categoryName = product.category_name as string;
           if (!groupedProducts[categoryName]) {
             groupedProducts[categoryName] = [];
           }
           
           // Transform product data to match frontend expectations
-          const transformedProduct = {
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            originalPrice: product.original_price,
-            image: product.featured_image || (product.images && product.images[0]) || product.image,
+          const transformedProduct: Product = {
+            id: product.id as number,
+            name: product.name as string,
+            price: product.price as number,
+            originalPrice: product.original_price as number | undefined,
+            image: (product.featured_image as string) || ((product.images as string[] | undefined)?.[0] ?? (product.image as string)),
             category: categoryName
           };
           
@@ -370,7 +379,7 @@ export default function Home() {
                 {/* Horizontal Scrollable Products */}
                 <div className="relative">
                   <div className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-4 scrollbar-hide">
-                    {(products as any[]).map((product: any) => (
+                    {(products as Product[]).map((product: Product) => (
                       <Card
                         key={product.id}
                         className="flex-shrink-0 w-48 sm:w-56 md:w-64 cursor-pointer transition-all duration-200 hover:shadow-lg group card-hover mobile-tap"

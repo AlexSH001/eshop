@@ -10,15 +10,7 @@ import AuthModal from "@/components/AuthModal";
 import UserDropdown from "@/components/UserDropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
-
-const sportsProducts = [
-  { id: 37, name: "Running Shoes", price: 89.99, originalPrice: 129.99, image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=300&fit=crop" },
-  { id: 38, name: "Yoga Mat", price: 29.99, originalPrice: 49.99, image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=300&h=300&fit=crop" },
-  { id: 39, name: "Dumbbells Set", price: 79.99, originalPrice: 99.99, image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=300&h=300&fit=crop" },
-  { id: 40, name: "Sports Water Bottle", price: 19.99, originalPrice: 29.99, image: "https://images.unsplash.com/photo-1523362628745-0c100150b504?w=300&h=300&fit=crop" },
-  { id: 41, name: "Fitness Tracker", price: 149.99, originalPrice: 199.99, image: "https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=300&h=300&fit=crop" },
-  { id: 42, name: "Tennis Racket", price: 99.99, originalPrice: 149.99, image: "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=300&h=300&fit=crop" }
-];
+import { sportsProducts } from "@/data/products";
 
 export default function SportsPage() {
   const { isAuthenticated } = useAuth();

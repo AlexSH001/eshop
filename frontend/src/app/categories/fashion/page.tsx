@@ -12,17 +12,7 @@ import UserDropdown from "@/components/UserDropdown";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
-
-const fashionProducts = [
-  { id: 13, name: "Cotton T-Shirt", price: 24.99, originalPrice: 39.99, image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop" },
-  { id: 14, name: "Denim Jeans", price: 79.99, originalPrice: 99.99, image: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=300&h=300&fit=crop" },
-  { id: 15, name: "Sneakers", price: 129.99, originalPrice: 159.99, image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=300&h=300&fit=crop" },
-  { id: 16, name: "Leather Jacket", price: 199.99, originalPrice: 299.99, image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=300&h=300&fit=crop" },
-  { id: 17, name: "Summer Dress", price: 89.99, originalPrice: 119.99, image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=300&h=300&fit=crop" },
-  { id: 18, name: "Sunglasses", price: 49.99, originalPrice: 79.99, image: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=300&h=300&fit=crop" },
-  { id: 19, name: "Winter Coat", price: 249.99, originalPrice: 349.99, image: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=300&h=300&fit=crop" },
-  { id: 20, name: "Handbag", price: 159.99, originalPrice: 199.99, image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=300&h=300&fit=crop" }
-];
+import { fashionProducts } from "@/data/products";
 
 export default function FashionPage() {
   const { addItem } = useCart();

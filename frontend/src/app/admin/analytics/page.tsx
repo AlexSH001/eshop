@@ -104,8 +104,8 @@ export default function AdminAnalyticsPage() {
         topProducts: products.products,
         categoryPerformance: categories.categories
       });
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Unknown error');
       toast.error('Failed to fetch analytics data');
     } finally {
       setLoading(false);

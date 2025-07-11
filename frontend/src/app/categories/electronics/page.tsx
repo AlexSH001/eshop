@@ -12,17 +12,7 @@ import UserDropdown from "@/components/UserDropdown";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
-
-const electronicsProducts = [
-  { id: 1, name: "Wireless Bluetooth Headphones", price: 89.99, originalPrice: 129.99, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop" },
-  { id: 2, name: "Smart Phone", price: 699.99, originalPrice: 799.99, image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&h=300&fit=crop" },
-  { id: 3, name: "Laptop", price: 999.99, originalPrice: 1299.99, image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=300&h=300&fit=crop" },
-  { id: 4, name: "Smart Watch", price: 299.99, originalPrice: 399.99, image: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=300&h=300&fit=crop" },
-  { id: 5, name: "Tablet", price: 449.99, originalPrice: 549.99, image: "https://images.unsplash.com/photo-1561154464-82e9adf32764?w=300&h=300&fit=crop" },
-  { id: 6, name: "Digital Camera", price: 799.99, originalPrice: 999.99, image: "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=300&h=300&fit=crop" },
-  { id: 7, name: "Gaming Console", price: 499.99, originalPrice: 599.99, image: "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=300&h=300&fit=crop" },
-  { id: 8, name: "Bluetooth Speakers", price: 199.99, originalPrice: 299.99, image: "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=300&h=300&fit=crop" }
-];
+import { electronicsProducts } from "@/data/products";
 
 export default function ElectronicsPage() {
   const { addItem } = useCart();

@@ -12,17 +12,7 @@ import UserDropdown from "@/components/UserDropdown";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
-
-const gamingProducts = [
-  { id: 29, name: "Mechanical Keyboard", price: 129.99, originalPrice: 179.99, image: "https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=300&h=300&fit=crop" },
-  { id: 30, name: "Gaming Mouse", price: 79.99, originalPrice: 99.99, image: "https://images.unsplash.com/photo-1527814050087-3793815479db?w=300&h=300&fit=crop" },
-  { id: 31, name: "Gaming Headset", price: 149.99, originalPrice: 199.99, image: "https://images.unsplash.com/photo-1612198537235-1f85bde9ac07?w=300&h=300&fit=crop" },
-  { id: 32, name: "Controller", price: 59.99, originalPrice: 79.99, image: "https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=300&h=300&fit=crop" },
-  { id: 33, name: "Gaming Chair", price: 299.99, originalPrice: 399.99, image: "https://images.unsplash.com/photo-1592300556311-8fc8ac6d0ddc?w=300&h=300&fit=crop" },
-  { id: 34, name: "Gaming Monitor", price: 399.99, originalPrice: 499.99, image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=300&h=300&fit=crop" },
-  { id: 35, name: "Gaming Desk", price: 249.99, originalPrice: 329.99, image: "https://images.unsplash.com/photo-1542393545-10f5cde2c810?w=300&h=300&fit=crop" },
-  { id: 36, name: "RGB Lighting", price: 89.99, originalPrice: 119.99, image: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=300&h=300&fit=crop" }
-];
+import { gamingProducts } from "@/data/products";
 
 export default function GamingPage() {
   const { addItem } = useCart();

@@ -132,13 +132,13 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (response.ok) {
           const data = await response.json();
           // Convert API cart items to local format
-          const items = data.items?.map((item: any) => ({
-            id: item.product_id,
-            name: item.product_name,
-            price: parseFloat(item.price),
-            image: item.product_image,
-            category: item.category_name || 'Unknown',
-            quantity: item.quantity,
+          const items = data.items?.map((item: Record<string, unknown>) => ({
+            id: item.product_id as number,
+            name: item.product_name as string,
+            price: parseFloat(item.price as string),
+            image: item.product_image as string,
+            category: (item.category_name as string) || 'Unknown',
+            quantity: item.quantity as number,
           })) || [];
 
           dispatch({ type: 'SET_CART', payload: items });

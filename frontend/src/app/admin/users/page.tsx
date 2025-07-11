@@ -30,6 +30,15 @@ interface User {
   status: string;
 }
 
+type UserFormData = {
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  status: string;
+  password: string;
+};
+
 export default function AdminUsersPage() {
   const { isAuthenticated, isLoading } = useAdmin();
   const router = useRouter();
@@ -38,7 +47,7 @@ export default function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<UserFormData>({
     email: "",
     firstName: "",
     lastName: "",
@@ -63,8 +72,8 @@ export default function AdminUsersPage() {
       if (!res.ok) throw new Error('Failed to fetch users');
       const data = await res.json();
       setUsers(data.users);
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -89,8 +98,8 @@ export default function AdminUsersPage() {
       setIsAddModalOpen(false);
       setFormData({ email: "", firstName: "", lastName: "", role: "user", status: "active", password: "" });
       fetchUsers();
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Unknown error');
       toast.error('Failed to add user');
     } finally {
       setLoading(false);
@@ -113,8 +122,8 @@ export default function AdminUsersPage() {
       setEditingUser(null);
       setFormData({ email: "", firstName: "", lastName: "", role: "user", status: "active", password: "" });
       fetchUsers();
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Unknown error');
       toast.error('Failed to update user');
     } finally {
       setLoading(false);
@@ -134,8 +143,8 @@ export default function AdminUsersPage() {
       toast.success('User deleted successfully');
       setDeletingUser(null);
       fetchUsers();
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Unknown error');
       toast.error('Failed to delete user');
     } finally {
       setLoading(false);
@@ -160,33 +169,33 @@ export default function AdminUsersPage() {
               <Input
                 placeholder="Email"
                 value={formData.email}
-                onChange={e => setFormData((prev: any) => ({ ...prev, email: e.target.value }))}
+                onChange={e => setFormData((prev: UserFormData) => ({ ...prev, email: e.target.value }))}
               />
               <Input
                 placeholder="First Name"
                 value={formData.firstName}
-                onChange={e => setFormData((prev: any) => ({ ...prev, firstName: e.target.value }))}
+                onChange={e => setFormData((prev: UserFormData) => ({ ...prev, firstName: e.target.value }))}
               />
               <Input
                 placeholder="Last Name"
                 value={formData.lastName}
-                onChange={e => setFormData((prev: any) => ({ ...prev, lastName: e.target.value }))}
+                onChange={e => setFormData((prev: UserFormData) => ({ ...prev, lastName: e.target.value }))}
               />
               <Input
                 placeholder="Password"
                 type="password"
                 value={formData.password}
-                onChange={e => setFormData((prev: any) => ({ ...prev, password: e.target.value }))}
+                onChange={e => setFormData((prev: UserFormData) => ({ ...prev, password: e.target.value }))}
               />
               <Input
                 placeholder="Role (user/admin)"
                 value={formData.role}
-                onChange={e => setFormData((prev: any) => ({ ...prev, role: e.target.value }))}
+                onChange={e => setFormData((prev: UserFormData) => ({ ...prev, role: e.target.value }))}
               />
               <Input
                 placeholder="Status (active/inactive)"
                 value={formData.status}
-                onChange={e => setFormData((prev: any) => ({ ...prev, status: e.target.value }))}
+                onChange={e => setFormData((prev: UserFormData) => ({ ...prev, status: e.target.value }))}
               />
               <Button onClick={handleAddUser} disabled={loading}>
                 Add
@@ -236,33 +245,33 @@ export default function AdminUsersPage() {
                         <Input
                           placeholder="Email"
                           value={formData.email}
-                          onChange={e => setFormData((prev: any) => ({ ...prev, email: e.target.value }))}
+                          onChange={e => setFormData((prev: UserFormData) => ({ ...prev, email: e.target.value }))}
                         />
                         <Input
                           placeholder="First Name"
                           value={formData.firstName}
-                          onChange={e => setFormData((prev: any) => ({ ...prev, firstName: e.target.value }))}
+                          onChange={e => setFormData((prev: UserFormData) => ({ ...prev, firstName: e.target.value }))}
                         />
                         <Input
                           placeholder="Last Name"
                           value={formData.lastName}
-                          onChange={e => setFormData((prev: any) => ({ ...prev, lastName: e.target.value }))}
+                          onChange={e => setFormData((prev: UserFormData) => ({ ...prev, lastName: e.target.value }))}
                         />
                         <Input
                           placeholder="Password (leave blank to keep current)"
                           type="password"
                           value={formData.password}
-                          onChange={e => setFormData((prev: any) => ({ ...prev, password: e.target.value }))}
+                          onChange={e => setFormData((prev: UserFormData) => ({ ...prev, password: e.target.value }))}
                         />
                         <Input
                           placeholder="Role (user/admin)"
                           value={formData.role}
-                          onChange={e => setFormData((prev: any) => ({ ...prev, role: e.target.value }))}
+                          onChange={e => setFormData((prev: UserFormData) => ({ ...prev, role: e.target.value }))}
                         />
                         <Input
                           placeholder="Status (active/inactive)"
                           value={formData.status}
-                          onChange={e => setFormData((prev: any) => ({ ...prev, status: e.target.value }))}
+                          onChange={e => setFormData((prev: UserFormData) => ({ ...prev, status: e.target.value }))}
                         />
                         <Button onClick={handleEditUser} disabled={loading}>
                           Save
