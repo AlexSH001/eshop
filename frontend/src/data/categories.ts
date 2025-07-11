@@ -84,3 +84,38 @@ export const allCategories = [
     image: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop"
   }
 ]; 
+
+export const bannerSlides = [
+  {
+    id: 1,
+    title: "Summer Sale",
+    subtitle: "Up to 70% off on all electronics",
+    image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&h=400&fit=crop",
+    cta: "Shop Electronics",
+    link: "/categories/electronics"
+  },
+  {
+    id: 2,
+    title: "New Fashion Collection",
+    subtitle: "Discover the latest trends",
+    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=400&fit=crop",
+    cta: "Shop Fashion",
+    link: "/categories/fashion"
+  },
+  {
+    id: 3,
+    title: "Home & Garden Sale",
+    subtitle: "Transform your living space",
+    image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&h=400&fit=crop",
+    cta: "Shop Home",
+    link: "/categories/home-garden"
+  },
+  {
+    id: 4,
+    title: "Gaming Gear",
+    subtitle: "Level up your gaming experience",
+    image: "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=1200&h=400&fit=crop",
+    cta: "Shop Gaming",
+    link: "/categories/gaming"
+  }
+];

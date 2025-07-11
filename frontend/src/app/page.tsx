@@ -18,7 +18,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useEffect, useState } from "react";
-
+import { allCategories, bannerSlides } from "@/data/categories";
 interface Product {
   id: number;
   name: string;
@@ -37,54 +37,7 @@ export default function Home() {
   const [categoryProducts, setCategoryProducts] = useState<Record<string, Product[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const commodityTypes = [
-    { name: "Electronics", icon: Smartphone, description: "Phones, Laptops, Gadgets" },
-    { name: "Home & Garden", icon: HomeIcon, description: "Furniture, Decor, Tools" },
-    { name: "Fashion", icon: ShoppingBag, description: "Clothing, Shoes, Accessories" },
-    { name: "Sports", icon: Dumbbell, description: "Fitness, Camping, Sports" },
-    { name: "Gaming", icon: Gamepad2, description: "Consoles, Games, Accessories" },
-    { name: "Photography", icon: Camera, description: "Cameras, Lenses, Equipment" },
-    { name: "Books", icon: Book, description: "Books, Movies, Music" },
-    { name: "Automotive", icon: Car, description: "Parts, Accessories, Tools" },
-    { name: "Music", icon: Music, description: "Instruments, Audio, Equipment" },
-    { name: "Baby & Kids", icon: Baby, description: "Toys, Clothes, Safety" }
-  ];
-
-  const bannerSlides = [
-    {
-      id: 1,
-      title: "Summer Sale",
-      subtitle: "Up to 70% off on all electronics",
-      image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&h=400&fit=crop",
-      cta: "Shop Electronics",
-      link: "/categories/electronics"
-    },
-    {
-      id: 2,
-      title: "New Fashion Collection",
-      subtitle: "Discover the latest trends",
-      image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=400&fit=crop",
-      cta: "Shop Fashion",
-      link: "/categories/fashion"
-    },
-    {
-      id: 3,
-      title: "Home & Garden Sale",
-      subtitle: "Transform your living space",
-      image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&h=400&fit=crop",
-      cta: "Shop Home",
-      link: "/categories/home-garden"
-    },
-    {
-      id: 4,
-      title: "Gaming Gear",
-      subtitle: "Level up your gaming experience",
-      image: "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=1200&h=400&fit=crop",
-      cta: "Shop Gaming",
-      link: "/categories/gaming"
-    }
-  ];
+ 
 
   // Fetch products from API
   useEffect(() => {
@@ -308,12 +261,12 @@ export default function Home() {
             {/* Mobile: Horizontal scrolling categories */}
             <div className="md:hidden">
               <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
-                {commodityTypes.map((type) => {
+                {allCategories.map((type) => {
                   const IconComponent = type.icon;
                   return (
                     <Link
                       key={type.name}
-                      href={`/${type.name.toLowerCase().replace(/\s+/g, '-').replace('&', '')}`}
+                      href={type.href}
                       className="flex flex-col items-center space-y-2 text-center hover:text-black transition-colors flex-shrink-0"
                     >
                       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300">
@@ -330,12 +283,12 @@ export default function Home() {
 
             {/* Desktop: Grid layout */}
             <div className="hidden md:flex items-center justify-evenly w-full">
-              {commodityTypes.slice(0, 8).map((type) => {
+              {allCategories.slice(0, 8).map((type) => {
                 const IconComponent = type.icon;
                 return (
                   <Link
                     key={type.name}
-                    href={`/${type.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    href={type.href}
                     className="flex flex-col items-center space-y-2 text-center hover:text-black transition-colors flex-shrink-0"
                   >
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200">
