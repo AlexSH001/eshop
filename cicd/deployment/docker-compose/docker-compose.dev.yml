@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database (Development)
+  postgres:
+    image: postgres:15-alpine
+    container_name: eshop_postgres_dev
+    environment:
+      POSTGRES_DB: eshop_dev
+      POSTGRES_USER: eshop_dev
+      POSTGRES_PASSWORD: dev_password
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - eshop_dev_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eshop_dev -d eshop_dev"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache (Development)
+  redis:
+    image: redis:7-alpine
+    container_name: eshop_redis_dev
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_dev_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - eshop_dev_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backend API (Development)
+  backend:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/backend/Dockerfile
+      target: base
+    container_name: eshop_backend_dev
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: eshop_dev
+      DB_USER: eshop_dev
+      DB_PASSWORD: dev_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: dev_jwt_secret_change_in_production
+      JWT_REFRESH_SECRET: dev_refresh_secret_change_in_production
+      FRONTEND_URL: http://localhost:3000
+    volumes:
+      - ../../backend:/app
+      - /app/node_modules
+      - backend_dev_uploads:/app/uploads
+      - backend_dev_logs:/app/logs
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - eshop_dev_network
+    command: npm run dev
+
+  # Frontend Application (Development)
+  frontend:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/frontend/Dockerfile
+      target: builder
+    container_name: eshop_frontend_dev
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api
+      NEXT_PUBLIC_APP_NAME: E-Shop Dev
+    volumes:
+      - ../../frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - eshop_dev_network
+    command: npm run dev
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local
+  backend_dev_uploads:
+    driver: local
+  backend_dev_logs:
+    driver: local
+
+networks:
+  eshop_dev_network:
+    driver: bridge 

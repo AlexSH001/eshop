@@ -1,5 +1,5 @@
 const express = require('express');
-const { database } = require('../database/init');
+const { postgresDatabase } = require('../database/init-postgres');
 const { authenticateAdmin, requireSuperAdmin } = require('../middleware/auth');
 const { paginationValidation, idValidation } = require('../middleware/validation');
 const { hashPassword, formatAdminResponse } = require('../utils/auth');
@@ -12,7 +12,7 @@ router.get('/dashboard/stats', authenticateAdmin, async (req, res) => {
   const { period = '30' } = req.query; // days
 
   // Get overview stats
-  const stats = await database.get(`
+  const stats = await postgresDatabase.get(`
     SELECT
       (SELECT COUNT(*) FROM products WHERE status = 'active') as total_products,
       (SELECT COUNT(*) FROM orders WHERE created_at >= datetime('now', '-${period} days')) as total_orders,
@@ -23,7 +23,7 @@ router.get('/dashboard/stats', authenticateAdmin, async (req, res) => {
   `);
 
   // Growth calculations (compare with previous period)
-  const previousStats = await database.get(`
+  const previousStats = await postgresDatabase.get(`
     SELECT
       (SELECT COUNT(*) FROM orders WHERE created_at BETWEEN datetime('now', '-${period * 2} days') AND datetime('now', '-${period} days')) as prev_orders,
       (SELECT COALESCE(SUM(total), 0) FROM orders WHERE created_at BETWEEN datetime('now', '-${period * 2} days') AND datetime('now', '-${period} days')) as prev_revenue,
@@ -56,7 +56,7 @@ router.get('/dashboard/stats', authenticateAdmin, async (req, res) => {
 router.get('/dashboard/recent-orders', authenticateAdmin, async (req, res) => {
   const { limit = 10 } = req.query;
 
-  const orders = await database.query(`
+  const orders = await postgresDatabase.query(`
     SELECT
       id,
       order_number,
@@ -78,7 +78,7 @@ router.get('/dashboard/recent-orders', authenticateAdmin, async (req, res) => {
 router.get('/dashboard/top-products', authenticateAdmin, async (req, res) => {
   const { limit = 10, period = '30' } = req.query;
 
-  const products = await database.query(`
+  const products = await postgresDatabase.query(`
     SELECT
       p.id,
       p.name,
@@ -109,7 +109,7 @@ router.get('/dashboard/top-products', authenticateAdmin, async (req, res) => {
 router.get('/dashboard/sales-data', authenticateAdmin, async (req, res) => {
   const { days = '30' } = req.query;
 
-  const salesData = await database.query(`
+  const salesData = await postgresDatabase.query(`
     SELECT
       DATE(created_at) as date,
       COUNT(*) as orders_count,
@@ -133,7 +133,7 @@ router.get('/dashboard/sales-data', authenticateAdmin, async (req, res) => {
 router.get('/dashboard/category-performance', authenticateAdmin, async (req, res) => {
   const { period = '30' } = req.query;
 
-  const categoryStats = await database.query(`
+  const categoryStats = await postgresDatabase.query(`
     SELECT
       c.id,
       c.name,
@@ -194,7 +194,7 @@ router.get('/users', paginationValidation, async (req, res) => {
   const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
   const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
-  const users = await database.query(`
+  const users = await postgresDatabase.query(`
     SELECT
       id, email, first_name, last_name, phone, avatar,
       email_verified, is_active, created_at, updated_at,
@@ -206,7 +206,7 @@ router.get('/users', paginationValidation, async (req, res) => {
     LIMIT ? OFFSET ?
   `, [...params, parseInt(limit), offset]);
 
-  const [{ total }] = await database.query(`
+  const [{ total }] = await postgresDatabase.query(`
     SELECT COUNT(*) as total FROM users ${whereClause}
   `, params);
 
@@ -261,7 +261,7 @@ router.get('/users/authenticated', authenticateAdmin, paginationValidation, asyn
   const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
   const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
-  const users = await database.query(`
+  const users = await postgresDatabase.query(`
     SELECT
       id, email, first_name, last_name, phone, avatar,
       email_verified, is_active, created_at, updated_at,
@@ -273,7 +273,7 @@ router.get('/users/authenticated', authenticateAdmin, paginationValidation, asyn
     LIMIT ? OFFSET ?
   `, [...params, parseInt(limit), offset]);
 
-  const [{ total }] = await database.query(`
+  const [{ total }] = await postgresDatabase.query(`
     SELECT COUNT(*) as total FROM users ${whereClause}
   `, params);
 
@@ -295,7 +295,7 @@ router.get('/users/authenticated', authenticateAdmin, paginationValidation, asyn
 router.get('/users/:id', authenticateAdmin, idValidation, async (req, res) => {
   const userId = req.params.id;
 
-  const user = await database.get(`
+  const user = await postgresDatabase.get(`
     SELECT
       id, email, first_name, last_name, phone, avatar,
       email_verified, is_active, created_at, updated_at
@@ -308,7 +308,7 @@ router.get('/users/:id', authenticateAdmin, idValidation, async (req, res) => {
   }
 
   // Get user's orders
-  const orders = await database.query(`
+  const orders = await postgresDatabase.query(`
     SELECT id, order_number, total, status, created_at
     FROM orders
     WHERE user_id = ?
@@ -317,7 +317,7 @@ router.get('/users/:id', authenticateAdmin, idValidation, async (req, res) => {
   `, [userId]);
 
   // Get user stats
-  const [stats] = await database.query(`
+  const [stats] = await postgresDatabase.query(`
     SELECT
       COUNT(*) as order_count,
       COALESCE(SUM(total), 0) as total_spent,
@@ -341,14 +341,14 @@ router.get('/users/:id', authenticateAdmin, idValidation, async (req, res) => {
 router.put('/users/:id/toggle-status', authenticateAdmin, idValidation, async (req, res) => {
   const userId = req.params.id;
 
-  const user = await database.get('SELECT id, is_active FROM users WHERE id = ?', [userId]);
+  const user = await postgresDatabase.get('SELECT id, is_active FROM users WHERE id = ?', [userId]);
   if (!user) {
     throw new NotFoundError('User not found');
   }
 
   const newStatus = !user.is_active;
 
-  await database.execute(
+  await postgresDatabase.execute(
     'UPDATE users SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
     [newStatus, userId]
   );
@@ -373,7 +373,7 @@ router.get('/admins', authenticateAdmin, requireSuperAdmin, paginationValidation
     params.push(searchTerm, searchTerm);
   }
 
-  const admins = await database.query(`
+  const admins = await postgresDatabase.query(`
     SELECT id, email, name, role, avatar, is_active, last_login, created_at
     FROM admins
     ${whereClause}
@@ -381,7 +381,7 @@ router.get('/admins', authenticateAdmin, requireSuperAdmin, paginationValidation
     LIMIT ? OFFSET ?
   `, [...params, parseInt(limit), offset]);
 
-  const [{ total }] = await database.query(`
+  const [{ total }] = await postgresDatabase.query(`
     SELECT COUNT(*) as total FROM admins ${whereClause}
   `, params);
 
@@ -401,7 +401,7 @@ router.post('/admins', authenticateAdmin, requireSuperAdmin, async (req, res) =>
   const { email, password, name, role = 'admin' } = req.body;
 
   // Check if admin already exists
-  const existingAdmin = await database.get('SELECT id FROM admins WHERE email = ?', [email]);
+  const existingAdmin = await postgresDatabase.get('SELECT id FROM admins WHERE email = ?', [email]);
   if (existingAdmin) {
     return res.status(409).json({ error: 'Admin with this email already exists' });
   }
@@ -410,12 +410,12 @@ router.post('/admins', authenticateAdmin, requireSuperAdmin, async (req, res) =>
   const hashedPassword = await hashPassword(password);
 
   // Create admin
-  const result = await database.execute(
+  const result = await postgresDatabase.execute(
     'INSERT INTO admins (email, password, name, role) VALUES (?, ?, ?, ?)',
     [email, hashedPassword, name, role]
   );
 
-  const admin = await database.get(
+  const admin = await postgresDatabase.get(
     'SELECT id, email, name, role, is_active, created_at FROM admins WHERE id = ?',
     [result.id]
   );
@@ -431,7 +431,7 @@ router.put('/admins/:id', authenticateAdmin, requireSuperAdmin, idValidation, as
   const adminId = req.params.id;
   const { name, role, isActive } = req.body;
 
-  const admin = await database.get('SELECT id FROM admins WHERE id = ?', [adminId]);
+  const admin = await postgresDatabase.get('SELECT id FROM admins WHERE id = ?', [adminId]);
   if (!admin) {
     throw new NotFoundError('Admin not found');
   }
@@ -461,12 +461,12 @@ router.put('/admins/:id', authenticateAdmin, requireSuperAdmin, idValidation, as
   updates.push('updated_at = CURRENT_TIMESTAMP');
   params.push(adminId);
 
-  await database.execute(
+  await postgresDatabase.execute(
     `UPDATE admins SET ${updates.join(', ')} WHERE id = ?`,
     params
   );
 
-  const updatedAdmin = await database.get(
+  const updatedAdmin = await postgresDatabase.get(
     'SELECT id, email, name, role, is_active, created_at, updated_at FROM admins WHERE id = ?',
     [adminId]
   );
@@ -486,25 +486,25 @@ router.delete('/admins/:id', authenticateAdmin, requireSuperAdmin, idValidation,
     return res.status(400).json({ error: 'Cannot delete your own account' });
   }
 
-  const admin = await database.get('SELECT id FROM admins WHERE id = ?', [adminId]);
+  const admin = await postgresDatabase.get('SELECT id FROM admins WHERE id = ?', [adminId]);
   if (!admin) {
     throw new NotFoundError('Admin not found');
   }
 
-  await database.execute('DELETE FROM admins WHERE id = ?', [adminId]);
+  await postgresDatabase.execute('DELETE FROM admins WHERE id = ?', [adminId]);
 
   res.json({ message: 'Admin deleted successfully' });
 });
 
 // System health check
 router.get('/system/health', authenticateAdmin, async (req, res) => {
-  const dbStatus = await database.get('SELECT 1 as status');
+  const dbStatus = await postgresDatabase.get('SELECT 1 as status');
 
   // Get database size
-  const [dbInfo] = await database.query("SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()");
+  const [dbInfo] = await postgresDatabase.query("SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()");
 
   // Get table counts
-  const tableCounts = await database.query(`
+  const tableCounts = await postgresDatabase.query(`
     SELECT
       'users' as table_name, COUNT(*) as count FROM users
     UNION ALL

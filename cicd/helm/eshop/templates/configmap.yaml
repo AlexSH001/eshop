@@ -1,0 +1,25 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "eshop.fullname" . }}-postgresql-init
+  namespace: {{ include "eshop.fullname" . }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql-init
+data:
+  init.sql: |
+    -- Create extensions
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+    
+    -- Set timezone
+    SET timezone = 'UTC';
+    
+    -- Create additional users if needed
+    -- CREATE USER readonly WITH PASSWORD 'readonly_password';
+    -- GRANT CONNECT ON DATABASE eshop TO readonly;
+    -- GRANT USAGE ON SCHEMA public TO readonly;
+    -- GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly;
+    -- ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO readonly;
+{{- end }} 

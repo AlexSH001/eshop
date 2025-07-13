@@ -1,5 +1,5 @@
 const express = require('express');
-const { database } = require('../database/init');
+const { postgresDatabase } = require('../database/init-postgres');
 const { generateSlug, generateSKU } = require('../utils/auth');
 const { authenticateAdmin, optionalAuth } = require('../middleware/auth');
 const {
@@ -34,13 +34,13 @@ router.get('/', paginationValidation, async (req, res) => {
 
   // Base condition for status
   if (status !== 'all') {
-    whereConditions.push('p.status = ?');
+    whereConditions.push(`p.status = $${params.length + 1}`);
     params.push(status);
   }
 
   // Category filter
   if (category) {
-    whereConditions.push('p.category_id = ?');
+    whereConditions.push(`p.category_id = $${params.length + 1}`);
     params.push(category);
   }
 
@@ -51,18 +51,18 @@ router.get('/', paginationValidation, async (req, res) => {
 
   // Search filter
   if (search) {
-    whereConditions.push('(p.name LIKE ? OR p.description LIKE ? OR p.tags LIKE ?)');
+    whereConditions.push(`(p.name LIKE $${params.length + 1} OR p.description LIKE $${params.length + 2} OR p.tags LIKE $${params.length + 3})`);
     const searchTerm = `%${search}%`;
     params.push(searchTerm, searchTerm, searchTerm);
   }
 
   // Price range filter
   if (minPrice) {
-    whereConditions.push('p.price >= ?');
+    whereConditions.push(`p.price >= $${params.length + 1}`);
     params.push(minPrice);
   }
   if (maxPrice) {
-    whereConditions.push('p.price <= ?');
+    whereConditions.push(`p.price <= $${params.length + 1}`);
     params.push(maxPrice);
   }
 
@@ -74,8 +74,8 @@ router.get('/', paginationValidation, async (req, res) => {
   const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
   const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
-  // Get products
-  const query = `
+  // Get products with proper PostgreSQL parameterization
+  let query = `
     SELECT
       p.*,
       c.name as category_name,
@@ -83,11 +83,26 @@ router.get('/', paginationValidation, async (req, res) => {
     FROM products p
     LEFT JOIN categories c ON p.category_id = c.id
     ${whereClause}
-    ORDER BY p.${sortColumn} ${sortDirection}
-    LIMIT ? OFFSET ?
   `;
+  
+  // Add ORDER BY clause based on sort parameters
+  if (sortColumn === 'name') {
+    query += ` ORDER BY p.name ${sortDirection}`;
+  } else if (sortColumn === 'price') {
+    query += ` ORDER BY p.price ${sortDirection}`;
+  } else if (sortColumn === 'created_at') {
+    query += ` ORDER BY p.created_at ${sortDirection}`;
+  } else if (sortColumn === 'sales_count') {
+    query += ` ORDER BY p.sales_count ${sortDirection}`;
+  } else if (sortColumn === 'rating') {
+    query += ` ORDER BY p.rating ${sortDirection}`;
+  } else {
+    query += ` ORDER BY p.created_at DESC`;
+  }
+  
+  query += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
 
-  const products = await database.query(query, [...params, parseInt(limit), offset]);
+  const products = await postgresDatabase.query(query, [...params, parseInt(limit), offset]);
 
   // Get total count
   const countQuery = `
@@ -96,15 +111,15 @@ router.get('/', paginationValidation, async (req, res) => {
     LEFT JOIN categories c ON p.category_id = c.id
     ${whereClause}
   `;
-  const [{ total }] = await database.query(countQuery, params);
+  const [{ total }] = await postgresDatabase.query(countQuery, params);
 
   // Format product data
   const formattedProducts = products.map(product => ({
     ...product,
-    images: product.images ? JSON.parse(product.images) : [],
-    tags: product.tags ? JSON.parse(product.tags) : [],
-    attributes: product.attributes ? JSON.parse(product.attributes) : {},
-    dimensions: product.dimensions ? JSON.parse(product.dimensions) : null
+    images: product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [],
+    tags: product.tags ? (typeof product.tags === 'string' ? JSON.parse(product.tags) : product.tags) : [],
+    attributes: product.attributes ? (typeof product.attributes === 'string' ? JSON.parse(product.attributes) : product.attributes) : {},
+    dimensions: product.dimensions ? (typeof product.dimensions === 'string' ? JSON.parse(product.dimensions) : product.dimensions) : null
   }));
 
   res.json({
@@ -123,19 +138,19 @@ router.get('/:id', idValidation, optionalAuth, async (req, res) => {
   const productId = req.params.id;
 
   // Increment view count
-  await database.execute(
-    'UPDATE products SET view_count = view_count + 1 WHERE id = ?',
+  await postgresDatabase.execute(
+    'UPDATE products SET view_count = view_count + 1 WHERE id = $1',
     [productId]
   );
 
-  const product = await database.get(`
+  const product = await postgresDatabase.get(`
     SELECT
       p.*,
       c.name as category_name,
       c.slug as category_slug
     FROM products p
     LEFT JOIN categories c ON p.category_id = c.id
-    WHERE p.id = ?
+    WHERE p.id = $1
   `, [productId]);
 
   if (!product) {
@@ -145,21 +160,21 @@ router.get('/:id', idValidation, optionalAuth, async (req, res) => {
   // Format product data
   const formattedProduct = {
     ...product,
-    images: product.images ? JSON.parse(product.images) : [],
-    tags: product.tags ? JSON.parse(product.tags) : [],
-    attributes: product.attributes ? JSON.parse(product.attributes) : {},
-    dimensions: product.dimensions ? JSON.parse(product.dimensions) : null,
+    images: product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [],
+    tags: product.tags ? (typeof product.tags === 'string' ? JSON.parse(product.tags) : product.tags) : [],
+    attributes: product.attributes ? (typeof product.attributes === 'string' ? JSON.parse(product.attributes) : product.attributes) : {},
+    dimensions: product.dimensions ? (typeof product.dimensions === 'string' ? JSON.parse(product.dimensions) : product.dimensions) : null,
     inStock: product.stock > 0,
     stockCount: product.stock,
-    specifications: product.specifications ? JSON.parse(product.specifications) : {},
+    specifications: product.specifications ? (typeof product.specifications === 'string' ? JSON.parse(product.specifications) : product.specifications) : {},
     shipping: product.shipping || ''
   };
 
   // Get related products
-  const relatedProducts = await database.query(`
+  const relatedProducts = await postgresDatabase.query(`
     SELECT id, name, price, original_price, featured_image, category_id
     FROM products
-    WHERE category_id = ? AND id != ? AND status = 'active'
+    WHERE category_id = $1 AND id != $2 AND status = 'active'
     ORDER BY sales_count DESC
     LIMIT 4
   `, [product.category_id, productId]);
@@ -182,29 +197,47 @@ router.get('/category/:categoryId', paginationValidation, async (req, res) => {
   const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
   const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
-  const products = await database.query(`
+  // Build query with proper ORDER BY handling
+  let query = `
     SELECT
       p.*,
       c.name as category_name,
       c.slug as category_slug
     FROM products p
     LEFT JOIN categories c ON p.category_id = c.id
-    WHERE p.category_id = ? AND p.status = 'active'
-    ORDER BY p.${sortColumn} ${sortDirection}
-    LIMIT ? OFFSET ?
-  `, [categoryId, parseInt(limit), offset]);
+    WHERE p.category_id = $1 AND p.status = 'active'
+  `;
+  
+  // Add ORDER BY clause based on sort parameters
+  if (sortColumn === 'name') {
+    query += ` ORDER BY p.name ${sortDirection}`;
+  } else if (sortColumn === 'price') {
+    query += ` ORDER BY p.price ${sortDirection}`;
+  } else if (sortColumn === 'created_at') {
+    query += ` ORDER BY p.created_at ${sortDirection}`;
+  } else if (sortColumn === 'sales_count') {
+    query += ` ORDER BY p.sales_count ${sortDirection}`;
+  } else if (sortColumn === 'rating') {
+    query += ` ORDER BY p.rating ${sortDirection}`;
+  } else {
+    query += ` ORDER BY p.created_at DESC`;
+  }
+  
+  query += ` LIMIT $2 OFFSET $3`;
 
-  const [{ total }] = await database.query(
-    'SELECT COUNT(*) as total FROM products WHERE category_id = ? AND status = "active"',
+  const products = await postgresDatabase.query(query, [categoryId, parseInt(limit), offset]);
+
+  const [{ total }] = await postgresDatabase.query(
+    'SELECT COUNT(*) as total FROM products WHERE category_id = $1 AND status = \'active\'',
     [categoryId]
   );
 
   // Format products
   const formattedProducts = products.map(product => ({
     ...product,
-    images: product.images ? JSON.parse(product.images) : [],
-    tags: product.tags ? JSON.parse(product.tags) : [],
-    attributes: product.attributes ? JSON.parse(product.attributes) : {}
+    images: product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [],
+    tags: product.tags ? (typeof product.tags === 'string' ? JSON.parse(product.tags) : product.tags) : [],
+    attributes: product.attributes ? (typeof product.attributes === 'string' ? JSON.parse(product.attributes) : product.attributes) : {}
   }));
 
   res.json({
@@ -222,7 +255,7 @@ router.get('/category/:categoryId', paginationValidation, async (req, res) => {
 router.get('/featured/list', async (req, res) => {
   const { limit = 8 } = req.query;
 
-  const products = await database.query(`
+  const products = await postgresDatabase.query(`
     SELECT
       p.*,
       c.name as category_name,
@@ -231,14 +264,14 @@ router.get('/featured/list', async (req, res) => {
     LEFT JOIN categories c ON p.category_id = c.id
     WHERE p.is_featured = TRUE AND p.status = 'active'
     ORDER BY p.sales_count DESC, p.created_at DESC
-    LIMIT ?
+    LIMIT $1
   `, [parseInt(limit)]);
 
   const formattedProducts = products.map(product => ({
     ...product,
-    images: product.images ? JSON.parse(product.images) : [],
-    tags: product.tags ? JSON.parse(product.tags) : [],
-    attributes: product.attributes ? JSON.parse(product.attributes) : {}
+    images: product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [],
+    tags: product.tags ? (typeof product.tags === 'string' ? JSON.parse(product.tags) : product.tags) : [],
+    attributes: product.attributes ? (typeof product.attributes === 'string' ? JSON.parse(product.attributes) : product.attributes) : {}
   }));
 
   res.json({
@@ -278,7 +311,7 @@ router.post('/', createProductValidation, async (req, res) => {
   const slug = generateSlug(name);
 
   // Get category name for SKU generation
-  const category = await database.get('SELECT name FROM categories WHERE id = ?', [finalCategoryId]);
+  const category = await postgresDatabase.get('SELECT name FROM categories WHERE id = $1', [finalCategoryId]);
   if (!category) {
     throw new NotFoundError('Category not found');
   }
@@ -286,13 +319,13 @@ router.post('/', createProductValidation, async (req, res) => {
   const sku = generateSKU(category.name, name);
 
   // Create product
-  const result = await database.execute(`
+  const result = await postgresDatabase.execute(`
     INSERT INTO products (
       name, slug, description, short_description, sku, price, original_price,
       category_id, stock, weight, dimensions, images, featured_image, tags,
       attributes, status, is_featured, meta_title, meta_description,
       specifications, shipping
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
   `, [
     name,
     slug,
@@ -317,7 +350,7 @@ router.post('/', createProductValidation, async (req, res) => {
     shipping
   ]);
 
-  const product = await database.get('SELECT * FROM products WHERE id = ?', [result.id]);
+  const product = await postgresDatabase.get('SELECT * FROM products WHERE id = $1', [result.rows[0].id]);
 
   res.status(201).json({
     message: 'Product created successfully',

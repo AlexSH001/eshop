@@ -1,5 +1,5 @@
 const express = require('express');
-const { database } = require('../database/init');
+const { postgresDatabase } = require('../database/init-postgres');
 const { generateOrderNumber } = require('../utils/auth');
 const { authenticateUser, authenticateAdmin, optionalAuth } = require('../middleware/auth');
 const {
@@ -27,19 +27,19 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
   const userId = req.user ? req.user.id : null;
 
   try {
-    await database.beginTransaction();
+    await postgresDatabase.beginTransaction();
 
     // Get cart items if not provided
     let orderItems = cartItems;
     if (!orderItems || orderItems.length === 0) {
       const cartQuery = userId
-        ? 'SELECT ci.*, p.name, p.price, p.stock FROM cart_items ci JOIN products p ON ci.product_id = p.id WHERE ci.user_id = ?'
-        : 'SELECT ci.*, p.name, p.price, p.stock FROM cart_items ci JOIN products p ON ci.product_id = p.id WHERE ci.session_id = ?';
+        ? 'SELECT ci.*, p.name, p.price, p.stock FROM cart_items ci JOIN products p ON ci.product_id = p.id WHERE ci.user_id = $1'
+        : 'SELECT ci.*, p.name, p.price, p.stock FROM cart_items ci JOIN products p ON ci.product_id = p.id WHERE ci.session_id = $1';
 
-      const cartData = await database.query(cartQuery, [userId || sessionId]);
+      const cartData = await postgresDatabase.query(cartQuery, [userId || sessionId]);
 
       if (cartData.length === 0) {
-        await database.rollback();
+        await postgresDatabase.rollback();
         return res.status(400).json({ error: 'Cart is empty' });
       }
 
@@ -53,20 +53,20 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
 
     // Validate stock availability
     for (const item of orderItems) {
-      const product = await database.get(
-        'SELECT stock, status FROM products WHERE id = ?',
+      const product = await postgresDatabase.get(
+        'SELECT stock, status FROM products WHERE id = $1',
         [item.productId]
       );
 
       if (!product || product.status !== 'active') {
-        await database.rollback();
+        await postgresDatabase.rollback();
         return res.status(400).json({
           error: `Product ${item.name} is no longer available`
         });
       }
 
       if (product.stock < item.quantity) {
-        await database.rollback();
+        await postgresDatabase.rollback();
         return res.status(400).json({
           error: `Insufficient stock for ${item.name}. Available: ${product.stock}`
         });
@@ -84,7 +84,7 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
     const orderNumber = generateOrderNumber();
 
     // Create order
-    const orderResult = await database.execute(`
+    const orderResult = await postgresDatabase.execute(`
       INSERT INTO orders (
         order_number, user_id, email, phone, status, payment_status, payment_method,
         billing_first_name, billing_last_name, billing_company, billing_address_line_1,
@@ -92,7 +92,7 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
         shipping_first_name, shipping_last_name, shipping_company, shipping_address_line_1,
         shipping_address_line_2, shipping_city, shipping_state, shipping_postal_code, shipping_country,
         subtotal, tax_amount, shipping_amount, total
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
     `, [
       orderNumber,
       userId,
@@ -130,9 +130,9 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
     // Create order items and update product stock
     for (const item of orderItems) {
       // Add order item
-      await database.execute(`
+      await postgresDatabase.execute(`
         INSERT INTO order_items (order_id, product_id, product_name, quantity, price, total)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5, $6)
       `, [
         orderId,
         item.productId,
@@ -143,29 +143,29 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
       ]);
 
       // Update product stock and sales count
-      await database.execute(`
+      await postgresDatabase.execute(`
         UPDATE products
-        SET stock = stock - ?, sales_count = sales_count + ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
+        SET stock = stock - $1, sales_count = sales_count + $2, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $3
       `, [item.quantity, item.quantity, item.productId]);
     }
 
     // Clear cart
     if (userId) {
-      await database.execute('DELETE FROM cart_items WHERE user_id = ?', [userId]);
+      await postgresDatabase.execute('DELETE FROM cart_items WHERE user_id = $1', [userId]);
     } else if (sessionId) {
-      await database.execute('DELETE FROM cart_items WHERE session_id = ?', [sessionId]);
+      await postgresDatabase.execute('DELETE FROM cart_items WHERE session_id = $1', [sessionId]);
     }
 
-    await database.commit();
+    await postgresDatabase.commit();
 
     // Get created order with items
-    const order = await database.get('SELECT * FROM orders WHERE id = ?', [orderId]);
-    const items = await database.query(`
+    const order = await postgresDatabase.get('SELECT * FROM orders WHERE id = $1', [orderId]);
+    const items = await postgresDatabase.query(`
       SELECT oi.*, p.featured_image
       FROM order_items oi
       LEFT JOIN products p ON oi.product_id = p.id
-      WHERE oi.order_id = ?
+      WHERE oi.order_id = $1
     `, [orderId]);
 
     res.status(201).json({
@@ -185,7 +185,7 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
     });
 
   } catch (error) {
-    await database.rollback();
+    await postgresDatabase.rollback();
     throw error;
   }
 });
@@ -196,25 +196,25 @@ router.get('/my-orders', authenticateUser, paginationValidation, async (req, res
   const offset = (page - 1) * limit;
   const userId = req.user.id;
 
-  const orders = await database.query(`
+  const orders = await postgresDatabase.query(`
     SELECT * FROM orders
-    WHERE user_id = ?
+    WHERE user_id = $1
     ORDER BY created_at DESC
-    LIMIT ? OFFSET ?
+    LIMIT $2 OFFSET $3
   `, [userId, parseInt(limit), offset]);
 
-  const [{ total }] = await database.query(
-    'SELECT COUNT(*) as total FROM orders WHERE user_id = ?',
+  const [{ total }] = await postgresDatabase.query(
+    'SELECT COUNT(*) as total FROM orders WHERE user_id = $1',
     [userId]
   );
 
   // Get order items for each order
   for (const order of orders) {
-    const items = await database.query(`
+    const items = await postgresDatabase.query(`
       SELECT oi.*, p.featured_image
       FROM order_items oi
       LEFT JOIN products p ON oi.product_id = p.id
-      WHERE oi.order_id = ?
+      WHERE oi.order_id = $1
     `, [order.id]);
 
     order.items = items ? items.map(item => ({
@@ -258,19 +258,19 @@ router.get('/', paginationValidation, async (req, res) => {
 
   // Status filter
   if (status && status !== 'all') {
-    whereConditions.push('status = ?');
+    whereConditions.push('status = $1');
     params.push(status);
   }
 
   // Payment status filter
   if (paymentStatus && paymentStatus !== 'all') {
-    whereConditions.push('payment_status = ?');
+    whereConditions.push('payment_status = $1');
     params.push(paymentStatus);
   }
 
   // Search filter
   if (search) {
-    whereConditions.push('(order_number LIKE ? OR email LIKE ? OR billing_first_name LIKE ? OR billing_last_name LIKE ?)');
+    whereConditions.push('(order_number LIKE $1 OR email LIKE $2 OR billing_first_name LIKE $3 OR billing_last_name LIKE $4)');
     const searchTerm = `%${search}%`;
     params.push(searchTerm, searchTerm, searchTerm, searchTerm);
   }
@@ -283,14 +283,14 @@ router.get('/', paginationValidation, async (req, res) => {
   const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
   const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
-  const orders = await database.query(`
+  const orders = await postgresDatabase.query(`
     SELECT * FROM orders
     ${whereClause}
     ORDER BY ${sortColumn} ${sortDirection}
-    LIMIT ? OFFSET ?
+    LIMIT $1 OFFSET $2
   `, [...params, parseInt(limit), offset]);
 
-  const [{ total }] = await database.query(`
+  const [{ total }] = await postgresDatabase.query(`
     SELECT COUNT(*) as total FROM orders ${whereClause}
   `, params);
 
@@ -300,11 +300,11 @@ router.get('/', paginationValidation, async (req, res) => {
     order.items = [];
     
     try {
-      const items = await database.query(`
+      const items = await postgresDatabase.query(`
         SELECT oi.*, p.featured_image
         FROM order_items oi
         LEFT JOIN products p ON oi.product_id = p.id
-        WHERE oi.order_id = ?
+        WHERE oi.order_id = $1
       `, [order.id]);
 
       if (items && Array.isArray(items) && items.length > 0) {
@@ -354,19 +354,19 @@ router.get('/authenticated', authenticateAdmin, paginationValidation, async (req
 
   // Status filter
   if (status && status !== 'all') {
-    whereConditions.push('status = ?');
+    whereConditions.push('status = $1');
     params.push(status);
   }
 
   // Payment status filter
   if (paymentStatus && paymentStatus !== 'all') {
-    whereConditions.push('payment_status = ?');
+    whereConditions.push('payment_status = $1');
     params.push(paymentStatus);
   }
 
   // Search filter
   if (search) {
-    whereConditions.push('(order_number LIKE ? OR email LIKE ? OR billing_first_name LIKE ? OR billing_last_name LIKE ?)');
+    whereConditions.push('(order_number LIKE $1 OR email LIKE $2 OR billing_first_name LIKE $3 OR billing_last_name LIKE $4)');
     const searchTerm = `%${search}%`;
     params.push(searchTerm, searchTerm, searchTerm, searchTerm);
   }
@@ -379,14 +379,14 @@ router.get('/authenticated', authenticateAdmin, paginationValidation, async (req
   const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
   const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
-  const orders = await database.query(`
+  const orders = await postgresDatabase.query(`
     SELECT * FROM orders
     ${whereClause}
     ORDER BY ${sortColumn} ${sortDirection}
-    LIMIT ? OFFSET ?
+    LIMIT $1 OFFSET $2
   `, [...params, parseInt(limit), offset]);
 
-  const [{ total }] = await database.query(`
+  const [{ total }] = await postgresDatabase.query(`
     SELECT COUNT(*) as total FROM orders ${whereClause}
   `, params);
 
@@ -396,11 +396,11 @@ router.get('/authenticated', authenticateAdmin, paginationValidation, async (req
     order.items = [];
     
     try {
-      const items = await database.query(`
+      const items = await postgresDatabase.query(`
         SELECT oi.*, p.featured_image
         FROM order_items oi
         LEFT JOIN products p ON oi.product_id = p.id
-        WHERE oi.order_id = ?
+        WHERE oi.order_id = $1
       `, [order.id]);
 
       if (items && Array.isArray(items) && items.length > 0) {
@@ -436,15 +436,15 @@ router.get('/:id', idValidation, async (req, res) => {
   const orderId = req.params.id;
 
   // If user is authenticated, check ownership
-  let whereClause = 'WHERE o.id = ?';
+  let whereClause = 'WHERE o.id = $1';
   let params = [orderId];
 
   if (req.user) {
-    whereClause += ' AND o.user_id = ?';
+    whereClause += ' AND o.user_id = $2';
     params.push(req.user.id);
   }
 
-  const order = await database.get(`
+  const order = await postgresDatabase.get(`
     SELECT o.* FROM orders o ${whereClause}
   `, params);
 
@@ -453,11 +453,11 @@ router.get('/:id', idValidation, async (req, res) => {
   }
 
   // Get order items
-  const items = await database.query(`
+  const items = await postgresDatabase.query(`
     SELECT oi.*, p.featured_image
     FROM order_items oi
     LEFT JOIN products p ON oi.product_id = p.id
-    WHERE oi.order_id = ?
+    WHERE oi.order_id = $1
   `, [orderId]);
 
   res.json({
@@ -481,21 +481,21 @@ router.put('/:id/status', authenticateAdmin, updateOrderStatusValidation, async 
   const orderId = req.params.id;
   const { status, trackingNumber, notes } = req.body;
 
-  const order = await database.get('SELECT * FROM orders WHERE id = ?', [orderId]);
+  const order = await postgresDatabase.get('SELECT * FROM orders WHERE id = $1', [orderId]);
   if (!order) {
     throw new NotFoundError('Order not found');
   }
 
-  const updates = ['status = ?', 'updated_at = CURRENT_TIMESTAMP'];
+  const updates = ['status = $1', 'updated_at = CURRENT_TIMESTAMP'];
   const params = [status];
 
   if (trackingNumber) {
-    updates.push('tracking_number = ?');
+    updates.push('tracking_number = $2');
     params.push(trackingNumber);
   }
 
   if (notes) {
-    updates.push('notes = ?');
+    updates.push('notes = $3');
     params.push(notes);
   }
 
@@ -508,12 +508,12 @@ router.put('/:id/status', authenticateAdmin, updateOrderStatusValidation, async 
 
   params.push(orderId);
 
-  await database.execute(
-    `UPDATE orders SET ${updates.join(', ')} WHERE id = ?`,
+  await postgresDatabase.execute(
+    `UPDATE orders SET ${updates.join(', ')} WHERE id = $1`,
     params
   );
 
-  const updatedOrder = await database.get('SELECT * FROM orders WHERE id = ?', [orderId]);
+  const updatedOrder = await postgresDatabase.get('SELECT * FROM orders WHERE id = $1', [orderId]);
 
   res.json({
     message: 'Order status updated successfully',
@@ -525,7 +525,7 @@ router.put('/:id/status', authenticateAdmin, updateOrderStatusValidation, async 
 router.get('/admin/statistics', authenticateAdmin, async (req, res) => {
   const { period = '30' } = req.query; // days
 
-  const stats = await database.get(`
+  const stats = await postgresDatabase.get(`
     SELECT
       COUNT(*) as total_orders,
       COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders,
@@ -539,7 +539,7 @@ router.get('/admin/statistics', authenticateAdmin, async (req, res) => {
     WHERE created_at >= datetime('now', '-${period} days')
   `);
 
-  const dailyStats = await database.query(`
+  const dailyStats = await postgresDatabase.query(`
     SELECT
       DATE(created_at) as date,
       COUNT(*) as orders_count,

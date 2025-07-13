@@ -1,0 +1,163 @@
+# Production values for eshop Helm chart
+
+# Global settings
+global:
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+
+# Backend configuration
+backend:
+  image:
+    repository: yourrepo/eshop-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 3
+  service:
+    type: ClusterIP
+    port: 3001
+  env:
+    NODE_ENV: production
+    PORT: 3001
+    JWT_SECRET: "CHANGE_THIS_TO_A_SECURE_SECRET_AT_LEAST_64_CHARACTERS"
+    DB_HOST: eshop-postgres
+    DB_PORT: 5432
+    DB_NAME: eshop
+    DB_USER: eshop
+    DB_PASSWORD: "CHANGE_THIS_TO_A_SECURE_PASSWORD"
+    REDIS_HOST: eshop-redis
+    REDIS_PORT: 6379
+    REDIS_PASSWORD: "CHANGE_THIS_TO_A_SECURE_REDIS_PASSWORD"
+    FRONTEND_URL: https://eshop.yourdomain.com
+    SENTRY_DSN: "https://your-sentry-dsn"
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  persistence:
+    enabled: true
+    storageClass: "fast-ssd"
+    uploadsSize: "10Gi"
+    logsSize: "5Gi"
+
+# Frontend configuration
+frontend:
+  image:
+    repository: yourrepo/eshop-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    type: ClusterIP
+    port: 3000
+  env:
+    NODE_ENV: production
+    PORT: 3000
+    API_URL: https://eshop.yourdomain.com/api
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  persistence:
+    enabled: true
+    storageClass: "fast-ssd"
+    cacheSize: "5Gi"
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 15-alpine
+    pullPolicy: IfNotPresent
+  auth:
+    username: eshop
+    password: "CHANGE_THIS_TO_A_SECURE_PASSWORD"
+    database: eshop
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: "fast-ssd"
+  service:
+    port: 5432
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+
+# Redis configuration
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: 7-alpine
+    pullPolicy: IfNotPresent
+  password: "CHANGE_THIS_TO_A_SECURE_REDIS_PASSWORD"
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: "fast-ssd"
+  service:
+    port: 6379
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# Nginx configuration (optional reverse proxy)
+nginx:
+  enabled: false
+  image:
+    repository: nginx
+    tag: stable-alpine
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  hosts:
+    - host: eshop.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 3000
+        - path: /api
+          pathType: Prefix
+          service: backend
+          port: 3001
+  tls:
+    - secretName: eshop-tls
+      hosts:
+        - eshop.yourdomain.com 

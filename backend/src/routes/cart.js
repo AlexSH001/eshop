@@ -1,5 +1,5 @@
 const express = require('express');
-const { database } = require('../database/init');
+const { postgresDatabase } = require('../database/init-postgres');
 const { optionalAuth, authenticateUser } = require('../middleware/auth');
 const { addToCartValidation, updateCartValidation, idValidation } = require('../middleware/validation');
 const { NotFoundError } = require('../middleware/errorHandler');
@@ -39,7 +39,7 @@ router.get('/', optionalAuth, async (req, res) => {
       FROM cart_items ci
       JOIN products p ON ci.product_id = p.id
       LEFT JOIN categories c ON p.category_id = c.id
-      WHERE ci.user_id = ?
+      WHERE ci.user_id = $1
       ORDER BY ci.created_at DESC
     `;
     params = [userId];
@@ -57,13 +57,13 @@ router.get('/', optionalAuth, async (req, res) => {
       FROM cart_items ci
       JOIN products p ON ci.product_id = p.id
       LEFT JOIN categories c ON p.category_id = c.id
-      WHERE ci.session_id = ?
+      WHERE ci.session_id = $1
       ORDER BY ci.created_at DESC
     `;
     params = [sessionId];
   }
 
-  const cartItems = await database.query(cartQuery, params);
+  const cartItems = await postgresDatabase.query(cartQuery, params);
 
   // Calculate totals
   let subtotal = 0;
@@ -108,9 +108,9 @@ router.post('/items', optionalAuth, addToCartValidation, async (req, res) => {
   const { userId, sessionId } = getCartIdentifier(req);
 
   // Check if product exists and is available
-  const product = await database.get(
-    'SELECT id, name, price, stock, status FROM products WHERE id = ? AND status = "active"',
-    [productId]
+  const product = await postgresDatabase.get(
+    'SELECT id, name, price, stock, status FROM products WHERE id = $1 AND status = $2',
+    [productId, 'active']
   );
 
   if (!product) {
@@ -128,13 +128,13 @@ router.post('/items', optionalAuth, addToCartValidation, async (req, res) => {
     // Check if item already exists in cart
     let existingItem;
     if (userId) {
-      existingItem = await database.get(
-        'SELECT * FROM cart_items WHERE user_id = ? AND product_id = ?',
+      existingItem = await postgresDatabase.get(
+        'SELECT * FROM cart_items WHERE user_id = $1 AND product_id = $2',
         [userId, productId]
       );
     } else {
-      existingItem = await database.get(
-        'SELECT * FROM cart_items WHERE session_id = ? AND product_id = ?',
+      existingItem = await postgresDatabase.get(
+        'SELECT * FROM cart_items WHERE session_id = $1 AND product_id = $2',
         [sessionId, productId]
       );
     }
@@ -152,8 +152,8 @@ router.post('/items', optionalAuth, addToCartValidation, async (req, res) => {
         });
       }
 
-      await database.execute(
-        'UPDATE cart_items SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      await postgresDatabase.execute(
+        'UPDATE cart_items SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
         [newQuantity, existingItem.id]
       );
 
@@ -168,8 +168,8 @@ router.post('/items', optionalAuth, addToCartValidation, async (req, res) => {
       });
     } else {
       // Add new item
-      const result = await database.execute(
-        'INSERT INTO cart_items (user_id, session_id, product_id, quantity, price) VALUES (?, ?, ?, ?, ?)',
+      const result = await postgresDatabase.execute(
+        'INSERT INTO cart_items (user_id, session_id, product_id, quantity, price) VALUES ($1, $2, $3, $4, $5) RETURNING id',
         [userId, sessionId, productId, quantity, product.price]
       );
 
@@ -184,7 +184,7 @@ router.post('/items', optionalAuth, addToCartValidation, async (req, res) => {
       });
     }
   } catch (error) {
-    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    if (error.code === '23505') { // SQLITE_CONSTRAINT_UNIQUE
       return res.status(409).json({ error: 'Item already in cart' });
     }
     throw error;
@@ -200,18 +200,18 @@ router.put('/items/:itemId', optionalAuth, updateCartValidation, async (req, res
   // Get cart item with product info
   let cartItem;
   if (userId) {
-    cartItem = await database.get(`
+    cartItem = await postgresDatabase.get(`
       SELECT ci.*, p.stock, p.name
       FROM cart_items ci
       JOIN products p ON ci.product_id = p.id
-      WHERE ci.id = ? AND ci.user_id = ?
+      WHERE ci.id = $1 AND ci.user_id = $2
     `, [itemId, userId]);
   } else {
-    cartItem = await database.get(`
+    cartItem = await postgresDatabase.get(`
       SELECT ci.*, p.stock, p.name
       FROM cart_items ci
       JOIN products p ON ci.product_id = p.id
-      WHERE ci.id = ? AND ci.session_id = ?
+      WHERE ci.id = $1 AND ci.session_id = $2
     `, [itemId, sessionId]);
   }
 
@@ -226,8 +226,8 @@ router.put('/items/:itemId', optionalAuth, updateCartValidation, async (req, res
     });
   }
 
-  await database.execute(
-    'UPDATE cart_items SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+  await postgresDatabase.execute(
+    'UPDATE cart_items SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
     [quantity, itemId]
   );
 
@@ -247,13 +247,13 @@ router.delete('/items/:itemId', optionalAuth, async (req, res) => {
 
   let cartItem;
   if (userId) {
-    cartItem = await database.get(
-      'SELECT id FROM cart_items WHERE id = ? AND user_id = ?',
+    cartItem = await postgresDatabase.get(
+      'SELECT id FROM cart_items WHERE id = $1 AND user_id = $2',
       [itemId, userId]
     );
   } else {
-    cartItem = await database.get(
-      'SELECT id FROM cart_items WHERE id = ? AND session_id = ?',
+    cartItem = await postgresDatabase.get(
+      'SELECT id FROM cart_items WHERE id = $1 AND session_id = $2',
       [itemId, sessionId]
     );
   }
@@ -262,7 +262,7 @@ router.delete('/items/:itemId', optionalAuth, async (req, res) => {
     throw new NotFoundError('Cart item not found');
   }
 
-  await database.execute('DELETE FROM cart_items WHERE id = ?', [itemId]);
+  await postgresDatabase.execute('DELETE FROM cart_items WHERE id = $1', [itemId]);
 
   res.json({
     message: 'Item removed from cart successfully'
@@ -274,9 +274,9 @@ router.delete('/', optionalAuth, async (req, res) => {
   const { userId, sessionId } = getCartIdentifier(req);
 
   if (userId) {
-    await database.execute('DELETE FROM cart_items WHERE user_id = ?', [userId]);
+    await postgresDatabase.execute('DELETE FROM cart_items WHERE user_id = $1', [userId]);
   } else {
-    await database.execute('DELETE FROM cart_items WHERE session_id = ?', [sessionId]);
+    await postgresDatabase.execute('DELETE FROM cart_items WHERE session_id = $1', [sessionId]);
   }
 
   res.json({
@@ -294,47 +294,47 @@ router.post('/merge', authenticateUser, async (req, res) => {
   }
 
   try {
-    await database.beginTransaction();
+    await postgresDatabase.beginTransaction();
 
     // Get guest cart items
-    const guestItems = await database.query(
-      'SELECT * FROM cart_items WHERE session_id = ?',
+    const guestItems = await postgresDatabase.query(
+      'SELECT * FROM cart_items WHERE session_id = $1',
       [sessionId]
     );
 
     for (const item of guestItems) {
       // Check if user already has this product in cart
-      const existingUserItem = await database.get(
-        'SELECT * FROM cart_items WHERE user_id = ? AND product_id = ?',
+      const existingUserItem = await postgresDatabase.get(
+        'SELECT * FROM cart_items WHERE user_id = $1 AND product_id = $2',
         [userId, item.product_id]
       );
 
       if (existingUserItem) {
         // Update quantity (take the maximum)
         const maxQuantity = Math.max(existingUserItem.quantity, item.quantity);
-        await database.execute(
-          'UPDATE cart_items SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        await postgresDatabase.execute(
+          'UPDATE cart_items SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
           [maxQuantity, existingUserItem.id]
         );
       } else {
         // Move guest item to user cart
-        await database.execute(
-          'UPDATE cart_items SET user_id = ?, session_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        await postgresDatabase.execute(
+          'UPDATE cart_items SET user_id = $1, session_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
           [userId, item.id]
         );
       }
     }
 
     // Clean up any remaining guest items
-    await database.execute('DELETE FROM cart_items WHERE session_id = ?', [sessionId]);
+    await postgresDatabase.execute('DELETE FROM cart_items WHERE session_id = $1', [sessionId]);
 
-    await database.commit();
+    await postgresDatabase.commit();
 
     res.json({
       message: 'Cart merged successfully'
     });
   } catch (error) {
-    await database.rollback();
+    await postgresDatabase.rollback();
     throw error;
   }
 });
@@ -347,14 +347,14 @@ router.get('/count', optionalAuth, async (req, res) => {
   let params;
 
   if (userId) {
-    countQuery = 'SELECT COALESCE(SUM(quantity), 0) as count FROM cart_items WHERE user_id = ?';
+    countQuery = 'SELECT COALESCE(SUM(quantity), 0) as count FROM cart_items WHERE user_id = $1';
     params = [userId];
   } else {
-    countQuery = 'SELECT COALESCE(SUM(quantity), 0) as count FROM cart_items WHERE session_id = ?';
+    countQuery = 'SELECT COALESCE(SUM(quantity), 0) as count FROM cart_items WHERE session_id = $1';
     params = [sessionId];
   }
 
-  const [{ count }] = await database.query(countQuery, params);
+  const [{ count }] = await postgresDatabase.query(countQuery, params);
 
   res.json({
     sessionId: sessionId || undefined,

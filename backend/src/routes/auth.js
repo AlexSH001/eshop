@@ -1,5 +1,5 @@
 const express = require('express');
-const { database } = require('../database/init');
+const { postgresDatabase } = require('../database/init-postgres');
 const {
   hashPassword,
   comparePassword,
@@ -31,8 +31,8 @@ router.post('/register', registerValidation, async (req, res) => {
   const { email, password, firstName, lastName, phone } = req.body;
 
   // Check if user already exists
-  const existingUser = await database.get(
-    'SELECT id FROM users WHERE email = ?',
+  const existingUser = await postgresDatabase.get(
+    'SELECT id FROM users WHERE email = $1',
     [email]
   );
 
@@ -44,15 +44,15 @@ router.post('/register', registerValidation, async (req, res) => {
   const hashedPassword = await hashPassword(password);
 
   // Create user
-  const result = await database.execute(
+  const result = await postgresDatabase.execute(
     `INSERT INTO users (email, password, first_name, last_name, phone)
-     VALUES (?, ?, ?, ?, ?)`,
+     VALUES ($1, $2, $3, $4, $5)`,
     [email, hashedPassword, firstName, lastName, phone || null]
   );
 
   // Get created user (without password)
-  const user = await database.get(
-    'SELECT id, email, first_name, last_name, phone, avatar, created_at FROM users WHERE id = ?',
+  const user = await postgresDatabase.get(
+    'SELECT id, email, first_name, last_name, phone, avatar, created_at FROM users WHERE id = $1',
     [result.id]
   );
 
@@ -75,8 +75,8 @@ router.post('/login', loginValidation, async (req, res) => {
   const { email, password } = req.body;
 
   // Find user
-  const user = await database.get(
-    'SELECT * FROM users WHERE email = ? AND is_active = TRUE',
+  const user = await postgresDatabase.get(
+    'SELECT * FROM users WHERE email = $1 AND is_active = TRUE',
     [email]
   );
 
@@ -109,8 +109,8 @@ router.post('/admin/login', adminLoginValidation, async (req, res) => {
   const { email, password } = req.body;
 
   // Find admin
-  const admin = await database.get(
-    'SELECT * FROM admins WHERE email = ? AND is_active = TRUE',
+  const admin = await postgresDatabase.get(
+    'SELECT * FROM admins WHERE email = $1 AND is_active = TRUE',
     [email]
   );
 
@@ -125,8 +125,8 @@ router.post('/admin/login', adminLoginValidation, async (req, res) => {
   }
 
   // Update last login
-  await database.execute(
-    'UPDATE admins SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
+  await postgresDatabase.execute(
+    'UPDATE admins SET last_login = CURRENT_TIMESTAMP WHERE id = $1',
     [admin.id]
   );
 
@@ -168,8 +168,8 @@ router.post('/refresh', async (req, res) => {
 
     if (decoded.userId) {
       // User token
-      const user = await database.get(
-        'SELECT id, email, first_name, last_name, phone, avatar FROM users WHERE id = ? AND is_active = TRUE',
+      const user = await postgresDatabase.get(
+        'SELECT id, email, first_name, last_name, phone, avatar FROM users WHERE id = $1 AND is_active = TRUE',
         [decoded.userId]
       );
 
@@ -181,8 +181,8 @@ router.post('/refresh', async (req, res) => {
       userData = { user: formatUserResponse(user) };
     } else if (decoded.adminId) {
       // Admin token
-      const admin = await database.get(
-        'SELECT id, email, name, role, avatar FROM admins WHERE id = ? AND is_active = TRUE',
+      const admin = await postgresDatabase.get(
+        'SELECT id, email, name, role, avatar FROM admins WHERE id = $1 AND is_active = TRUE',
         [decoded.adminId]
       );
 
@@ -230,16 +230,16 @@ router.put('/profile', authenticateUser, async (req, res) => {
   const userId = req.user.id;
 
   // Update user
-  await database.execute(
+  await postgresDatabase.execute(
     `UPDATE users
-     SET first_name = ?, last_name = ?, phone = ?, updated_at = CURRENT_TIMESTAMP
-     WHERE id = ?`,
+     SET first_name = $1, last_name = $2, phone = $3, updated_at = CURRENT_TIMESTAMP
+     WHERE id = $4`,
     [firstName, lastName, phone || null, userId]
   );
 
   // Get updated user
-  const user = await database.get(
-    'SELECT id, email, first_name, last_name, phone, avatar, created_at, updated_at FROM users WHERE id = ?',
+  const user = await postgresDatabase.get(
+    'SELECT id, email, first_name, last_name, phone, avatar, created_at, updated_at FROM users WHERE id = $1',
     [userId]
   );
 
@@ -255,8 +255,8 @@ router.put('/password', authenticateUser, async (req, res) => {
   const userId = req.user.id;
 
   // Get current user with password
-  const user = await database.get(
-    'SELECT password FROM users WHERE id = ?',
+  const user = await postgresDatabase.get(
+    'SELECT password FROM users WHERE id = $1',
     [userId]
   );
 
@@ -270,8 +270,8 @@ router.put('/password', authenticateUser, async (req, res) => {
   const hashedPassword = await hashPassword(newPassword);
 
   // Update password
-  await database.execute(
-    'UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+  await postgresDatabase.execute(
+    'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
     [hashedPassword, userId]
   );
 

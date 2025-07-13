@@ -1,0 +1,16 @@
+apiVersion: v2
+name: eshop
+version: 0.1.0
+description: A Helm chart for deploying the E-Shop application (backend, frontend, PostgreSQL, Redis) on Kubernetes
+keywords:
+  - ecommerce
+  - nodejs
+  - nextjs
+  - postgres
+  - redis
+  - kubernetes
+  - helm
+home: https://yourdomain.com
+maintainers:
+  - name: E-Shop DevOps
+    email: devops@yourdomain.com 

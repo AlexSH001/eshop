@@ -1,0 +1,94 @@
+{
+    "products": [
+        {
+            "id": 1001, "name": "Wireless Bluetooth Headphones", "categoryid": 1, "price": 89.99, "originalprice": 129.99, "stock": 99,
+            "images": [
+                {"image": "/uploads/products/1001/1.jpg", "download_link": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop"},
+                {"image": "/uploads/products/1001/2.jpg", "download_link": "https://ts1.tc.mm.bing.net/th/id/OIP-C.8slszXguL-U_XH9jVQLj5AHaEK?rs=1&pid=ImgDetMain"}
+            ],
+            "description": "",
+            "specifications": [
+                {"key": "", "value": ""}
+            ],
+            "shipping": ""
+        },
+        {
+            "id": 1002, "name": "Smart Phone", "categoryid": 1, "price": 699.99, "originalprice": 799.99, "stock": 99,
+            "images": [
+                {"image": "/uploads/products/1002/1.jpg", "download_link": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&h=300&fit=crop"},
+                {"image": "/uploads/products/1002/2.jpg", "download_link": "https://ts2.tc.mm.bing.net/th/id/OIP-C.L_IBmQ5JmWqU-k1Ezm9DjgHaFj?rs=1&pid=ImgDetMain"}
+          ],
+          "description": "",
+          "specifications": [
+              {"key": "", "value": ""}
+          ],
+          "shipping": ""
+        },
+        {
+            "id": 1003, "name": "Laptop", "categoryid": 1, "price": 999.99, "originalprice": 1299.99, "stock": 99,
+            "images": [
+                {"image": "/uploads/products/1003/1.jpg", "download_link": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=300&h=300&fit=crop"}
+            ],
+            "description": "",
+            "specifications": [
+                {"key": "", "value": ""}
+            ],
+            "shipping": ""
+        },
+        {
+            "id": 1004, "name": "Smart Watch", "categoryid": 1, "price": 299.99, "originalprice": 399.99, "stock": 99,
+            "images": [
+                {"image": "/uploads/products/1004/1.jpg", "download_link": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=300&h=300&fit=crop"}
+            ],
+            "description": "",
+            "specifications": [
+                {"key": "", "value": ""}
+            ],
+            "shipping": ""
+        },
+        {
+            "id": 1005, "name": "Tablet", "categoryid": 1, "price": 449.99, "originalprice": 549.99, "stock": 99,
+            "images": [
+                {"image": "/uploads/products/1005/1.jpg", "download_link": "https://images.unsplash.com/photo-1561154464-82e9adf32764?w=300&h=300&fit=crop"}
+            ],
+            "description": "",
+            "specifications": [
+                {"key": "", "value": ""}
+            ],
+            "shipping": ""
+        },
+        {
+            "id": 1006, "name": "Digital Camera", "categoryid": 1, "price": 799.99, "originalprice": 999.99, "stock": 99,
+            "images": [
+                {"image": "/uploads/products/1006/1.jpg", "download_link": "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=300&h=300&fit=crop"}
+            ],
+            "description": "",
+            "specifications": [
+                {"key": "", "value": ""}
+            ],
+            "shipping": ""
+        },
+        {
+            "id": 1007, "name": "Gaming Console", "categoryid": 1, "price": 499.99, "originalprice": 599.99, "stock": 99,
+            "images": [
+                {"image": "/uploads/products/1007/1.jpg", "download_link": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=300&h=300&fit=crop"}
+            ],
+            "description": "",
+            "specifications": [
+                {"key": "", "value": ""}
+            ],
+            "shipping": ""
+        },
+        {
+            "id": 1008, "name": "Bluetooth Speakers", "categoryid": 1, "price": 199.99, "originalprice": 299.99, "stock": 99,
+            "images": [
+                {"image": "/uploads/products/1008/1.jpg", "download_link": "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=300&h=300&fit=crop"}
+            ],
+            "description": "",
+            "specifications": [
+                {"key": "", "value": ""}
+            ],
+            "shipping": ""
+        }
+    ]
+}

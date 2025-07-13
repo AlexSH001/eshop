@@ -1,0 +1,116 @@
+# Development values for eshop Helm chart
+
+# Global settings
+global:
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+
+# Backend configuration
+backend:
+  image:
+    repository: yourrepo/eshop-backend
+    tag: dev
+    pullPolicy: Always
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 3001
+  env:
+    NODE_ENV: development
+    PORT: 3001
+    JWT_SECRET: dev-jwt-secret-change-in-production
+    DB_HOST: eshop-postgres
+    DB_PORT: 5432
+    DB_NAME: eshop
+    DB_USER: eshop
+    DB_PASSWORD: dev_password
+    REDIS_HOST: eshop-redis
+    REDIS_PORT: 6379
+    REDIS_PASSWORD: dev_redis_password
+    FRONTEND_URL: http://eshop-frontend:3000
+    SENTRY_DSN: ""
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  persistence:
+    enabled: false
+
+# Frontend configuration
+frontend:
+  image:
+    repository: yourrepo/eshop-frontend
+    tag: dev
+    pullPolicy: Always
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 3000
+  env:
+    NODE_ENV: development
+    PORT: 3000
+    API_URL: http://eshop-backend:3001
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  persistence:
+    enabled: false
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 15-alpine
+    pullPolicy: IfNotPresent
+  auth:
+    username: eshop
+    password: dev_password
+    database: eshop
+  persistence:
+    enabled: false
+  service:
+    port: 5432
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+# Redis configuration
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: 7-alpine
+    pullPolicy: IfNotPresent
+  password: dev_redis_password
+  persistence:
+    enabled: false
+  service:
+    port: 6379
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+# Nginx configuration (disabled in dev)
+nginx:
+  enabled: false
+
+# Ingress configuration (disabled in dev)
+ingress:
+  enabled: false 

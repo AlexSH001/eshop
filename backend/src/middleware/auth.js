@@ -1,8 +1,18 @@
 const jwt = require('jsonwebtoken');
-const { database } = require('../database/init');
+const { postgresDatabase } = require('../database/init-postgres');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+
+// Validate secrets are set
+if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
+  throw new Error('JWT secrets must be configured in production');
+}
+
+if (process.env.NODE_ENV === 'production' && 
+    (JWT_SECRET.length < 32 || JWT_REFRESH_SECRET.length < 32)) {
+  throw new Error('JWT secrets must be at least 32 characters in production');
+}
 
 // Generate access token (short-lived)
 const generateAccessToken = (payload) => {
@@ -40,8 +50,8 @@ const authenticateUser = async (req, res, next) => {
     const decoded = verifyAccessToken(token);
 
     // Verify user still exists and is active
-    const user = await database.get(
-      'SELECT id, email, first_name, last_name, phone, avatar, is_active FROM users WHERE id = ? AND is_active = TRUE',
+    const user = await postgresDatabase.get(
+      'SELECT id, email, first_name, last_name, phone, avatar, is_active FROM users WHERE id = $1 AND is_active = TRUE',
       [decoded.userId]
     );
 
@@ -77,8 +87,8 @@ const authenticateAdmin = async (req, res, next) => {
     const decoded = verifyAccessToken(token);
 
     // Verify admin exists and is active
-    const admin = await database.get(
-      'SELECT id, email, name, role, avatar, is_active FROM admins WHERE id = ? AND is_active = TRUE',
+    const admin = await postgresDatabase.get(
+      'SELECT id, email, name, role, avatar, is_active FROM admins WHERE id = $1 AND is_active = TRUE',
       [decoded.adminId]
     );
 
@@ -120,8 +130,8 @@ const optionalAuth = async (req, res, next) => {
     }
 
     const decoded = verifyAccessToken(token);
-    const user = await database.get(
-      'SELECT id, email, first_name, last_name, phone, avatar, is_active FROM users WHERE id = ? AND is_active = TRUE',
+    const user = await postgresDatabase.get(
+      'SELECT id, email, first_name, last_name, phone, avatar, is_active FROM users WHERE id = $1 AND is_active = TRUE',
       [decoded.userId]
     );
 

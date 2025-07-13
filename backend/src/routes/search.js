@@ -1,5 +1,5 @@
 const express = require('express');
-const { database } = require('../database/init');
+const { postgresDatabase } = require('../database/init-postgres');
 const { optionalAuth } = require('../middleware/auth');
 const { searchValidation } = require('../middleware/validation');
 
@@ -24,8 +24,8 @@ router.get('/', optionalAuth, searchValidation, async (req, res) => {
   // Log search if user is authenticated or has session
   const sessionId = req.headers['x-session-id'];
   if (userId || sessionId) {
-    await database.execute(
-      'INSERT INTO search_history (user_id, session_id, search_term) VALUES (?, ?, ?)',
+    await postgresDatabase.execute(
+      'INSERT INTO search_history (user_id, session_id, search_term) VALUES ($1, $2, $3)',
       [userId, sessionId || null, query]
     ).catch(() => {}); // Ignore errors for search logging
   }
@@ -35,28 +35,28 @@ router.get('/', optionalAuth, searchValidation, async (req, res) => {
 
   // Search in name, description, and tags
   whereConditions.push(`(
-    p.name LIKE ? OR
-    p.description LIKE ? OR
-    p.short_description LIKE ? OR
-    p.tags LIKE ? OR
-    c.name LIKE ?
+    p.name LIKE $1 OR
+    p.description LIKE $2 OR
+    p.short_description LIKE $3 OR
+    p.tags LIKE $4 OR
+    c.name LIKE $5
   )`);
   const searchTerm = `%${query}%`;
   params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
 
   // Category filter
   if (category) {
-    whereConditions.push('p.category_id = ?');
+    whereConditions.push('p.category_id = $6');
     params.push(category);
   }
 
   // Price range filters
   if (minPrice) {
-    whereConditions.push('p.price >= ?');
+    whereConditions.push('p.price >= $7');
     params.push(minPrice);
   }
   if (maxPrice) {
-    whereConditions.push('p.price <= ?');
+    whereConditions.push('p.price <= $8');
     params.push(maxPrice);
   }
 
@@ -88,11 +88,11 @@ router.get('/', optionalAuth, searchValidation, async (req, res) => {
       // Relevance-based sorting (name match > description match)
       orderClause = `ORDER BY
         CASE
-          WHEN p.name LIKE ? THEN 1
-          WHEN p.short_description LIKE ? THEN 2
-          WHEN p.description LIKE ? THEN 3
-          WHEN p.tags LIKE ? THEN 4
-          WHEN c.name LIKE ? THEN 5
+          WHEN p.name LIKE $9 THEN 1
+          WHEN p.short_description LIKE $10 THEN 2
+          WHEN p.description LIKE $11 THEN 3
+          WHEN p.tags LIKE $12 THEN 4
+          WHEN c.name LIKE $13 THEN 5
           ELSE 6
         END,
         p.sales_count DESC,
@@ -111,10 +111,10 @@ router.get('/', optionalAuth, searchValidation, async (req, res) => {
     LEFT JOIN categories c ON p.category_id = c.id
     ${whereClause}
     ${orderClause}
-    LIMIT ? OFFSET ?
+    LIMIT $14 OFFSET $15
   `;
 
-  const products = await database.query(searchQuery, [...params, parseInt(limit), offset]);
+  const products = await postgresDatabase.query(searchQuery, [...params, parseInt(limit), offset]);
 
   // Get total count
   const countQuery = `
@@ -124,14 +124,14 @@ router.get('/', optionalAuth, searchValidation, async (req, res) => {
     ${whereClause}
   `;
   const countParams = params.slice(0, sortBy === 'relevance' ? params.length - 5 : params.length);
-  const [{ total }] = await database.query(countQuery, countParams);
+  const [{ total }] = await postgresDatabase.query(countQuery, countParams);
 
   // Update results count in search history
   if (userId || sessionId) {
-    await database.execute(
+    await postgresDatabase.execute(
       `UPDATE search_history
-       SET results_count = ?
-       WHERE (user_id = ? OR session_id = ?) AND search_term = ?
+       SET results_count = $16
+       WHERE (user_id = $17 OR session_id = $18) AND search_term = $19
        ORDER BY created_at DESC LIMIT 1`,
       [total, userId, sessionId || null, query]
     ).catch(() => {});
@@ -172,21 +172,21 @@ router.get('/suggestions', optionalAuth, async (req, res) => {
   const searchTerm = `%${query}%`;
 
   // Get product name suggestions
-  const productSuggestions = await database.query(`
+  const productSuggestions = await postgresDatabase.query(`
     SELECT DISTINCT name
     FROM products
-    WHERE name LIKE ? AND status = 'active'
+    WHERE name LIKE $1 AND status = 'active'
     ORDER BY sales_count DESC, name ASC
-    LIMIT ?
+    LIMIT $2
   `, [searchTerm, Math.floor(limit * 0.7)]);
 
   // Get category suggestions
-  const categorySuggestions = await database.query(`
+  const categorySuggestions = await postgresDatabase.query(`
     SELECT DISTINCT name
     FROM categories
-    WHERE name LIKE ? AND is_active = TRUE
+    WHERE name LIKE $1 AND is_active = TRUE
     ORDER BY name ASC
-    LIMIT ?
+    LIMIT $2
   `, [searchTerm, Math.floor(limit * 0.3)]);
 
   const suggestions = [
@@ -201,7 +201,7 @@ router.get('/suggestions', optionalAuth, async (req, res) => {
 router.get('/popular', async (req, res) => {
   const { limit = 10 } = req.query;
 
-  const popularSearches = await database.query(`
+  const popularSearches = await postgresDatabase.query(`
     SELECT
       search_term,
       COUNT(*) as search_count,
@@ -211,7 +211,7 @@ router.get('/popular', async (req, res) => {
       AND results_count > 0
     GROUP BY search_term
     ORDER BY search_count DESC, avg_results DESC
-    LIMIT ?
+    LIMIT $1
   `, [parseInt(limit)]);
 
   res.json({
@@ -233,13 +233,13 @@ router.get('/recent', optionalAuth, async (req, res) => {
     return res.json({ recent: [] });
   }
 
-  const recentSearches = await database.query(`
+  const recentSearches = await postgresDatabase.query(`
     SELECT DISTINCT search_term, MAX(created_at) as last_searched
     FROM search_history
-    WHERE (user_id = ? OR session_id = ?)
+    WHERE (user_id = $1 OR session_id = $2)
     GROUP BY search_term
     ORDER BY last_searched DESC
-    LIMIT ?
+    LIMIT $3
   `, [userId, sessionId || null, parseInt(limit)]);
 
   res.json({
@@ -259,8 +259,8 @@ router.delete('/history', optionalAuth, async (req, res) => {
     return res.status(400).json({ error: 'No search history to clear' });
   }
 
-  await database.execute(
-    'DELETE FROM search_history WHERE user_id = ? OR session_id = ?',
+  await postgresDatabase.execute(
+    'DELETE FROM search_history WHERE user_id = $1 OR session_id = $2',
     [userId, sessionId || null]
   );
 
@@ -285,10 +285,10 @@ router.get('/category/:categoryId', optionalAuth, async (req, res) => {
   if (sortBy === 'relevance') {
     orderClause = `ORDER BY
       CASE
-        WHEN p.name LIKE ? THEN 1
-        WHEN p.short_description LIKE ? THEN 2
-        WHEN p.description LIKE ? THEN 3
-        WHEN p.tags LIKE ? THEN 4
+        WHEN p.name LIKE $6 THEN 1
+        WHEN p.short_description LIKE $7 THEN 2
+        WHEN p.description LIKE $8 THEN 3
+        WHEN p.tags LIKE $9 THEN 4
         ELSE 5
       END,
       p.sales_count DESC`;
@@ -297,26 +297,26 @@ router.get('/category/:categoryId', optionalAuth, async (req, res) => {
     orderClause = 'ORDER BY p.created_at DESC';
   }
 
-  const products = await database.query(`
+  const products = await postgresDatabase.query(`
     SELECT
       p.*,
       c.name as category_name,
       c.slug as category_slug
     FROM products p
     LEFT JOIN categories c ON p.category_id = c.id
-    WHERE p.category_id = ?
+    WHERE p.category_id = $1
       AND p.status = 'active'
-      AND (p.name LIKE ? OR p.description LIKE ? OR p.short_description LIKE ? OR p.tags LIKE ?)
+      AND (p.name LIKE $2 OR p.description LIKE $3 OR p.short_description LIKE $4 OR p.tags LIKE $5)
     ${orderClause}
-    LIMIT ? OFFSET ?
+    LIMIT $10 OFFSET $11
   `, [...params, parseInt(limit), offset]);
 
-  const [{ total }] = await database.query(`
+  const [{ total }] = await postgresDatabase.query(`
     SELECT COUNT(*) as total
     FROM products p
-    WHERE p.category_id = ?
+    WHERE p.category_id = $1
       AND p.status = 'active'
-      AND (p.name LIKE ? OR p.description LIKE ? OR p.short_description LIKE ? OR p.tags LIKE ?)
+      AND (p.name LIKE $2 OR p.description LIKE $3 OR p.short_description LIKE $4 OR p.tags LIKE $5)
   `, [categoryId, searchTerm, searchTerm, searchTerm, searchTerm]);
 
   const formattedProducts = products.map(product => ({
@@ -343,12 +343,12 @@ router.get('/category/:categoryId', optionalAuth, async (req, res) => {
 async function getAvailableCategories(query) {
   const searchTerm = `%${query}%`;
 
-  return await database.query(`
+  return await postgresDatabase.query(`
     SELECT DISTINCT c.id, c.name, COUNT(p.id) as product_count
     FROM categories c
     JOIN products p ON c.id = p.category_id
     WHERE p.status = 'active'
-      AND (p.name LIKE ? OR p.description LIKE ? OR p.tags LIKE ?)
+      AND (p.name LIKE $1 OR p.description LIKE $2 OR p.tags LIKE $3)
     GROUP BY c.id, c.name
     ORDER BY product_count DESC, c.name ASC
   `, [searchTerm, searchTerm, searchTerm]);
@@ -357,13 +357,13 @@ async function getAvailableCategories(query) {
 async function getPriceRange(query) {
   const searchTerm = `%${query}%`;
 
-  const [result] = await database.query(`
+  const [result] = await postgresDatabase.query(`
     SELECT
       MIN(price) as min_price,
       MAX(price) as max_price
     FROM products
     WHERE status = 'active'
-      AND (name LIKE ? OR description LIKE ? OR tags LIKE ?)
+      AND (name LIKE $1 OR description LIKE $2 OR tags LIKE $3)
   `, [searchTerm, searchTerm, searchTerm]);
 
   return {
