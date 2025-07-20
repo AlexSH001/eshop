@@ -2,7 +2,6 @@
 
 # dependencies
 backend/node_modules
-backend/data/store.db
 frontend/node_modules
 /.pnp
 .pnp.*
@@ -35,6 +34,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -43,4 +43,132 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# logs
 logs
+*.log
+backend/logs/
+backend/server.log
+
+# database files
+*.db
+*.sqlite
+*.sqlite3
+backend/data/store.db
+backend/database.sqlite
+
+# uploads and user content
+backend/uploads/
+backend/uploads/avatars/
+backend/uploads/products/
+backend/uploads/misc/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Test files (optional - uncomment if you don't want to track test files)
+# backend/test-*.js
+# backend/test-*.sh
+
+# Build artifacts
+dist/
+build/
+*.tgz
+*.tar.gz
+
+# Lock files (keep package-lock.json but ignore others)
+# package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lock
+
+# Cache directories
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+.env.test
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/

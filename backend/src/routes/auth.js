@@ -1,5 +1,5 @@
 const express = require('express');
-const { postgresDatabase } = require('../database/init-postgres');
+const { database } = require('../database');
 const {
   hashPassword,
   comparePassword,
@@ -31,7 +31,7 @@ router.post('/register', registerValidation, async (req, res) => {
   const { email, password, firstName, lastName, phone } = req.body;
 
   // Check if user already exists
-  const existingUser = await postgresDatabase.get(
+  const existingUser = await database.get(
     'SELECT id FROM users WHERE email = $1',
     [email]
   );
@@ -44,14 +44,14 @@ router.post('/register', registerValidation, async (req, res) => {
   const hashedPassword = await hashPassword(password);
 
   // Create user
-  const result = await postgresDatabase.execute(
+  const result = await database.execute(
     `INSERT INTO users (email, password, first_name, last_name, phone)
      VALUES ($1, $2, $3, $4, $5)`,
     [email, hashedPassword, firstName, lastName, phone || null]
   );
 
   // Get created user (without password)
-  const user = await postgresDatabase.get(
+  const user = await database.get(
     'SELECT id, email, first_name, last_name, phone, avatar, created_at FROM users WHERE id = $1',
     [result.id]
   );
@@ -75,7 +75,7 @@ router.post('/login', loginValidation, async (req, res) => {
   const { email, password } = req.body;
 
   // Find user
-  const user = await postgresDatabase.get(
+  const user = await database.get(
     'SELECT * FROM users WHERE email = $1 AND is_active = TRUE',
     [email]
   );
@@ -109,7 +109,7 @@ router.post('/admin/login', adminLoginValidation, async (req, res) => {
   const { email, password } = req.body;
 
   // Find admin
-  const admin = await postgresDatabase.get(
+  const admin = await database.get(
     'SELECT * FROM admins WHERE email = $1 AND is_active = TRUE',
     [email]
   );
@@ -125,7 +125,7 @@ router.post('/admin/login', adminLoginValidation, async (req, res) => {
   }
 
   // Update last login
-  await postgresDatabase.execute(
+  await database.execute(
     'UPDATE admins SET last_login = CURRENT_TIMESTAMP WHERE id = $1',
     [admin.id]
   );
@@ -168,7 +168,7 @@ router.post('/refresh', async (req, res) => {
 
     if (decoded.userId) {
       // User token
-      const user = await postgresDatabase.get(
+      const user = await database.get(
         'SELECT id, email, first_name, last_name, phone, avatar FROM users WHERE id = $1 AND is_active = TRUE',
         [decoded.userId]
       );
@@ -181,7 +181,7 @@ router.post('/refresh', async (req, res) => {
       userData = { user: formatUserResponse(user) };
     } else if (decoded.adminId) {
       // Admin token
-      const admin = await postgresDatabase.get(
+      const admin = await database.get(
         'SELECT id, email, name, role, avatar FROM admins WHERE id = $1 AND is_active = TRUE',
         [decoded.adminId]
       );
@@ -230,7 +230,7 @@ router.put('/profile', authenticateUser, async (req, res) => {
   const userId = req.user.id;
 
   // Update user
-  await postgresDatabase.execute(
+  await database.execute(
     `UPDATE users
      SET first_name = $1, last_name = $2, phone = $3, updated_at = CURRENT_TIMESTAMP
      WHERE id = $4`,
@@ -238,7 +238,7 @@ router.put('/profile', authenticateUser, async (req, res) => {
   );
 
   // Get updated user
-  const user = await postgresDatabase.get(
+  const user = await database.get(
     'SELECT id, email, first_name, last_name, phone, avatar, created_at, updated_at FROM users WHERE id = $1',
     [userId]
   );
@@ -255,7 +255,7 @@ router.put('/password', authenticateUser, async (req, res) => {
   const userId = req.user.id;
 
   // Get current user with password
-  const user = await postgresDatabase.get(
+  const user = await database.get(
     'SELECT password FROM users WHERE id = $1',
     [userId]
   );
@@ -270,7 +270,7 @@ router.put('/password', authenticateUser, async (req, res) => {
   const hashedPassword = await hashPassword(newPassword);
 
   // Update password
-  await postgresDatabase.execute(
+  await database.execute(
     'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
     [hashedPassword, userId]
   );

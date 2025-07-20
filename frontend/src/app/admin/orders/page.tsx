@@ -57,10 +57,33 @@ export default function AdminOrdersPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('http://localhost:3001/api/orders');
+      const adminToken = localStorage.getItem('admin_token');
+      if (!adminToken) {
+        throw new Error('No admin token found');
+      }
+
+      const res = await fetch('http://localhost:3001/api/orders/authenticated', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
       if (!res.ok) throw new Error('Failed to fetch orders');
       const data = await res.json();
-      setOrders(data.orders);
+      
+      // Transform the data to match frontend expectations
+      const transformedOrders = data.orders.map((order: any) => ({
+        id: order.id,
+        customer: `${order.billing_first_name || ''} ${order.billing_last_name || ''}`.trim() || order.email,
+        email: order.email,
+        total: order.total,
+        status: order.status,
+        createdAt: new Date(order.created_at).toLocaleDateString(),
+        items: order.items || []
+      }));
+      
+      setOrders(transformedOrders);
     } catch (err: unknown) {
       setError((err as Error).message || 'Unknown error');
     } finally {
@@ -77,9 +100,17 @@ export default function AdminOrdersPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:3001/api/orders/${editingOrder.id}`, {
+      const adminToken = localStorage.getItem('admin_token');
+      if (!adminToken) {
+        throw new Error('No admin token found');
+      }
+
+      const res = await fetch(`http://localhost:3001/api/orders/${editingOrder.id}/status`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json' 
+        },
         credentials: 'include',
         body: JSON.stringify({ status })
       });
@@ -101,8 +132,16 @@ export default function AdminOrdersPage() {
     setLoading(true);
     setError(null);
     try {
+      const adminToken = localStorage.getItem('admin_token');
+      if (!adminToken) {
+        throw new Error('No admin token found');
+      }
+
       const res = await fetch(`http://localhost:3001/api/orders/${deletingOrder.id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        },
         credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to delete order');

@@ -36,7 +36,7 @@ const userRoutes = require('./routes/users');
 const monitoringRoutes = require('./routes/monitoring');
 
 const { errorHandler } = require('./middleware/errorHandler');
-const { initializePostgresDatabase } = require('./database/init-postgres');
+const { initializeDatabase } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -78,8 +78,8 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Initialize PostgreSQL database
-initializePostgresDatabase().catch(console.error);
+// Initialize database (automatically selects SQLite or PostgreSQL based on DB_CLIENT)
+initializeDatabase().catch(console.error);
 
 // Security middleware
 app.use(helmet({

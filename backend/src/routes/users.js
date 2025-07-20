@@ -1,5 +1,5 @@
 const express = require('express');
-const { postgresDatabase } = require('../database/init-postgres');
+const { database } = require('../database');
 const { authenticateAdmin } = require('../middleware/auth');
 const { paginationValidation, idValidation } = require('../middleware/validation');
 const { hashPassword } = require('../utils/auth');
@@ -13,7 +13,7 @@ router.get('/analytics/stats', async (req, res) => {
 
   try {
     // Get overview stats
-    const stats = await postgresDatabase.get(`
+    const stats = await database.get(`
       SELECT
         (SELECT COUNT(*) FROM products WHERE status = 'active') as total_products,
         (SELECT COUNT(*) FROM orders WHERE created_at >= datetime('now', '-${period} days')) as total_orders,
@@ -24,7 +24,7 @@ router.get('/analytics/stats', async (req, res) => {
     `);
 
     // Growth calculations (compare with previous period)
-    const previousStats = await postgresDatabase.get(`
+    const previousStats = await database.get(`
       SELECT
         (SELECT COUNT(*) FROM orders WHERE created_at BETWEEN datetime('now', '-${period * 2} days') AND datetime('now', '-${period} days')) as prev_orders,
         (SELECT COALESCE(SUM(total), 0) FROM orders WHERE created_at BETWEEN datetime('now', '-${period * 2} days') AND datetime('now', '-${period} days')) as prev_revenue,
@@ -60,7 +60,7 @@ router.get('/analytics/sales-data', async (req, res) => {
   const { days = '30' } = req.query;
 
   try {
-    const salesData = await postgresDatabase.query(`
+    const salesData = await database.query(`
       SELECT
         DATE(created_at) as date,
         COUNT(*) as orders_count,
@@ -87,7 +87,7 @@ router.get('/analytics/top-products', async (req, res) => {
   const { limit = 10, period = '30' } = req.query;
 
   try {
-    const products = await postgresDatabase.query(`
+    const products = await database.query(`
       SELECT
         p.id,
         p.name,
@@ -121,7 +121,7 @@ router.get('/analytics/category-performance', async (req, res) => {
   const { period = '30' } = req.query;
 
   try {
-    const categoryStats = await postgresDatabase.query(`
+    const categoryStats = await database.query(`
       SELECT
         c.id,
         c.name,
@@ -185,7 +185,7 @@ router.get('/', paginationValidation, async (req, res) => {
   const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
   const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
-  const users = await postgresDatabase.query(`
+  const users = await database.query(`
     SELECT
       u.id, u.email, u.first_name, u.last_name, u.phone, u.avatar,
       u.email_verified, u.is_active, u.created_at, u.updated_at,
@@ -201,7 +201,7 @@ router.get('/', paginationValidation, async (req, res) => {
   `, [parseInt(limit), offset]);
 
   // Get total count
-  const countResult = await postgresDatabase.get(`
+  const countResult = await database.get(`
     SELECT COUNT(*) as total
     FROM users u
     LEFT JOIN admins a ON u.email = a.email
@@ -251,7 +251,7 @@ router.post('/', async (req, res) => {
   }
 
   // Check if user already exists
-  const existingUser = await postgresDatabase.get('SELECT id FROM users WHERE email = $1', [email]);
+  const existingUser = await database.get('SELECT id FROM users WHERE email = $1', [email]);
   if (existingUser) {
     return res.status(400).json({
       error: 'User with this email already exists'
@@ -262,12 +262,12 @@ router.post('/', async (req, res) => {
   const hashedPassword = await hashPassword(password);
 
   // Insert user
-  const result = await postgresDatabase.execute(`
+  const result = await database.execute(`
     INSERT INTO users (email, first_name, last_name, password, is_active, created_at, updated_at)
     VALUES ($1, $2, $3, $4, $5, datetime('now'), datetime('now'))
   `, [email, firstName, lastName, hashedPassword, status === 'active']);
 
-  const newUser = await postgresDatabase.get(`
+  const newUser = await database.get(`
     SELECT u.id, u.email, u.first_name, u.last_name, u.is_active, u.created_at,
            CASE WHEN a.id IS NOT NULL THEN 'admin' ELSE 'user' END as role
     FROM users u
@@ -302,14 +302,14 @@ router.put('/:id', idValidation, async (req, res) => {
   } = req.body;
 
   // Check if user exists
-  const existingUser = await postgresDatabase.get('SELECT id FROM users WHERE id = $1', [id]);
+  const existingUser = await database.get('SELECT id FROM users WHERE id = $1', [id]);
   if (!existingUser) {
     throw new NotFoundError('User not found');
   }
 
   // Check if email is being changed and if it's already taken
   if (email) {
-    const emailCheck = await postgresDatabase.get('SELECT id FROM users WHERE email = $1 AND id != $2', [email, id]);
+    const emailCheck = await database.get('SELECT id FROM users WHERE email = $1 AND id != $2', [email, id]);
     if (emailCheck) {
       return res.status(400).json({
         error: 'Email is already taken by another user'
@@ -348,13 +348,13 @@ router.put('/:id', idValidation, async (req, res) => {
   updates.push('updated_at = datetime("now")');
   params.push(id);
 
-  await postgresDatabase.execute(`
+  await database.execute(`
     UPDATE users
     SET ${updates.join(', ')}
     WHERE id = $1
   `, params);
 
-  const updatedUser = await postgresDatabase.get(`
+  const updatedUser = await database.get(`
     SELECT u.id, u.email, u.first_name, u.last_name, u.is_active, u.updated_at,
            CASE WHEN a.id IS NOT NULL THEN 'admin' ELSE 'user' END as role
     FROM users u
@@ -381,20 +381,20 @@ router.delete('/:id', idValidation, async (req, res) => {
   const { id } = req.params;
 
   // Check if user exists
-  const existingUser = await postgresDatabase.get('SELECT id FROM users WHERE id = $1', [id]);
+  const existingUser = await database.get('SELECT id FROM users WHERE id = $1', [id]);
   if (!existingUser) {
     throw new NotFoundError('User not found');
   }
 
   // Check if user has orders
-  const orderCheck = await postgresDatabase.get('SELECT id FROM orders WHERE user_id = $1 LIMIT 1', [id]);
+  const orderCheck = await database.get('SELECT id FROM orders WHERE user_id = $1 LIMIT 1', [id]);
   if (orderCheck) {
     return res.status(400).json({
       error: 'Cannot delete user with existing orders'
     });
   }
 
-  await postgresDatabase.execute('DELETE FROM users WHERE id = $1', [id]);
+  await database.execute('DELETE FROM users WHERE id = $1', [id]);
 
   res.json({
     message: 'User deleted successfully'

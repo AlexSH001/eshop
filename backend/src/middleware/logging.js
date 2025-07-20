@@ -15,8 +15,8 @@ const requestLogger = (req, res, next) => {
     userAgent: req.get('User-Agent'),
     requestId: req.requestId,
     userId: req.user?.id || 'anonymous',
-    query: Object.keys(req.query).length > 0 ? req.query : undefined,
-    body: req.method !== 'GET' && Object.keys(req.body).length > 0 ? req.body : undefined
+    query: Object.keys(req.query || {}).length > 0 ? req.query : undefined,
+    body: req.method !== 'GET' && req.body && Object.keys(req.body).length > 0 ? req.body : undefined
   });
 
   // Override res.end to log response
@@ -48,9 +48,9 @@ const errorLogger = (err, req, res, next) => {
     url: req.originalUrl,
     requestId: req.requestId,
     userId: req.user?.id || 'anonymous',
-    body: req.body,
-    query: req.query,
-    params: req.params,
+    body: req.body || null,
+    query: req.query || {},
+    params: req.params || {},
     headers: {
       'user-agent': req.get('User-Agent'),
       'content-type': req.get('Content-Type'),

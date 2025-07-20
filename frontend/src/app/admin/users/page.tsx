@@ -68,7 +68,18 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('http://localhost:3001/api/users');
+      const adminToken = localStorage.getItem('admin_token');
+      if (!adminToken) {
+        throw new Error('No admin token found');
+      }
+
+      const res = await fetch('http://localhost:3001/api/users/authenticated', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
       if (!res.ok) throw new Error('Failed to fetch users');
       const data = await res.json();
       setUsers(data.users);
@@ -87,9 +98,17 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(null);
     try {
+      const adminToken = localStorage.getItem('admin_token');
+      if (!adminToken) {
+        throw new Error('No admin token found');
+      }
+
       const res = await fetch('http://localhost:3001/api/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json' 
+        },
         credentials: 'include',
         body: JSON.stringify(formData)
       });
@@ -111,9 +130,17 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(null);
     try {
+      const adminToken = localStorage.getItem('admin_token');
+      if (!adminToken) {
+        throw new Error('No admin token found');
+      }
+
       const res = await fetch(`http://localhost:3001/api/users/${editingUser.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json' 
+        },
         credentials: 'include',
         body: JSON.stringify(formData)
       });
@@ -135,8 +162,16 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(null);
     try {
+      const adminToken = localStorage.getItem('admin_token');
+      if (!adminToken) {
+        throw new Error('No admin token found');
+      }
+
       const res = await fetch(`http://localhost:3001/api/users/${deletingUser.id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        },
         credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to delete user');

@@ -1,5 +1,5 @@
 const express = require('express');
-const { postgresDatabase } = require('../database/init-postgres');
+const { database } = require('../database');
 const { authenticateAdmin } = require('../middleware/auth');
 const { idValidation, paginationValidation } = require('../middleware/validation');
 const { NotFoundError } = require('../middleware/errorHandler');
@@ -8,7 +8,7 @@ const router = express.Router();
 
 // Get all categories (public)
 router.get('/', async (req, res) => {
-  const categories = await postgresDatabase.query(`
+  const categories = await database.query(`
     SELECT id, name, slug, description, icon, image, parent_id, sort_order
     FROM categories
     WHERE is_active = TRUE
@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 
 // Get categories for admin product form (public)
 router.get('/list', async (req, res) => {
-  const categories = await postgresDatabase.query(`
+  const categories = await database.query(`
     SELECT id, name, slug, description, icon
     FROM categories
     WHERE is_active = TRUE
@@ -38,7 +38,7 @@ router.get('/list', async (req, res) => {
 router.get('/:id', idValidation, async (req, res) => {
   const categoryId = req.params.id;
 
-  const category = await postgresDatabase.get(`
+  const category = await database.get(`
     SELECT * FROM categories
     WHERE id = $1 AND is_active = TRUE
   `, [categoryId]);
@@ -48,7 +48,7 @@ router.get('/:id', idValidation, async (req, res) => {
   }
 
   // Get products in this category
-  const products = await postgresDatabase.query(`
+  const products = await database.query(`
     SELECT id, name, price, original_price, featured_image, stock, status
     FROM products
     WHERE category_id = $1 AND status = 'active'
@@ -99,7 +99,7 @@ router.get('/admin/list', authenticateAdmin, paginationValidation, async (req, r
   const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'sort_order';
   const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'ASC';
 
-  const categories = await postgresDatabase.query(`
+  const categories = await database.query(`
     SELECT 
       c.*,
       COUNT(p.id) as product_count
@@ -111,7 +111,7 @@ router.get('/admin/list', authenticateAdmin, paginationValidation, async (req, r
     LIMIT $1 OFFSET $2
   `, [parseInt(limit), offset]);
 
-  const [{ total }] = await postgresDatabase.query(`
+  const [{ total }] = await database.query(`
     SELECT COUNT(*) as total FROM categories ${whereClause}
   `, params);
 
@@ -143,7 +143,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
   }
 
   // Check if category with same name exists
-  const existingCategory = await postgresDatabase.get(
+  const existingCategory = await database.get(
     'SELECT id FROM categories WHERE name = $1',
     [name]
   );
@@ -156,12 +156,12 @@ router.post('/', authenticateAdmin, async (req, res) => {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
   // Create category
-  const result = await postgresDatabase.execute(`
+  const result = await database.execute(`
     INSERT INTO categories (name, slug, description, icon, image, parent_id, sort_order)
     VALUES ($1, $2, $3, $4, $5, $6, $7)
   `, [name, slug, description || null, icon || null, image || null, parentId || null, sortOrder]);
 
-  const category = await postgresDatabase.get('SELECT * FROM categories WHERE id = $1', [result.id]);
+  const category = await database.get('SELECT * FROM categories WHERE id = $1', [result.id]);
 
   res.status(201).json({
     message: 'Category created successfully',
@@ -183,14 +183,14 @@ router.put('/:id', authenticateAdmin, idValidation, async (req, res) => {
   } = req.body;
 
   // Check if category exists
-  const existingCategory = await postgresDatabase.get('SELECT * FROM categories WHERE id = $1', [categoryId]);
+  const existingCategory = await database.get('SELECT * FROM categories WHERE id = $1', [categoryId]);
   if (!existingCategory) {
     throw new NotFoundError('Category not found');
   }
 
   // Check if name is being changed and if it conflicts
   if (name && name !== existingCategory.name) {
-    const nameConflict = await postgresDatabase.get(
+    const nameConflict = await database.get(
       'SELECT id FROM categories WHERE name = $1 AND id != $2',
       [name, categoryId]
     );
@@ -227,12 +227,12 @@ router.put('/:id', authenticateAdmin, idValidation, async (req, res) => {
   updates.push('updated_at = CURRENT_TIMESTAMP');
   params.push(categoryId);
 
-  await postgresDatabase.execute(
+  await database.execute(
     `UPDATE categories SET ${updates.join(', ')} WHERE id = $1`,
     params
   );
 
-  const updatedCategory = await postgresDatabase.get('SELECT * FROM categories WHERE id = $1', [categoryId]);
+  const updatedCategory = await database.get('SELECT * FROM categories WHERE id = $1', [categoryId]);
 
   res.json({
     message: 'Category updated successfully',
@@ -245,13 +245,13 @@ router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
   const categoryId = req.params.id;
 
   // Check if category exists
-  const category = await postgresDatabase.get('SELECT * FROM categories WHERE id = $1', [categoryId]);
+  const category = await database.get('SELECT * FROM categories WHERE id = $1', [categoryId]);
   if (!category) {
     throw new NotFoundError('Category not found');
   }
 
   // Check if category has products
-  const productCount = await postgresDatabase.get(
+  const productCount = await database.get(
     'SELECT COUNT(*) as count FROM products WHERE category_id = $1',
     [categoryId]
   );
@@ -263,7 +263,7 @@ router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
   }
 
   // Check if category has subcategories
-  const subcategoryCount = await postgresDatabase.get(
+  const subcategoryCount = await database.get(
     'SELECT COUNT(*) as count FROM categories WHERE parent_id = $1',
     [categoryId]
   );
@@ -274,7 +274,7 @@ router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
     });
   }
 
-  await postgresDatabase.execute('DELETE FROM categories WHERE id = $1', [categoryId]);
+  await database.execute('DELETE FROM categories WHERE id = $1', [categoryId]);
 
   res.json({
     message: 'Category deleted successfully'
@@ -283,7 +283,7 @@ router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
 
 // Admin: Get category statistics
 router.get('/admin/statistics', authenticateAdmin, async (req, res) => {
-  const stats = await postgresDatabase.query(`
+  const stats = await database.query(`
     SELECT
       c.id,
       c.name,

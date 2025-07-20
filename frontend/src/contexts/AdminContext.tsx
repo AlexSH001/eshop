@@ -73,7 +73,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         role: data.admin.role,
       };
       localStorage.setItem('admin_user', JSON.stringify(user));
-      localStorage.setItem('admin_token', data.token);
+      localStorage.setItem('admin_token', data.tokens.accessToken);
       setState({
         user,
         isAuthenticated: true,
@@ -87,6 +87,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('admin_user');
+    localStorage.removeItem('admin_token');
     setState({
       user: null,
       isAuthenticated: false,

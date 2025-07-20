@@ -1,5 +1,5 @@
 const express = require('express');
-const { postgresDatabase } = require('../database/init-postgres');
+const { database } = require('../database');
 const { authenticateUser } = require('../middleware/auth');
 const { idValidation, paginationValidation } = require('../middleware/validation');
 const { NotFoundError, ConflictError } = require('../middleware/errorHandler');
@@ -12,7 +12,7 @@ router.get('/', authenticateUser, paginationValidation, async (req, res) => {
   const offset = (page - 1) * limit;
   const userId = req.user.id;
 
-  const wishlistItems = await postgresDatabase.query(`
+  const wishlistItems = await database.query(`
     SELECT
       wi.id as wishlist_id,
       wi.created_at as added_at,
@@ -27,7 +27,7 @@ router.get('/', authenticateUser, paginationValidation, async (req, res) => {
     LIMIT $2 OFFSET $3
   `, [userId, parseInt(limit), offset]);
 
-  const [{ total }] = await postgresDatabase.query(
+  const [{ total }] = await database.query(
     'SELECT COUNT(*) as total FROM wishlist_items wi JOIN products p ON wi.product_id = p.id WHERE wi.user_id = $1 AND p.status = "active"',
     [userId]
   );
@@ -73,7 +73,7 @@ router.post('/items/:productId', authenticateUser, idValidation, async (req, res
   const userId = req.user.id;
 
   // Check if product exists
-  const product = await postgresDatabase.get(
+  const product = await database.get(
     'SELECT id, name FROM products WHERE id = $1 AND status = "active"',
     [productId]
   );
@@ -84,7 +84,7 @@ router.post('/items/:productId', authenticateUser, idValidation, async (req, res
 
   try {
     // Add to wishlist
-    await postgresDatabase.execute(
+    await database.execute(
       'INSERT INTO wishlist_items (user_id, product_id) VALUES ($1, $2)',
       [userId, productId]
     );
@@ -106,7 +106,7 @@ router.delete('/items/:productId', authenticateUser, idValidation, async (req, r
   const productId = req.params.productId;
   const userId = req.user.id;
 
-  const result = await postgresDatabase.execute(
+  const result = await database.execute(
     'DELETE FROM wishlist_items WHERE user_id = $1 AND product_id = $2',
     [userId, productId]
   );
@@ -126,7 +126,7 @@ router.get('/check/:productId', authenticateUser, idValidation, async (req, res)
   const productId = req.params.productId;
   const userId = req.user.id;
 
-  const item = await postgresDatabase.get(
+  const item = await database.get(
     'SELECT id FROM wishlist_items WHERE user_id = $1 AND product_id = $2',
     [userId, productId]
   );
@@ -141,7 +141,7 @@ router.get('/check/:productId', authenticateUser, idValidation, async (req, res)
 router.get('/count', authenticateUser, async (req, res) => {
   const userId = req.user.id;
 
-  const [{ count }] = await postgresDatabase.query(
+  const [{ count }] = await database.query(
     `SELECT COUNT(*) as count
      FROM wishlist_items wi
      JOIN products p ON wi.product_id = p.id
@@ -161,7 +161,7 @@ router.post('/items/:productId/move-to-cart', authenticateUser, idValidation, as
   const { quantity = 1 } = req.body;
 
   // Check if product is in wishlist
-  const wishlistItem = await postgresDatabase.get(
+  const wishlistItem = await database.get(
     'SELECT id FROM wishlist_items WHERE user_id = $1 AND product_id = $2',
     [userId, productId]
   );
@@ -171,7 +171,7 @@ router.post('/items/:productId/move-to-cart', authenticateUser, idValidation, as
   }
 
   // Get product details
-  const product = await postgresDatabase.get(
+  const product = await database.get(
     'SELECT id, name, price, stock, status FROM products WHERE id = $1 AND status = "active"',
     [productId]
   );
@@ -188,10 +188,10 @@ router.post('/items/:productId/move-to-cart', authenticateUser, idValidation, as
   }
 
   try {
-    await postgresDatabase.beginTransaction();
+    await database.beginTransaction();
 
     // Check if item already exists in cart
-    const existingCartItem = await postgresDatabase.get(
+    const existingCartItem = await database.get(
       'SELECT * FROM cart_items WHERE user_id = $1 AND product_id = $2',
       [userId, productId]
     );
@@ -201,7 +201,7 @@ router.post('/items/:productId/move-to-cart', authenticateUser, idValidation, as
       const newQuantity = existingCartItem.quantity + quantity;
 
       if (product.stock < newQuantity) {
-        await postgresDatabase.rollback();
+        await database.rollback();
         return res.status(400).json({
           error: 'Insufficient stock for requested quantity',
           currentQuantity: existingCartItem.quantity,
@@ -210,25 +210,25 @@ router.post('/items/:productId/move-to-cart', authenticateUser, idValidation, as
         });
       }
 
-      await postgresDatabase.execute(
+      await database.execute(
         'UPDATE cart_items SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
         [newQuantity, existingCartItem.id]
       );
     } else {
       // Add to cart
-      await postgresDatabase.execute(
+      await database.execute(
         'INSERT INTO cart_items (user_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)',
         [userId, productId, quantity, product.price]
       );
     }
 
     // Remove from wishlist
-    await postgresDatabase.execute(
+    await database.execute(
       'DELETE FROM wishlist_items WHERE user_id = $1 AND product_id = $2',
       [userId, productId]
     );
 
-    await postgresDatabase.commit();
+    await database.commit();
 
     res.json({
       message: 'Product moved to cart successfully',
@@ -236,7 +236,7 @@ router.post('/items/:productId/move-to-cart', authenticateUser, idValidation, as
       quantity
     });
   } catch (error) {
-    await postgresDatabase.rollback();
+    await database.rollback();
     throw error;
   }
 });
@@ -245,7 +245,7 @@ router.post('/items/:productId/move-to-cart', authenticateUser, idValidation, as
 router.delete('/', authenticateUser, async (req, res) => {
   const userId = req.user.id;
 
-  await postgresDatabase.execute('DELETE FROM wishlist_items WHERE user_id = $1', [userId]);
+  await database.execute('DELETE FROM wishlist_items WHERE user_id = $1', [userId]);
 
   res.json({
     message: 'Wishlist cleared successfully'
@@ -257,7 +257,7 @@ router.get('/summary', authenticateUser, async (req, res) => {
   const userId = req.user.id;
   const { limit = 5 } = req.query;
 
-  const items = await postgresDatabase.query(`
+  const items = await database.query(`
     SELECT
       p.id,
       p.name,
@@ -272,7 +272,7 @@ router.get('/summary', authenticateUser, async (req, res) => {
     LIMIT $2
   `, [userId, parseInt(limit)]);
 
-  const [{ total }] = await postgresDatabase.query(
+  const [{ total }] = await database.query(
     `SELECT COUNT(*) as total
      FROM wishlist_items wi
      JOIN products p ON wi.product_id = p.id

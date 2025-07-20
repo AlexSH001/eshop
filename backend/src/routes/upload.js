@@ -372,8 +372,8 @@ router.post('/cleanup', authenticateAdmin, async (req, res) => {
 
     if (category === 'products') {
       // Get all referenced image files from products table
-      const { postgresDatabase } = require('../database/init-postgres');
-      const products = await postgresDatabase.query('SELECT featured_image, images FROM products');
+      const { database } = require('../database');
+      const products = await database.query('SELECT featured_image, images FROM products');
       const referencedFiles = new Set();
 
       products.forEach(product => {
@@ -403,8 +403,8 @@ router.post('/cleanup', authenticateAdmin, async (req, res) => {
       });
     } else {
       // For other categories, check single column reference
-      const { postgresDatabase } = require('../database/init-postgres');
-      const referencedFiles = await postgresDatabase.query(
+      const { database } = require('../database');
+      const referencedFiles = await database.query(
         `SELECT DISTINCT ${columnName} FROM ${tableName} WHERE ${columnName} IS NOT NULL`
       );
 

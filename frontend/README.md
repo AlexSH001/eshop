@@ -20,6 +20,16 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## 环境变量
+
+前端通过 `NEXT_PUBLIC_API_URL` 环境变量配置后端API地址。例如在`.env.local`中添加：
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+避免在代码中硬编码API地址，方便不同环境部署。
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

@@ -516,3 +516,127 @@ For support and questions:
 ---
 
 **Happy coding! 🚀**
+
+## 环境变量
+
+请根据`.env.example`文件配置数据库、Redis、前端URL等关键参数。
+
+## 🛠 脚本工具（scripts/ 目录）
+
+### 1. 环境切换脚本
+
+- **scripts/switch-env.sh**
+  - 用途：一键切换开发/生产环境配置（.env 文件）。
+  - 用法：
+    ```bash
+    cd backend/scripts
+    chmod +x switch-env.sh
+    ./switch-env.sh development   # 切换到开发环境
+    ./switch-env.sh production    # 切换到生产环境
+    ```
+  - 场景：本地开发、部署前环境切换。
+
+### 2. 生产环境JWT密钥自动生成
+
+- **scripts/gen-jwt-secret.sh**
+  - 用途：为生产环境自动生成强随机JWT密钥并写入 `.env.production`。
+  - 用法：
+    ```bash
+    cd backend/scripts
+    chmod +x gen-jwt-secret.sh
+    ./gen-jwt-secret.sh
+    ```
+  - 场景：首次部署、密钥轮换、提升安全性。
+
+### 3. 开发环境JWT密钥自动生成
+
+- **scripts/gen-jwt-secret-dev.sh**
+  - 用途：为开发环境自动生成强随机JWT密钥并写入 `.env.development`。
+  - 用法：
+    ```bash
+    cd backend/scripts
+    chmod +x gen-jwt-secret-dev.sh
+    ./gen-jwt-secret-dev.sh
+    ```
+  - 场景：本地开发、多人协作时快速生成安全密钥。
+
+### 4. 数据库设置脚本
+
+- **scripts/setup-database.sh**
+  - 用途：一键设置数据库环境，包括环境切换、密钥生成、迁移和种子数据。
+  - 用法：
+    ```bash
+    cd backend/scripts
+    chmod +x setup-database.sh
+    ./setup-database.sh sqlite reset    # SQLite环境，重置数据库
+    ./setup-database.sh postgres seed   # PostgreSQL环境，只填充种子数据
+    ```
+  - 场景：快速初始化开发环境、切换数据库类型。
+
+## 🗄️ 统一数据库架构
+
+### 概述
+
+项目采用统一的数据库抽象层，支持 SQLite3（开发）和 PostgreSQL（生产），应用代码无需区分数据库类型。
+
+### 核心组件
+
+1. **DatabaseManager** (`src/database/index.js`)
+   - 根据 `DB_CLIENT` 环境变量自动选择数据库类型
+   - 管理数据库连接和初始化
+
+2. **DatabaseInterface** (`src/database/index.js`)
+   - 提供统一的数据库操作接口
+   - 自动处理参数占位符转换
+
+3. **DatabaseAdapter** (`src/database/adapter.js`)
+   - 处理 SQLite 和 PostgreSQL 之间的语法差异
+   - 自动转换参数占位符（`?` ↔ `$1, $2, $3`）
+
+### 使用方法
+
+#### 在路由中使用
+
+```javascript
+const { db } = require('../database');
+
+// 查询数据
+const products = await db.query('SELECT * FROM products WHERE category_id = $1', [categoryId]);
+
+// 执行操作
+const result = await db.execute('INSERT INTO products (name, price) VALUES ($1, $2)', [name, price]);
+
+// 获取单条记录
+const product = await db.get('SELECT * FROM products WHERE id = $1', [productId]);
+
+// 事务处理
+await db.transaction(async () => {
+  await db.execute('UPDATE inventory SET stock = stock - 1 WHERE product_id = $1', [productId]);
+  await db.execute('INSERT INTO orders (product_id, quantity) VALUES ($1, $2)', [productId, 1]);
+});
+```
+
+#### 环境配置
+
+**开发环境（SQLite）**：
+```env
+DB_CLIENT=sqlite3
+DB_NAME=./database.sqlite
+```
+
+**生产环境（PostgreSQL）**：
+```env
+DB_CLIENT=pg
+DB_HOST=your_postgres_host
+DB_PORT=5432
+DB_USER=eshop
+DB_PASSWORD=your_password
+DB_NAME=eshop
+```
+
+### 优势
+
+1. **代码统一**：应用代码无需关心底层数据库类型
+2. **自动适配**：自动处理不同数据库的语法差异
+3. **环境隔离**：开发用 SQLite，生产用 PostgreSQL
+4. **易于维护**：统一的接口，减少代码重复

@@ -1,5 +1,5 @@
 const express = require('express');
-const { postgresDatabase } = require('../database/init-postgres');
+const { database } = require('../database');
 const { generateOrderNumber } = require('../utils/auth');
 const { authenticateUser, authenticateAdmin, optionalAuth } = require('../middleware/auth');
 const {
@@ -27,7 +27,7 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
   const userId = req.user ? req.user.id : null;
 
   try {
-    await postgresDatabase.beginTransaction();
+    await database.beginTransaction();
 
     // Get cart items if not provided
     let orderItems = cartItems;
@@ -36,10 +36,10 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
         ? 'SELECT ci.*, p.name, p.price, p.stock FROM cart_items ci JOIN products p ON ci.product_id = p.id WHERE ci.user_id = $1'
         : 'SELECT ci.*, p.name, p.price, p.stock FROM cart_items ci JOIN products p ON ci.product_id = p.id WHERE ci.session_id = $1';
 
-      const cartData = await postgresDatabase.query(cartQuery, [userId || sessionId]);
+      const cartData = await database.query(cartQuery, [userId || sessionId]);
 
       if (cartData.length === 0) {
-        await postgresDatabase.rollback();
+        await database.rollback();
         return res.status(400).json({ error: 'Cart is empty' });
       }
 
@@ -53,20 +53,20 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
 
     // Validate stock availability
     for (const item of orderItems) {
-      const product = await postgresDatabase.get(
+      const product = await database.get(
         'SELECT stock, status FROM products WHERE id = $1',
         [item.productId]
       );
 
       if (!product || product.status !== 'active') {
-        await postgresDatabase.rollback();
+        await database.rollback();
         return res.status(400).json({
           error: `Product ${item.name} is no longer available`
         });
       }
 
       if (product.stock < item.quantity) {
-        await postgresDatabase.rollback();
+        await database.rollback();
         return res.status(400).json({
           error: `Insufficient stock for ${item.name}. Available: ${product.stock}`
         });
@@ -84,15 +84,15 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
     const orderNumber = generateOrderNumber();
 
     // Create order
-    const orderResult = await postgresDatabase.execute(`
+    const orderResult = await database.execute(`
       INSERT INTO orders (
-        order_number, user_id, email, phone, status, payment_status, payment_method,
+        order_number, user_id, email, phone, status, payment_status, payment_method, payment_id,
         billing_first_name, billing_last_name, billing_company, billing_address_line_1,
         billing_address_line_2, billing_city, billing_state, billing_postal_code, billing_country,
         shipping_first_name, shipping_last_name, shipping_company, shipping_address_line_1,
         shipping_address_line_2, shipping_city, shipping_state, shipping_postal_code, shipping_country,
-        subtotal, tax_amount, shipping_amount, total
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
+        subtotal, tax_amount, shipping_amount, discount_amount, total, notes, tracking_number, shipped_at, delivered_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35)
     `, [
       orderNumber,
       userId,
@@ -101,6 +101,7 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
       'pending',
       'pending',
       paymentMethod,
+      null, // payment_id
       billingAddress.firstName,
       billingAddress.lastName,
       billingAddress.company || null,
@@ -122,7 +123,12 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
       subtotal,
       taxAmount,
       shippingAmount,
-      total
+      0, // discount_amount
+      total,
+      null, // notes
+      null, // tracking_number
+      null, // shipped_at
+      null  // delivered_at
     ]);
 
     const orderId = orderResult.id;
@@ -130,7 +136,7 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
     // Create order items and update product stock
     for (const item of orderItems) {
       // Add order item
-      await postgresDatabase.execute(`
+      await database.execute(`
         INSERT INTO order_items (order_id, product_id, product_name, quantity, price, total)
         VALUES ($1, $2, $3, $4, $5, $6)
       `, [
@@ -143,7 +149,7 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
       ]);
 
       // Update product stock and sales count
-      await postgresDatabase.execute(`
+      await database.execute(`
         UPDATE products
         SET stock = stock - $1, sales_count = sales_count + $2, updated_at = CURRENT_TIMESTAMP
         WHERE id = $3
@@ -152,16 +158,16 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
 
     // Clear cart
     if (userId) {
-      await postgresDatabase.execute('DELETE FROM cart_items WHERE user_id = $1', [userId]);
+      await database.execute('DELETE FROM cart_items WHERE user_id = $1', [userId]);
     } else if (sessionId) {
-      await postgresDatabase.execute('DELETE FROM cart_items WHERE session_id = $1', [sessionId]);
+      await database.execute('DELETE FROM cart_items WHERE session_id = $1', [sessionId]);
     }
 
-    await postgresDatabase.commit();
+    await database.commit();
 
     // Get created order with items
-    const order = await postgresDatabase.get('SELECT * FROM orders WHERE id = $1', [orderId]);
-    const items = await postgresDatabase.query(`
+    const order = await database.get('SELECT * FROM orders WHERE id = $1', [orderId]);
+    const items = await database.query(`
       SELECT oi.*, p.featured_image
       FROM order_items oi
       LEFT JOIN products p ON oi.product_id = p.id
@@ -185,7 +191,7 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
     });
 
   } catch (error) {
-    await postgresDatabase.rollback();
+    await database.rollback();
     throw error;
   }
 });
@@ -196,21 +202,21 @@ router.get('/my-orders', authenticateUser, paginationValidation, async (req, res
   const offset = (page - 1) * limit;
   const userId = req.user.id;
 
-  const orders = await postgresDatabase.query(`
+  const orders = await database.query(`
     SELECT * FROM orders
     WHERE user_id = $1
     ORDER BY created_at DESC
     LIMIT $2 OFFSET $3
   `, [userId, parseInt(limit), offset]);
 
-  const [{ total }] = await postgresDatabase.query(
+  const [{ total }] = await database.query(
     'SELECT COUNT(*) as total FROM orders WHERE user_id = $1',
     [userId]
   );
 
   // Get order items for each order
   for (const order of orders) {
-    const items = await postgresDatabase.query(`
+    const items = await database.query(`
       SELECT oi.*, p.featured_image
       FROM order_items oi
       LEFT JOIN products p ON oi.product_id = p.id
@@ -283,14 +289,14 @@ router.get('/', paginationValidation, async (req, res) => {
   const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
   const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
-  const orders = await postgresDatabase.query(`
+  const orders = await database.query(`
     SELECT * FROM orders
     ${whereClause}
     ORDER BY ${sortColumn} ${sortDirection}
     LIMIT $1 OFFSET $2
   `, [...params, parseInt(limit), offset]);
 
-  const [{ total }] = await postgresDatabase.query(`
+  const [{ total }] = await database.query(`
     SELECT COUNT(*) as total FROM orders ${whereClause}
   `, params);
 
@@ -300,7 +306,7 @@ router.get('/', paginationValidation, async (req, res) => {
     order.items = [];
     
     try {
-      const items = await postgresDatabase.query(`
+      const items = await database.query(`
         SELECT oi.*, p.featured_image
         FROM order_items oi
         LEFT JOIN products p ON oi.product_id = p.id
@@ -379,14 +385,14 @@ router.get('/authenticated', authenticateAdmin, paginationValidation, async (req
   const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
   const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
-  const orders = await postgresDatabase.query(`
+  const orders = await database.query(`
     SELECT * FROM orders
     ${whereClause}
     ORDER BY ${sortColumn} ${sortDirection}
     LIMIT $1 OFFSET $2
   `, [...params, parseInt(limit), offset]);
 
-  const [{ total }] = await postgresDatabase.query(`
+  const [{ total }] = await database.query(`
     SELECT COUNT(*) as total FROM orders ${whereClause}
   `, params);
 
@@ -396,7 +402,7 @@ router.get('/authenticated', authenticateAdmin, paginationValidation, async (req
     order.items = [];
     
     try {
-      const items = await postgresDatabase.query(`
+      const items = await database.query(`
         SELECT oi.*, p.featured_image
         FROM order_items oi
         LEFT JOIN products p ON oi.product_id = p.id
@@ -444,7 +450,7 @@ router.get('/:id', idValidation, async (req, res) => {
     params.push(req.user.id);
   }
 
-  const order = await postgresDatabase.get(`
+  const order = await database.get(`
     SELECT o.* FROM orders o ${whereClause}
   `, params);
 
@@ -453,7 +459,7 @@ router.get('/:id', idValidation, async (req, res) => {
   }
 
   // Get order items
-  const items = await postgresDatabase.query(`
+  const items = await database.query(`
     SELECT oi.*, p.featured_image
     FROM order_items oi
     LEFT JOIN products p ON oi.product_id = p.id
@@ -481,7 +487,7 @@ router.put('/:id/status', authenticateAdmin, updateOrderStatusValidation, async 
   const orderId = req.params.id;
   const { status, trackingNumber, notes } = req.body;
 
-  const order = await postgresDatabase.get('SELECT * FROM orders WHERE id = $1', [orderId]);
+  const order = await database.get('SELECT * FROM orders WHERE id = $1', [orderId]);
   if (!order) {
     throw new NotFoundError('Order not found');
   }
@@ -508,12 +514,12 @@ router.put('/:id/status', authenticateAdmin, updateOrderStatusValidation, async 
 
   params.push(orderId);
 
-  await postgresDatabase.execute(
+  await database.execute(
     `UPDATE orders SET ${updates.join(', ')} WHERE id = $1`,
     params
   );
 
-  const updatedOrder = await postgresDatabase.get('SELECT * FROM orders WHERE id = $1', [orderId]);
+  const updatedOrder = await database.get('SELECT * FROM orders WHERE id = $1', [orderId]);
 
   res.json({
     message: 'Order status updated successfully',
@@ -521,11 +527,41 @@ router.put('/:id/status', authenticateAdmin, updateOrderStatusValidation, async 
   });
 });
 
+// Admin: Delete order
+router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
+  const orderId = req.params.id;
+
+  const order = await database.get('SELECT * FROM orders WHERE id = $1', [orderId]);
+  if (!order) {
+    throw new NotFoundError('Order not found');
+  }
+
+  // Start transaction
+  const client = await database.beginTransaction();
+  
+  try {
+    // Delete order items first (foreign key constraint)
+    await database.execute('DELETE FROM order_items WHERE order_id = $1', [orderId]);
+    
+    // Delete the order
+    await database.execute('DELETE FROM orders WHERE id = $1', [orderId]);
+    
+    await database.commit(client);
+    
+    res.json({
+      message: 'Order deleted successfully'
+    });
+  } catch (error) {
+    await database.rollback(client);
+    throw error;
+  }
+});
+
 // Admin: Get order statistics
 router.get('/admin/statistics', authenticateAdmin, async (req, res) => {
   const { period = '30' } = req.query; // days
 
-  const stats = await postgresDatabase.get(`
+  const stats = await database.get(`
     SELECT
       COUNT(*) as total_orders,
       COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders,
@@ -539,7 +575,7 @@ router.get('/admin/statistics', authenticateAdmin, async (req, res) => {
     WHERE created_at >= datetime('now', '-${period} days')
   `);
 
-  const dailyStats = await postgresDatabase.query(`
+  const dailyStats = await database.query(`
     SELECT
       DATE(created_at) as date,
       COUNT(*) as orders_count,

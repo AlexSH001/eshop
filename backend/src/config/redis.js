@@ -1,6 +1,9 @@
 const Redis = require('ioredis');
 require('dotenv').config();
 
+// Redis配置依赖以下环境变量：
+// REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_DB, REDIS_TLS
+// 请在.env文件中正确配置上述参数。
 const redis = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: process.env.REDIS_PORT || 6379,

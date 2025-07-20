@@ -63,7 +63,18 @@ export default function AdminCategoriesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('http://localhost:3001/api/categories');
+      const adminToken = localStorage.getItem('admin_token');
+      if (!adminToken) {
+        throw new Error('No admin token found');
+      }
+
+      const res = await fetch('http://localhost:3001/api/categories/admin/list', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
       if (!res.ok) throw new Error('Failed to fetch categories');
       const data = await res.json();
       setCategories(data.categories);
@@ -82,9 +93,17 @@ export default function AdminCategoriesPage() {
     setLoading(true);
     setError(null);
     try {
+      const adminToken = localStorage.getItem('admin_token');
+      if (!adminToken) {
+        throw new Error('No admin token found');
+      }
+
       const res = await fetch('http://localhost:3001/api/categories', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json' 
+        },
         credentials: 'include',
         body: JSON.stringify(formData)
       });
@@ -106,9 +125,17 @@ export default function AdminCategoriesPage() {
     setLoading(true);
     setError(null);
     try {
+      const adminToken = localStorage.getItem('admin_token');
+      if (!adminToken) {
+        throw new Error('No admin token found');
+      }
+
       const res = await fetch(`http://localhost:3001/api/categories/${editingCategory.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json' 
+        },
         credentials: 'include',
         body: JSON.stringify(formData)
       });
@@ -130,8 +157,16 @@ export default function AdminCategoriesPage() {
     setLoading(true);
     setError(null);
     try {
+      const adminToken = localStorage.getItem('admin_token');
+      if (!adminToken) {
+        throw new Error('No admin token found');
+      }
+
       const res = await fetch(`http://localhost:3001/api/categories/${deletingCategory.id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        },
         credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to delete category');

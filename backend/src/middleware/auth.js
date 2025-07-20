@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { postgresDatabase } = require('../database/init-postgres');
+const { database } = require('../database');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -50,8 +50,8 @@ const authenticateUser = async (req, res, next) => {
     const decoded = verifyAccessToken(token);
 
     // Verify user still exists and is active
-    const user = await postgresDatabase.get(
-      'SELECT id, email, first_name, last_name, phone, avatar, is_active FROM users WHERE id = $1 AND is_active = TRUE',
+    const user = await database.get(
+      'SELECT id, email, first_name, last_name, phone, avatar, is_active FROM users WHERE id = ? AND is_active = TRUE',
       [decoded.userId]
     );
 
@@ -87,8 +87,8 @@ const authenticateAdmin = async (req, res, next) => {
     const decoded = verifyAccessToken(token);
 
     // Verify admin exists and is active
-    const admin = await postgresDatabase.get(
-      'SELECT id, email, name, role, avatar, is_active FROM admins WHERE id = $1 AND is_active = TRUE',
+    const admin = await database.get(
+      'SELECT id, email, name, role, avatar, is_active FROM admins WHERE id = ? AND is_active = TRUE',
       [decoded.adminId]
     );
 
@@ -130,8 +130,8 @@ const optionalAuth = async (req, res, next) => {
     }
 
     const decoded = verifyAccessToken(token);
-    const user = await postgresDatabase.get(
-      'SELECT id, email, first_name, last_name, phone, avatar, is_active FROM users WHERE id = $1 AND is_active = TRUE',
+    const user = await database.get(
+      'SELECT id, email, first_name, last_name, phone, avatar, is_active FROM users WHERE id = ? AND is_active = TRUE',
       [decoded.userId]
     );
 

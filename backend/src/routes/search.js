@@ -1,5 +1,5 @@
 const express = require('express');
-const { postgresDatabase } = require('../database/init-postgres');
+const { database } = require('../database');
 const { optionalAuth } = require('../middleware/auth');
 const { searchValidation } = require('../middleware/validation');
 
@@ -24,7 +24,7 @@ router.get('/', optionalAuth, searchValidation, async (req, res) => {
   // Log search if user is authenticated or has session
   const sessionId = req.headers['x-session-id'];
   if (userId || sessionId) {
-    await postgresDatabase.execute(
+    await database.execute(
       'INSERT INTO search_history (user_id, session_id, search_term) VALUES ($1, $2, $3)',
       [userId, sessionId || null, query]
     ).catch(() => {}); // Ignore errors for search logging
@@ -114,7 +114,7 @@ router.get('/', optionalAuth, searchValidation, async (req, res) => {
     LIMIT $14 OFFSET $15
   `;
 
-  const products = await postgresDatabase.query(searchQuery, [...params, parseInt(limit), offset]);
+  const products = await database.query(searchQuery, [...params, parseInt(limit), offset]);
 
   // Get total count
   const countQuery = `
@@ -124,11 +124,11 @@ router.get('/', optionalAuth, searchValidation, async (req, res) => {
     ${whereClause}
   `;
   const countParams = params.slice(0, sortBy === 'relevance' ? params.length - 5 : params.length);
-  const [{ total }] = await postgresDatabase.query(countQuery, countParams);
+  const [{ total }] = await database.query(countQuery, countParams);
 
   // Update results count in search history
   if (userId || sessionId) {
-    await postgresDatabase.execute(
+    await database.execute(
       `UPDATE search_history
        SET results_count = $16
        WHERE (user_id = $17 OR session_id = $18) AND search_term = $19
@@ -172,7 +172,7 @@ router.get('/suggestions', optionalAuth, async (req, res) => {
   const searchTerm = `%${query}%`;
 
   // Get product name suggestions
-  const productSuggestions = await postgresDatabase.query(`
+  const productSuggestions = await database.query(`
     SELECT DISTINCT name
     FROM products
     WHERE name LIKE $1 AND status = 'active'
@@ -181,7 +181,7 @@ router.get('/suggestions', optionalAuth, async (req, res) => {
   `, [searchTerm, Math.floor(limit * 0.7)]);
 
   // Get category suggestions
-  const categorySuggestions = await postgresDatabase.query(`
+  const categorySuggestions = await database.query(`
     SELECT DISTINCT name
     FROM categories
     WHERE name LIKE $1 AND is_active = TRUE
@@ -201,7 +201,7 @@ router.get('/suggestions', optionalAuth, async (req, res) => {
 router.get('/popular', async (req, res) => {
   const { limit = 10 } = req.query;
 
-  const popularSearches = await postgresDatabase.query(`
+  const popularSearches = await database.query(`
     SELECT
       search_term,
       COUNT(*) as search_count,
@@ -233,7 +233,7 @@ router.get('/recent', optionalAuth, async (req, res) => {
     return res.json({ recent: [] });
   }
 
-  const recentSearches = await postgresDatabase.query(`
+  const recentSearches = await database.query(`
     SELECT DISTINCT search_term, MAX(created_at) as last_searched
     FROM search_history
     WHERE (user_id = $1 OR session_id = $2)
@@ -259,7 +259,7 @@ router.delete('/history', optionalAuth, async (req, res) => {
     return res.status(400).json({ error: 'No search history to clear' });
   }
 
-  await postgresDatabase.execute(
+  await database.execute(
     'DELETE FROM search_history WHERE user_id = $1 OR session_id = $2',
     [userId, sessionId || null]
   );
@@ -297,7 +297,7 @@ router.get('/category/:categoryId', optionalAuth, async (req, res) => {
     orderClause = 'ORDER BY p.created_at DESC';
   }
 
-  const products = await postgresDatabase.query(`
+  const products = await database.query(`
     SELECT
       p.*,
       c.name as category_name,
@@ -311,7 +311,7 @@ router.get('/category/:categoryId', optionalAuth, async (req, res) => {
     LIMIT $10 OFFSET $11
   `, [...params, parseInt(limit), offset]);
 
-  const [{ total }] = await postgresDatabase.query(`
+  const [{ total }] = await database.query(`
     SELECT COUNT(*) as total
     FROM products p
     WHERE p.category_id = $1
@@ -343,7 +343,7 @@ router.get('/category/:categoryId', optionalAuth, async (req, res) => {
 async function getAvailableCategories(query) {
   const searchTerm = `%${query}%`;
 
-  return await postgresDatabase.query(`
+  return await database.query(`
     SELECT DISTINCT c.id, c.name, COUNT(p.id) as product_count
     FROM categories c
     JOIN products p ON c.id = p.category_id
@@ -357,7 +357,7 @@ async function getAvailableCategories(query) {
 async function getPriceRange(query) {
   const searchTerm = `%${query}%`;
 
-  const [result] = await postgresDatabase.query(`
+  const [result] = await database.query(`
     SELECT
       MIN(price) as min_price,
       MAX(price) as max_price

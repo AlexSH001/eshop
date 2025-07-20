@@ -20,25 +20,106 @@ import {
   DollarSign,
   ShoppingBag
 } from "lucide-react";
-import { useCart } from "@/contexts/CartContext";
+import { useCart, type CartItem } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export default function CheckoutPage() {
   const { state, clearCart } = useCart();
-  const [selectedPayment, setSelectedPayment] = useState("credit-card");
+  const { isAuthenticated, user } = useAuth();
+  const [selectedPayment, setSelectedPayment] = useState("credit_card");
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleSubmitOrder = async () => {
     setIsProcessing(true);
 
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Get form data
+      const email = (document.getElementById('email') as HTMLInputElement)?.value;
+      const phone = (document.getElementById('phone') as HTMLInputElement)?.value;
+      const firstName = (document.getElementById('firstName') as HTMLInputElement)?.value;
+      const lastName = (document.getElementById('lastName') as HTMLInputElement)?.value;
+      const address = (document.getElementById('address') as HTMLInputElement)?.value;
+      const city = (document.getElementById('city') as HTMLInputElement)?.value;
+      const stateValue = (document.getElementById('state') as HTMLInputElement)?.value;
+      const zipCode = (document.getElementById('zipCode') as HTMLInputElement)?.value;
 
-    toast.success("Order placed successfully! You will receive a confirmation email shortly.");
-    clearCart();
-    setIsProcessing(false);
+      // Validate required fields
+      if (!email || !firstName || !lastName || !address || !city || !stateValue || !zipCode) {
+        toast.error("Please fill in all required fields");
+        setIsProcessing(false);
+        return;
+      }
+
+      // Prepare order data
+      const orderData = {
+        email,
+        phone: phone || null,
+        paymentMethod: selectedPayment,
+        billingAddress: {
+          firstName,
+          lastName,
+          addressLine1: address,
+          city,
+          state: stateValue,
+          postalCode: zipCode,
+          country: 'US'
+        },
+        shippingAddress: {
+          firstName,
+          lastName,
+          addressLine1: address,
+          city,
+          state: stateValue,
+          postalCode: zipCode,
+          country: 'US'
+        },
+        cartItems: state.items.map((item: CartItem) => ({
+          productId: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price
+        }))
+      };
+
+      // Create order
+      const authToken = localStorage.getItem('auth_token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
+      const response = await fetch('http://localhost:3001/api/orders', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify(orderData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create order');
+      }
+
+      const orderResult = await response.json();
+      
+      toast.success("Order placed successfully! You will receive a confirmation email shortly.");
+      clearCart();
+      
+      // Redirect to orders page or show order confirmation
+      window.location.href = '/orders';
+      
+    } catch (error) {
+      console.error('Order creation error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to create order');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (state.items.length === 0) {
@@ -211,13 +292,13 @@ export default function CheckoutPage() {
                 <CardContent>
                   <Tabs value={selectedPayment} onValueChange={setSelectedPayment}>
                     <TabsList className="grid w-full grid-cols-4">
-                      <TabsTrigger value="credit-card" className="text-xs">
+                      <TabsTrigger value="credit_card" className="text-xs">
                         Card
                       </TabsTrigger>
                       <TabsTrigger value="alipay" className="text-xs">
                         Alipay
                       </TabsTrigger>
-                      <TabsTrigger value="wechat" className="text-xs">
+                      <TabsTrigger value="wechat_pay" className="text-xs">
                         WeChat
                       </TabsTrigger>
                       <TabsTrigger value="paypal" className="text-xs">
@@ -225,7 +306,7 @@ export default function CheckoutPage() {
                       </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="credit-card" className="mt-6 space-y-4">
+                    <TabsContent value="credit_card" className="mt-6 space-y-4">
                       <div>
                         <Label htmlFor="cardNumber">Card Number</Label>
                         <Input id="cardNumber" placeholder="1234 5678 9012 3456" />
@@ -259,7 +340,7 @@ export default function CheckoutPage() {
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="wechat" className="mt-6">
+                    <TabsContent value="wechat_pay" className="mt-6">
                       <div className="rounded-lg border border-gray-200 p-6 text-center">
                         <Wallet className="mx-auto mb-4 h-12 w-12 text-green-600" />
                         <h3 className="mb-2 text-lg font-semibold">Pay with WeChat Pay</h3>
@@ -310,7 +391,7 @@ export default function CheckoutPage() {
                   </div>
 
                   <Button
-                    className="mt-6 w-full bg-black hover:bg-gray-800"
+                    className="mt-6 w-full bg-gray-50 hover:bg-gray-800"
                     onClick={handleSubmitOrder}
                     disabled={isProcessing}
                     size="lg"

@@ -1,5 +1,5 @@
 const express = require('express');
-const { postgresDatabase } = require('../database/init-postgres');
+const { db } = require('../database');
 const { generateSlug, generateSKU } = require('../utils/auth');
 const { authenticateAdmin, optionalAuth } = require('../middleware/auth');
 const {
@@ -74,7 +74,7 @@ router.get('/', paginationValidation, async (req, res) => {
   const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
   const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
-  // Get products with proper PostgreSQL parameterization
+  // Get products with proper parameterization
   let query = `
     SELECT
       p.*,
@@ -102,7 +102,7 @@ router.get('/', paginationValidation, async (req, res) => {
   
   query += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
 
-  const products = await postgresDatabase.query(query, [...params, parseInt(limit), offset]);
+  const products = await db.query(query, [...params, parseInt(limit), offset]);
 
   // Get total count
   const countQuery = `
@@ -111,7 +111,7 @@ router.get('/', paginationValidation, async (req, res) => {
     LEFT JOIN categories c ON p.category_id = c.id
     ${whereClause}
   `;
-  const [{ total }] = await postgresDatabase.query(countQuery, params);
+  const [{ total }] = await db.query(countQuery, params);
 
   // Format product data
   const formattedProducts = products.map(product => ({
@@ -138,12 +138,12 @@ router.get('/:id', idValidation, optionalAuth, async (req, res) => {
   const productId = req.params.id;
 
   // Increment view count
-  await postgresDatabase.execute(
+  await db.execute(
     'UPDATE products SET view_count = view_count + 1 WHERE id = $1',
     [productId]
   );
 
-  const product = await postgresDatabase.get(`
+  const product = await db.get(`
     SELECT
       p.*,
       c.name as category_name,
@@ -171,7 +171,7 @@ router.get('/:id', idValidation, optionalAuth, async (req, res) => {
   };
 
   // Get related products
-  const relatedProducts = await postgresDatabase.query(`
+  const relatedProducts = await db.query(`
     SELECT id, name, price, original_price, featured_image, category_id
     FROM products
     WHERE category_id = $1 AND id != $2 AND status = 'active'
@@ -225,9 +225,9 @@ router.get('/category/:categoryId', paginationValidation, async (req, res) => {
   
   query += ` LIMIT $2 OFFSET $3`;
 
-  const products = await postgresDatabase.query(query, [categoryId, parseInt(limit), offset]);
+  const products = await db.query(query, [categoryId, parseInt(limit), offset]);
 
-  const [{ total }] = await postgresDatabase.query(
+  const [{ total }] = await db.query(
     'SELECT COUNT(*) as total FROM products WHERE category_id = $1 AND status = \'active\'',
     [categoryId]
   );
@@ -255,7 +255,7 @@ router.get('/category/:categoryId', paginationValidation, async (req, res) => {
 router.get('/featured/list', async (req, res) => {
   const { limit = 8 } = req.query;
 
-  const products = await postgresDatabase.query(`
+  const products = await db.query(`
     SELECT
       p.*,
       c.name as category_name,
@@ -311,7 +311,7 @@ router.post('/', createProductValidation, async (req, res) => {
   const slug = generateSlug(name);
 
   // Get category name for SKU generation
-  const category = await postgresDatabase.get('SELECT name FROM categories WHERE id = $1', [finalCategoryId]);
+  const category = await db.get('SELECT name FROM categories WHERE id = $1', [finalCategoryId]);
   if (!category) {
     throw new NotFoundError('Category not found');
   }
@@ -319,7 +319,7 @@ router.post('/', createProductValidation, async (req, res) => {
   const sku = generateSKU(category.name, name);
 
   // Create product
-  const result = await postgresDatabase.execute(`
+  const result = await db.execute(`
     INSERT INTO products (
       name, slug, description, short_description, sku, price, original_price,
       category_id, stock, weight, dimensions, images, featured_image, tags,
@@ -350,7 +350,7 @@ router.post('/', createProductValidation, async (req, res) => {
     shipping
   ]);
 
-  const product = await postgresDatabase.get('SELECT * FROM products WHERE id = $1', [result.rows[0].id]);
+  const product = await db.get('SELECT * FROM products WHERE id = $1', [result.rows[0].id]);
 
   res.status(201).json({
     message: 'Product created successfully',
@@ -394,7 +394,7 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
   const slug = generateSlug(name);
 
   // Get category name for SKU generation
-  const category = await database.get('SELECT name FROM categories WHERE id = ?', [categoryId]);
+  const category = await db.get('SELECT name FROM categories WHERE id = $1', [categoryId]);
   if (!category) {
     throw new NotFoundError('Category not found');
   }
@@ -402,13 +402,13 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
   const sku = generateSKU(category.name, name);
 
   // Create product
-  const result = await database.execute(`
+  const result = await db.execute(`
     INSERT INTO products (
       name, slug, description, short_description, sku, price, original_price,
       category_id, stock, weight, dimensions, images, featured_image, tags,
       attributes, status, is_featured, meta_title, meta_description,
       specifications, shipping
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
   `, [
     name,
     slug,
@@ -433,7 +433,7 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
     shipping
   ]);
 
-  const product = await database.get('SELECT * FROM products WHERE id = ?', [result.id]);
+  const product = await db.get('SELECT * FROM products WHERE id = $1', [result.rows[0].id]);
 
   res.status(201).json({
     message: 'Product created successfully',
@@ -454,7 +454,7 @@ router.put('/:id', updateProductValidation, async (req, res) => {
   const productId = req.params.id;
 
   // Check if product exists
-  const existingProduct = await database.get('SELECT * FROM products WHERE id = ?', [productId]);
+  const existingProduct = await db.get('SELECT * FROM products WHERE id = $1', [productId]);
   if (!existingProduct) {
     throw new NotFoundError('Product not found');
   }
@@ -476,16 +476,16 @@ router.put('/:id', updateProductValidation, async (req, res) => {
   for (const field of allowedFields) {
     if (req.body[field] !== undefined) {
       if (['dimensions', 'images', 'tags', 'attributes'].includes(field)) {
-        updates.push(`${field} = ?`);
+        updates.push(`${field} = $${params.length + 1}`);
         params.push(JSON.stringify(req.body[field]));
       } else if (field === 'specifications' && req.body[field] !== undefined) {
-        updates.push(`${field} = ?`);
+        updates.push(`${field} = $${params.length + 1}`);
         params.push(JSON.stringify(req.body[field]));
       } else if (field === 'shipping' && req.body[field] !== undefined) {
-        updates.push(`${field} = ?`);
+        updates.push(`${field} = $${params.length + 1}`);
         params.push(req.body[field]);
       } else {
-        updates.push(`${field} = ?`);
+        updates.push(`${field} = $${params.length + 1}`);
         params.push(req.body[field]);
       }
     }
@@ -493,13 +493,13 @@ router.put('/:id', updateProductValidation, async (req, res) => {
 
   // Handle category update separately
   if (categoryId !== undefined) {
-    updates.push('category_id = ?');
+    updates.push('category_id = $' + (params.length + 1));
     params.push(categoryId);
   }
 
   // Update slug if name changed
   if (req.body.name) {
-    updates.push('slug = ?');
+    updates.push('slug = $' + (params.length + 1));
     params.push(generateSlug(req.body.name));
   }
 
@@ -510,12 +510,12 @@ router.put('/:id', updateProductValidation, async (req, res) => {
   updates.push('updated_at = CURRENT_TIMESTAMP');
   params.push(productId);
 
-  await database.execute(
-    `UPDATE products SET ${updates.join(', ')} WHERE id = ?`,
-    params
+  await db.execute(
+    `UPDATE products SET ${updates.join(', ')} WHERE id = $${params.length + 1}`,
+    [...params, productId]
   );
 
-  const updatedProduct = await database.get('SELECT * FROM products WHERE id = ?', [productId]);
+  const updatedProduct = await db.get('SELECT * FROM products WHERE id = $1', [productId]);
 
   res.json({
     message: 'Product updated successfully',
@@ -535,12 +535,12 @@ router.put('/:id', updateProductValidation, async (req, res) => {
 router.delete('/:id', idValidation, async (req, res) => {
   const productId = req.params.id;
 
-  const product = await database.get('SELECT id FROM products WHERE id = ?', [productId]);
+  const product = await db.get('SELECT id FROM products WHERE id = $1', [productId]);
   if (!product) {
     throw new NotFoundError('Product not found');
   }
 
-  await database.execute('DELETE FROM products WHERE id = ?', [productId]);
+  await db.execute('DELETE FROM products WHERE id = $1', [productId]);
 
   res.json({
     message: 'Product deleted successfully'
@@ -549,7 +549,7 @@ router.delete('/:id', idValidation, async (req, res) => {
 
 // Get categories
 router.get('/categories/list', async (req, res) => {
-  const categories = await database.query(`
+  const categories = await db.query(`
     SELECT * FROM categories
     WHERE is_active = TRUE
     ORDER BY sort_order ASC, name ASC
