@@ -334,10 +334,12 @@ export default function OrdersPage() {
                             )}
                           </div>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </Button>
+                            <Link href={`/orders/${order.id}`}>
+                              <Button variant="outline" size="sm">
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </Button>
+                            </Link>
                             {order.status === 'delivered' && (
                               <Button variant="outline" size="sm">
                                 <RotateCcw className="h-4 w-4 mr-2" />
