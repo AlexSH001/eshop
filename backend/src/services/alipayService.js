@@ -11,7 +11,7 @@ const alipaySdk = new AlipaySdk({
 });
 
 async function createOrder({ outTradeNo, totalAmount, subject, returnUrl, notifyUrl }) {
-  const result = await alipaySdk.exec('alipay.trade.page.pay', {
+  const result = await alipaySdk.pageExec('alipay.trade.page.pay', {
     notifyUrl,
     returnUrl,
     bizContent: {
@@ -20,7 +20,7 @@ async function createOrder({ outTradeNo, totalAmount, subject, returnUrl, notify
       totalAmount: totalAmount.toFixed(2),
       subject,
     },
-  }, { method: 'GET' });
+  });
   return result; // This is a URL to redirect the user to Alipay
 }
 

@@ -44,7 +44,9 @@
     "sqlite3": "^5.1.6",
     "uuid": "^9.0.1",
     "winston": "^3.17.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston-daily-rotate-file": "^5.0.0",
+    "@paypal/checkout-server-sdk": "^1.0.3",
+    "alipay-sdk": "^4.14.0"
   },
   "devDependencies": {
     "@types/pg": "^8.15.4",
