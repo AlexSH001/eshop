@@ -107,6 +107,7 @@ async function seedDatabase() {
         originalPrice: 129.99,
         category: 'Electronics',
         stock: 45,
+        status: 'active',
         images: ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500'],
         tags: ['wireless', 'bluetooth', 'headphones', 'audio'],
         isFeatured: true,
@@ -126,6 +127,7 @@ async function seedDatabase() {
         originalPrice: 799.99,
         category: 'Electronics',
         stock: 23,
+        status: 'active',
         images: ['https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500'],
         tags: ['smartphone', 'mobile', 'phone', 'tech'],
         isFeatured: true,
@@ -145,6 +147,7 @@ async function seedDatabase() {
         originalPrice: 1299.99,
         category: 'Electronics',
         stock: 12,
+        status: 'active',
         images: ['https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500'],
         tags: ['laptop', 'gaming', 'computer', 'tech'],
         specifications: {
@@ -163,6 +166,7 @@ async function seedDatabase() {
         originalPrice: 399.99,
         category: 'Electronics',
         stock: 67,
+        status: 'active',
         images: ['https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=500'],
         tags: ['smartwatch', 'fitness', 'health', 'wearable'],
         specifications: {
@@ -183,6 +187,7 @@ async function seedDatabase() {
         originalPrice: 39.99,
         category: 'Fashion',
         stock: 156,
+        status: 'active',
         images: ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500'],
         tags: ['t-shirt', 'cotton', 'casual', 'organic'],
         isFeatured: true,
@@ -202,6 +207,7 @@ async function seedDatabase() {
         originalPrice: 99.99,
         category: 'Fashion',
         stock: 89,
+        status: 'active',
         images: ['https://images.unsplash.com/photo-1542272604-787c3835535d?w=500'],
         tags: ['jeans', 'denim', 'pants', 'casual'],
         specifications: {
@@ -220,6 +226,7 @@ async function seedDatabase() {
         originalPrice: 159.99,
         category: 'Fashion',
         stock: 34,
+        status: 'active',
         images: ['https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500'],
         tags: ['sneakers', 'running', 'shoes', 'athletic'],
         specifications: {
@@ -240,6 +247,7 @@ async function seedDatabase() {
         originalPrice: 69.99,
         category: 'Home & Garden',
         stock: 78,
+        status: 'active',
         images: ['https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500'],
         tags: ['lamp', 'desk', 'lighting', 'office'],
         specifications: {
@@ -258,6 +266,7 @@ async function seedDatabase() {
         originalPrice: 219.99,
         category: 'Home & Garden',
         stock: 45,
+        status: 'active',
         images: ['https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=500'],
         tags: ['coffee', 'maker', 'kitchen', 'appliance'],
         specifications: {
@@ -278,6 +287,7 @@ async function seedDatabase() {
         originalPrice: 179.99,
         category: 'Gaming',
         stock: 56,
+        status: 'active',
         images: ['https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=500'],
         tags: ['keyboard', 'gaming', 'mechanical', 'rgb'],
         isFeatured: true,
@@ -297,9 +307,9 @@ async function seedDatabase() {
         originalPrice: 99.99,
         category: 'Gaming',
         stock: 0, // Out of stock for testing
+        status: 'inactive',
         images: ['https://images.unsplash.com/photo-1527814050087-3793815479db?w=500'],
         tags: ['mouse', 'gaming', 'precision', 'ergonomic'],
-        status: 'inactive',
         specifications: {
           brand: 'PrecisionPro',
           dpi: '2000',

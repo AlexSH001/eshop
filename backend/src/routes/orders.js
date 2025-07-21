@@ -9,6 +9,8 @@ const {
   paginationValidation
 } = require('../middleware/validation');
 const { NotFoundError } = require('../middleware/errorHandler');
+const paypalService = require('../services/paypalService');
+const alipayService = require('../services/alipayService');
 
 const router = express.Router();
 
@@ -597,6 +599,109 @@ router.get('/admin/statistics', authenticateAdmin, async (req, res) => {
       revenue: Math.round(day.revenue * 100) / 100
     }))
   });
+});
+
+// Initiate PayPal payment
+router.post('/:id/pay/paypal', optionalAuth, async (req, res) => {
+  const { id } = req.params;
+  const order = await database.get('SELECT * FROM orders WHERE id = $1', [id]);
+  if (!order) return res.status(404).json({ error: 'Order not found' });
+  if (order.payment_status !== 'pending') return res.status(400).json({ error: 'Order already paid or invalid status' });
+
+  const returnUrl = `${process.env.BASE_URL}/orders/paypal/callback?orderId=${id}`;
+  const cancelUrl = `${process.env.BASE_URL}/orders/${id}`;
+  try {
+    const paypalOrder = await paypalService.createOrder({
+      total: order.total,
+      currency: 'USD',
+      returnUrl,
+      cancelUrl,
+    });
+    const approvalUrl = paypalOrder.links.find(link => link.rel === 'approve').href;
+    res.json({ approvalUrl });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create PayPal order', details: err.message });
+  }
+});
+
+// PayPal callback (user returns after payment)
+router.get('/paypal/callback', async (req, res) => {
+  const { token, orderId } = req.query;
+  if (!token || !orderId) return res.status(400).send('Missing token or orderId');
+  try {
+    const capture = await paypalService.captureOrder(token);
+    // Update order payment status
+    await database.execute('UPDATE orders SET payment_status = $1, payment_id = $2 WHERE id = $3', [
+      'paid',
+      capture.id,
+      orderId,
+    ]);
+    // Redirect to order success page (customize as needed)
+    res.redirect(`${process.env.FRONTEND_URL}/orders/order-success?orderId=${orderId}`);
+  } catch (err) {
+    res.redirect(`${process.env.FRONTEND_URL}/orders/order-failed?orderId=${orderId}`);
+  }
+});
+
+// Initiate Alipay payment
+router.post('/:id/pay/alipay', optionalAuth, async (req, res) => {
+  const { id } = req.params;
+  const order = await database.get('SELECT * FROM orders WHERE id = $1', [id]);
+  if (!order) return res.status(404).json({ error: 'Order not found' });
+  if (order.payment_status !== 'pending') return res.status(400).json({ error: 'Order already paid or invalid status' });
+
+  const returnUrl = `${process.env.BASE_URL}/orders/alipay/callback?orderId=${id}`;
+  const notifyUrl = `${process.env.BASE_URL}/orders/alipay/notify`;
+  try {
+    const payUrl = await alipayService.createOrder({
+      outTradeNo: order.order_number,
+      totalAmount: order.total,
+      subject: `Order #${order.order_number}`,
+      returnUrl,
+      notifyUrl,
+    });
+    res.json({ payUrl });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create Alipay order', details: err.message });
+  }
+});
+
+// Alipay async notification (server-to-server)
+router.post('/alipay/notify', async (req, res) => {
+  const params = req.body;
+  if (alipayService.verifyCallback(params) && params.trade_status === 'TRADE_SUCCESS') {
+    // Find order by order_number
+    const order = await database.get('SELECT * FROM orders WHERE order_number = $1', [params.out_trade_no]);
+    if (order && order.payment_status === 'pending') {
+      await database.execute('UPDATE orders SET payment_status = $1, payment_id = $2 WHERE id = $3', [
+        'paid',
+        params.trade_no,
+        order.id,
+      ]);
+    }
+    res.send('success');
+  } else {
+    res.status(400).send('fail');
+  }
+});
+
+// Alipay return URL (user browser)
+router.get('/alipay/callback', async (req, res) => {
+  const params = req.query;
+  if (alipayService.verifyCallback(params) && params.trade_status === 'TRADE_SUCCESS') {
+    // Find order by order_number
+    const order = await database.get('SELECT * FROM orders WHERE order_number = $1', [params.out_trade_no]);
+    if (order && order.payment_status === 'pending') {
+      await database.execute('UPDATE orders SET payment_status = $1, payment_id = $2 WHERE id = $3', [
+        'paid',
+        params.trade_no,
+        order.id,
+      ]);
+    }
+    res.redirect(`${process.env.FRONTEND_URL}/orders/order-success?orderId=${order ? order.id : ''}`);
+  } else {
+    res.redirect(`${process.env.FRONTEND_URL}/orders/order-failed`);
+  }
 });
 
 module.exports = router;

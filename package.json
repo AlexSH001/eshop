@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@paypal/checkout-server-sdk": "^1.0.3",
+    "alipay-sdk": "^4.14.0"
+  }
+}

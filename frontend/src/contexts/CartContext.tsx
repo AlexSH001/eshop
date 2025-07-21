@@ -5,7 +5,8 @@ import { createContext, useContext, useReducer, useEffect, type ReactNode } from
 import { toast } from "sonner";
 
 export interface CartItem {
-  id: number;
+  id: number; // This is the cart item ID (from cart_items.id)
+  productId: number;
   name: string;
   price: number;
   originalPrice?: number;
@@ -21,7 +22,7 @@ interface CartState {
 }
 
 type CartAction =
-  | { type: 'ADD_ITEM'; payload: Omit<CartItem, 'quantity'> }
+  | { type: 'ADD_ITEM'; payload: CartItem }
   | { type: 'REMOVE_ITEM'; payload: number }
   | { type: 'UPDATE_QUANTITY'; payload: { id: number; quantity: number } }
   | { type: 'CLEAR_CART' }
@@ -30,12 +31,14 @@ type CartAction =
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case 'ADD_ITEM': {
-      const existingItem = state.items.find(item => item.id === action.payload.id);
+      const existingItem = state.items.find(item => item.productId === action.payload.productId);
 
       if (existingItem) {
+        // This case might be hit if the user clicks "add to cart" multiple times quickly
+        // The backend handles this by updating quantity, so we'll just update here too.
         const updatedItems = state.items.map(item =>
-          item.id === action.payload.id
-            ? { ...item, quantity: item.quantity + 1 }
+          item.id === existingItem.id
+            ? { ...item, quantity: action.payload.quantity } // Use quantity from backend response
             : item
         );
         const total = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -43,8 +46,8 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
         return { items: updatedItems, total, itemCount };
       }
-      const newItem = { ...action.payload, quantity: 1 };
-      const updatedItems = [...state.items, newItem];
+
+      const updatedItems = [...state.items, action.payload];
       const total = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const itemCount = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -82,10 +85,11 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
     case 'CLEAR_CART':
       return { items: [], total: 0, itemCount: 0 };
 
-    case 'SET_CART':
+    case 'SET_CART': {
       const total = action.payload.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const itemCount = action.payload.reduce((sum, item) => sum + item.quantity, 0);
       return { items: action.payload, total, itemCount };
+    }
 
     default:
       return state;
@@ -94,7 +98,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
 interface CartContextType {
   state: CartState;
-  addItem: (item: Omit<CartItem, 'quantity'>) => void;
+  addItem: (item: Omit<CartItem, 'quantity' | 'id' | 'productId'> & { id: number }) => void;
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
   clearCart: () => void;
@@ -132,12 +136,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (response.ok) {
           const data = await response.json();
           // Convert API cart items to local format
-          const items = data.items?.map((item: Record<string, unknown>) => ({
-            id: item.product_id as number,
-            name: item.product_name as string,
-            price: parseFloat(item.price as string),
-            image: item.product_image as string,
-            category: (item.category_name as string) || 'Unknown',
+          const items = data.items?.map((item: any) => ({
+            id: item.id as number,
+            productId: item.productId as number,
+            name: item.name as string,
+            price: item.currentPrice as number,
+            originalPrice: item.originalPrice as number,
+            image: item.image as string,
+            category: item.category as string || 'Unknown',
             quantity: item.quantity as number,
           })) || [];
 
@@ -151,10 +157,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     loadCart();
   }, []);
 
-  const addItem = async (item: Omit<CartItem, 'quantity'>) => {
+  const addItem = async (product: Omit<CartItem, 'quantity' | 'id' | 'productId'> & { id: number }) => {
     try {
       const sessionId = localStorage.getItem('session_id');
       const token = localStorage.getItem('auth_token');
+
+      // Optimistically check if item is already in cart to decide quantity
+      const existingItem = state.items.find(item => item.productId === product.id);
+      const quantity = (existingItem?.quantity || 0) + 1;
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/cart/items`, {
         method: 'POST',
@@ -164,14 +174,30 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           ...(sessionId && { 'X-Session-ID': sessionId }),
         },
         body: JSON.stringify({
-          productId: item.id,
-          quantity: 1,
+          productId: product.id,
+          quantity: 1, // Always add 1, backend handles aggregation
         }),
       });
 
       if (response.ok) {
-        dispatch({ type: 'ADD_ITEM', payload: item });
-        toast.success(`${item.name} added to cart!`);
+        const data = await response.json();
+        
+        // The backend returns the created/updated cart item, including its new quantity and ID
+        const backendItem = data.item;
+
+        const fullNewItem: CartItem = {
+          id: backendItem.id,
+          productId: product.id, // Use product.id from the input, which is the real product ID
+          name: product.name,
+          price: product.price,
+          originalPrice: product.originalPrice,
+          image: product.image,
+          category: product.category,
+          quantity: backendItem.quantity,
+        };
+
+        dispatch({ type: 'ADD_ITEM', payload: fullNewItem });
+        toast.success(`${product.name} added to cart!`);
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to add item to cart');

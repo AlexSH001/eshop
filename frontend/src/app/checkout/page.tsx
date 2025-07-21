@@ -31,6 +31,7 @@ export default function CheckoutPage() {
   const { isAuthenticated, user } = useAuth();
   const [selectedPayment, setSelectedPayment] = useState("credit_card");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const handleSubmitOrder = async () => {
     setIsProcessing(true);
@@ -49,6 +50,12 @@ export default function CheckoutPage() {
       // Validate required fields
       if (!email || !firstName || !lastName || !address || !city || !stateValue || !zipCode) {
         toast.error("Please fill in all required fields");
+        setIsProcessing(false);
+        return;
+      }
+      
+      if (!termsAccepted) {
+        toast.error("You must agree to the Terms of Service and Privacy Policy.");
         setIsProcessing(false);
         return;
       }
@@ -77,7 +84,7 @@ export default function CheckoutPage() {
           country: 'US'
         },
         cartItems: state.items.map((item: CartItem) => ({
-          productId: item.id,
+          productId: item.productId,
           name: item.name,
           quantity: item.quantity,
           price: item.price
@@ -97,7 +104,6 @@ export default function CheckoutPage() {
       const response = await fetch('http://localhost:3001/api/orders', {
         method: 'POST',
         headers,
-        credentials: 'include',
         body: JSON.stringify(orderData)
       });
 
@@ -107,19 +113,49 @@ export default function CheckoutPage() {
       }
 
       const orderResult = await response.json();
+      const orderId = orderResult.order.id;
       
-      toast.success("Order placed successfully! You will receive a confirmation email shortly.");
-      clearCart();
+      // After creating the order, handle payment flow
+      if (selectedPayment === 'alipay') {
+        toast.info("Redirecting to Alipay for payment...");
+        const payResponse = await fetch(`http://localhost:3001/api/orders/${orderId}/pay/alipay`, {
+          method: 'POST',
+          headers,
+        });
+        if (!payResponse.ok) {
+          const errorData = await payResponse.json();
+          throw new Error(errorData.error || 'Failed to initiate Alipay payment');
+        }
+        const { payUrl } = await payResponse.json();
+        window.location.href = payUrl;
+
+      } else if (selectedPayment === 'paypal') {
+        toast.info("Redirecting to PayPal for payment...");
+        const payResponse = await fetch(`http://localhost:3001/api/orders/${orderId}/pay/paypal`, {
+          method: 'POST',
+          headers,
+        });
+        if (!payResponse.ok) {
+          const errorData = await payResponse.json();
+          throw new Error(errorData.error || 'Failed to initiate PayPal payment');
+        }
+        const { approvalUrl } = await payResponse.json();
+        window.location.href = approvalUrl;
       
-      // Redirect to orders page or show order confirmation
-      window.location.href = '/orders';
+      } else {
+        // For 'credit_card' or other methods that don't have a redirect flow implemented
+        toast.success("Order placed successfully! You will receive a confirmation email shortly.");
+        clearCart();
+        window.location.href = `/orders/order-success?orderId=${orderId}`;
+      }
       
     } catch (error) {
-      console.error('Order creation error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create order');
-    } finally {
+      console.error('Order processing error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to process order');
       setIsProcessing(false);
     }
+    // No need for finally block as setIsProcessing is handled in error case.
+    // In success cases, the page redirects away.
   };
 
   if (state.items.length === 0) {
@@ -369,7 +405,11 @@ export default function CheckoutPage() {
 
                   <div className="mt-6 space-y-4">
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="terms" />
+                      <Checkbox 
+                        id="terms" 
+                        checked={termsAccepted}
+                        onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                      />
                       <Label htmlFor="terms" className="text-sm">
                         I agree to the{" "}
                         <Link href="/terms" className="text-blue-600 hover:underline">
