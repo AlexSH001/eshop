@@ -58,6 +58,34 @@ const adminLoginValidation = [
   handleValidationErrors
 ];
 
+// Password reset validation schemas
+const forgotPasswordValidation = [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email'),
+  handleValidationErrors
+];
+
+const resetPasswordValidation = [
+  body('token')
+    .notEmpty()
+    .withMessage('Reset token is required'),
+  body('newPassword')
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters long')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number and one special character'),
+  handleValidationErrors
+];
+
+const verifyResetTokenValidation = [
+  body('token')
+    .notEmpty()
+    .withMessage('Reset token is required'),
+  handleValidationErrors
+];
+
 // Product validation schemas
 const createProductValidation = [
   body('name')
@@ -294,6 +322,9 @@ module.exports = {
   registerValidation,
   loginValidation,
   adminLoginValidation,
+  forgotPasswordValidation,
+  resetPasswordValidation,
+  verifyResetTokenValidation,
   createProductValidation,
   updateProductValidation,
   addToCartValidation,

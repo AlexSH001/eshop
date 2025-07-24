@@ -4,7 +4,8 @@ const {
   hashPassword,
   comparePassword,
   formatUserResponse,
-  formatAdminResponse
+  formatAdminResponse,
+  generateToken
 } = require('../utils/auth');
 const {
   generateAccessToken,
@@ -16,13 +17,18 @@ const {
 const {
   registerValidation,
   loginValidation,
-  adminLoginValidation
+  adminLoginValidation,
+  forgotPasswordValidation,
+  resetPasswordValidation,
+  verifyResetTokenValidation
 } = require('../middleware/validation');
 const {
   ConflictError,
   UnauthorizedError,
   NotFoundError
 } = require('../middleware/errorHandler');
+const emailService = require('../services/emailService');
+const logger = require('../config/logger');
 
 const router = express.Router();
 
@@ -278,6 +284,133 @@ router.put('/password', authenticateUser, async (req, res) => {
   res.json({
     message: 'Password updated successfully'
   });
+});
+
+// Request Password Reset
+router.post('/forgot-password', forgotPasswordValidation, async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    // Check if user exists
+    const user = await database.get(
+      'SELECT id, email, first_name FROM users WHERE email = $1 AND is_active = TRUE',
+      [email]
+    );
+
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      return res.json({
+        message: 'If an account with that email exists, a password reset link has been sent.'
+      });
+    }
+
+    // Generate reset token
+    const resetToken = generateToken();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+    // Delete any existing reset tokens for this user
+    await database.execute(
+      'DELETE FROM email_tokens WHERE user_id = $1 AND type = $2',
+      [user.id, 'reset']
+    );
+
+    // Store reset token
+    await database.execute(
+      'INSERT INTO email_tokens (user_id, token, type, expires_at) VALUES ($1, $2, $3, $4)',
+      [user.id, resetToken, 'reset', expiresAt]
+    );
+
+    // Send reset email
+    const resetUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/reset-password` : null;
+    const emailResult = await emailService.sendPasswordResetEmail(user.email, resetToken, resetUrl);
+
+    if (!emailResult.success) {
+      logger.error('Failed to send password reset email:', emailResult.error);
+      // Don't expose email service errors to user
+    }
+
+    res.json({
+      message: 'If an account with that email exists, a password reset link has been sent.'
+    });
+  } catch (error) {
+    logger.error('Password reset request error:', error);
+    res.status(500).json({ error: 'Failed to process password reset request' });
+  }
+});
+
+// Reset Password with Token
+router.post('/reset-password', resetPasswordValidation, async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  try {
+    // Find valid reset token
+    const tokenRecord = await database.get(
+      `SELECT et.*, u.email, u.first_name 
+       FROM email_tokens et 
+       JOIN users u ON et.user_id = u.id 
+       WHERE et.token = $1 AND et.type = $2 AND et.expires_at > datetime('now') AND et.used_at IS NULL`,
+      [token, 'reset']
+    );
+
+    if (!tokenRecord) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
+    // Hash new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update user password
+    await database.execute(
+      'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [hashedPassword, tokenRecord.user_id]
+    );
+
+    // Mark token as used
+    await database.execute(
+      'UPDATE email_tokens SET used_at = CURRENT_TIMESTAMP WHERE id = $1',
+      [tokenRecord.id]
+    );
+
+    // Delete all reset tokens for this user
+    await database.execute(
+      'DELETE FROM email_tokens WHERE user_id = $1 AND type = $2',
+      [tokenRecord.user_id, 'reset']
+    );
+
+    res.json({
+      message: 'Password reset successfully'
+    });
+  } catch (error) {
+    logger.error('Password reset error:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+// Verify Reset Token
+router.post('/verify-reset-token', verifyResetTokenValidation, async (req, res) => {
+  const { token } = req.body;
+
+  try {
+    const tokenRecord = await database.get(
+      `SELECT et.*, u.email 
+       FROM email_tokens et 
+       JOIN users u ON et.user_id = u.id 
+       WHERE et.token = $1 AND et.type = $2 AND et.expires_at > datetime('now') AND et.used_at IS NULL`,
+      [token, 'reset']
+    );
+
+    if (!tokenRecord) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
+    res.json({
+      message: 'Token is valid',
+      email: tokenRecord.email
+    });
+  } catch (error) {
+    logger.error('Token verification error:', error);
+    res.status(500).json({ error: 'Failed to verify token' });
+  }
 });
 
 // Logout (invalidate token - in a real app, you'd maintain a blacklist)

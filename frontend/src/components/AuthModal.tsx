@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,6 +151,16 @@ export default function AuthModal({ children }: AuthModalProps) {
                 )}
               </Button>
             </form>
+
+            <div className="text-center">
+              <Link 
+                href="/forgot-password" 
+                className="text-sm text-gray-600 hover:text-gray-900 underline"
+                onClick={() => setIsOpen(false)}
+              >
+                Forgot your password?
+              </Link>
+            </div>
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-4">

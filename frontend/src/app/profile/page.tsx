@@ -20,7 +20,8 @@ import {
   MapPin,
   Bell,
   Shield,
-  Trash2
+  Trash2,
+  Mail
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -379,6 +380,12 @@ export default function ProfilePage() {
                   <Shield className="h-4 w-4 mr-2" />
                   Change Password
                 </Button>
+                <Link href="/forgot-password">
+                  <Button variant="outline" className="w-full justify-start">
+                    <Mail className="h-4 w-4 mr-2" />
+                    Reset Password
+                  </Button>
+                </Link>
                 <Button variant="outline" className="w-full justify-start">
                   <CreditCard className="h-4 w-4 mr-2" />
                   Payment Methods
