@@ -64,16 +64,15 @@ export default function ShoppingCartSheet({ children }: ShoppingCartSheetProps) 
             <>
               <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                 {state.items.map((item) => (
-                  <div key={item.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+                  <div key={item.id} className="flex items-start space-x-4 p-4 border rounded-lg">
                     <img
                       src={item.image}
                       alt={item.name}
-                      className="w-16 h-16 object-cover rounded-md"
+                      className="w-16 h-16 object-cover rounded-md flex-shrink-0"
                     />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-sm truncate">{item.name}</h3>
-                      <Badge variant="secondary" className="text-xs">{item.category}</Badge>
-                      <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 min-w-0 mr-4">
+                      <h3 className="font-medium text-sm leading-tight mb-2 break-words">{item.name}</h3>
+                      <div className="flex items-center gap-2 mb-2">
                         <span className="font-bold text-purple-600">${item.price}</span>
                         {item.originalPrice && (
                           <span className="text-xs text-gray-500 line-through">
@@ -81,30 +80,30 @@ export default function ShoppingCartSheet({ children }: ShoppingCartSheetProps) 
                           </span>
                         )}
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-8 text-center font-medium">{item.quantity}</span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{item.quantity}</span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-red-500 hover:text-red-700"
+                      className="h-8 w-8 text-red-500 hover:text-red-700 flex-shrink-0"
                       onClick={() => removeItem(item.id)}
                     >
                       <Trash2 className="h-4 w-4" />
