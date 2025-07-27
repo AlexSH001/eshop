@@ -970,6 +970,67 @@ async function seedCompleteDatabase() {
       console.log(`✅ Added user: ${user.email}`);
     }
 
+    // Seed sample addresses for users
+    console.log('📍 Seeding sample addresses...');
+    const addresses = [
+      {
+        userId: 1, // john.doe@example.com
+        type: 'shipping',
+        firstName: 'John',
+        lastName: 'Doe',
+        company: 'Tech Corp',
+        addressLine1: '123 Main Street',
+        addressLine2: 'Apt 4B',
+        city: 'New York',
+        state: 'NY',
+        postalCode: '10001',
+        country: 'US',
+        phone: '+1234567890',
+        isDefault: true
+      },
+      {
+        userId: 1,
+        type: 'shipping',
+        firstName: 'John',
+        lastName: 'Doe',
+        addressLine1: '456 Oak Avenue',
+        city: 'Los Angeles',
+        state: 'CA',
+        postalCode: '90210',
+        country: 'US',
+        phone: '+1234567890',
+        isDefault: false
+      },
+      {
+        userId: 2, // jane.smith@example.com
+        type: 'shipping',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        addressLine1: '789 Pine Street',
+        city: 'Chicago',
+        state: 'IL',
+        postalCode: '60601',
+        country: 'US',
+        phone: '+1234567891',
+        isDefault: true
+      }
+    ];
+
+    for (const address of addresses) {
+      await database.execute(`
+        INSERT INTO user_addresses (
+          user_id, type, first_name, last_name, company, address_line_1, address_line_2,
+          city, state, postal_code, country, phone, is_default
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        address.userId, address.type, address.firstName, address.lastName,
+        address.company || null, address.addressLine1, address.addressLine2 || null,
+        address.city, address.state, address.postalCode, address.country,
+        address.phone || null, address.isDefault
+      ]);
+      console.log(`✅ Added address for user ${address.userId}: ${address.addressLine1}`);
+    }
+
     // Seed admin user
     await database.execute(
       'INSERT INTO admins (email, password, name, role) VALUES (?, ?, ?, ?)',

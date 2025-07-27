@@ -20,6 +20,7 @@ interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (email: string, password: string, firstName: string, lastName: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  refreshToken: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
   });
 
-  // Check for existing session on mount
+  // Check for existing session on mount and listen for storage changes
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('auth_token');
@@ -39,17 +40,87 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (token && storedUser) {
         try {
-          const user = JSON.parse(storedUser);
-          setState({
-            user,
-            isAuthenticated: true,
-            isLoading: false,
+          // Validate token with backend
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/auth/me`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
           });
+
+          if (response.ok) {
+            const user = JSON.parse(storedUser);
+            setState({
+              user,
+              isAuthenticated: true,
+              isLoading: false,
+            });
+          } else {
+            // Try to refresh the token
+            const refreshTokenValue = localStorage.getItem('refresh_token');
+            if (refreshTokenValue) {
+              try {
+                const refreshResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/auth/refresh`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ refreshToken: refreshTokenValue }),
+                });
+
+                if (refreshResponse.ok) {
+                  const refreshData = await refreshResponse.json();
+                  localStorage.setItem('auth_token', refreshData.accessToken);
+                  const user = JSON.parse(storedUser);
+                  setState({
+                    user,
+                    isAuthenticated: true,
+                    isLoading: false,
+                  });
+                } else {
+                  // Refresh token is also invalid, clear storage
+                  localStorage.removeItem('user');
+                  localStorage.removeItem('auth_token');
+                  localStorage.removeItem('refresh_token');
+                  setState({
+                    user: null,
+                    isAuthenticated: false,
+                    isLoading: false,
+                  });
+                }
+              } catch (refreshError) {
+                console.error('Failed to refresh token:', refreshError);
+                localStorage.removeItem('user');
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('refresh_token');
+                setState({
+                  user: null,
+                  isAuthenticated: false,
+                  isLoading: false,
+                });
+              }
+            } else {
+              // No refresh token, clear storage
+              localStorage.removeItem('user');
+              localStorage.removeItem('auth_token');
+              localStorage.removeItem('refresh_token');
+              setState({
+                user: null,
+                isAuthenticated: false,
+                isLoading: false,
+              });
+            }
+          }
         } catch (error) {
-          console.error('Failed to parse stored user:', error);
+          console.error('Failed to validate token:', error);
           localStorage.removeItem('user');
           localStorage.removeItem('auth_token');
-          setState(prev => ({ ...prev, isLoading: false }));
+          localStorage.removeItem('refresh_token');
+          setState({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
         }
       } else {
         setState(prev => ({ ...prev, isLoading: false }));
@@ -57,6 +128,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     checkAuth();
+
+    // Listen for storage changes (when tokens are cleared by API functions)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'auth_token' && !e.newValue) {
+        // Token was removed, update state
+        setState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
@@ -76,9 +165,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Store tokens
-      localStorage.setItem('auth_token', data.accessToken);
-      if (data.refreshToken) {
-        localStorage.setItem('refresh_token', data.refreshToken);
+      localStorage.setItem('auth_token', data.tokens.accessToken);
+      if (data.tokens.refreshToken) {
+        localStorage.setItem('refresh_token', data.tokens.refreshToken);
       }
 
       // Store user data
@@ -121,9 +210,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Store tokens
-      localStorage.setItem('auth_token', data.accessToken);
-      if (data.refreshToken) {
-        localStorage.setItem('refresh_token', data.refreshToken);
+      localStorage.setItem('auth_token', data.tokens.accessToken);
+      if (data.tokens.refreshToken) {
+        localStorage.setItem('refresh_token', data.tokens.refreshToken);
       }
 
       // Store user data
@@ -161,11 +250,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const refreshToken = async (): Promise<boolean> => {
+    const refreshTokenValue = localStorage.getItem('refresh_token');
+    
+    if (!refreshTokenValue) {
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken: refreshTokenValue }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('auth_token', data.accessToken);
+        return true;
+      } else {
+        // Refresh token is invalid, logout user
+        logout();
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to refresh token:', error);
+      logout();
+      return false;
+    }
+  };
+
   const value: AuthContextType = {
     ...state,
     login,
     signup,
     logout,
+    refreshToken,
   };
 
   return (

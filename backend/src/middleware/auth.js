@@ -16,12 +16,12 @@ if (process.env.NODE_ENV === 'production' &&
 
 // Generate access token (short-lived)
 const generateAccessToken = (payload) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '1m' });
 };
 
 // Generate refresh token (long-lived)
 const generateRefreshToken = (payload) => {
-  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '5m' });
 };
 
 // Verify access token

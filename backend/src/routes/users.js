@@ -1,6 +1,6 @@
 const express = require('express');
 const { database } = require('../database');
-const { authenticateAdmin } = require('../middleware/auth');
+const { authenticateAdmin, authenticateUser } = require('../middleware/auth');
 const { paginationValidation, idValidation } = require('../middleware/validation');
 const { hashPassword } = require('../utils/auth');
 const { NotFoundError } = require('../middleware/errorHandler');
@@ -399,6 +399,326 @@ router.delete('/:id', idValidation, async (req, res) => {
   res.json({
     message: 'User deleted successfully'
   });
+});
+
+// Get user addresses
+router.get('/addresses', authenticateUser, async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const addresses = await database.query(`
+      SELECT * FROM user_addresses 
+      WHERE user_id = $1 
+      ORDER BY is_default DESC, created_at DESC
+    `, [userId]);
+
+    res.json({
+      addresses: addresses.map(addr => ({
+        id: addr.id,
+        type: addr.type,
+        firstName: addr.first_name,
+        lastName: addr.last_name,
+        company: addr.company,
+        addressLine1: addr.address_line_1,
+        addressLine2: addr.address_line_2,
+        city: addr.city,
+        state: addr.state,
+        postalCode: addr.postal_code,
+        country: addr.country,
+        phone: addr.phone,
+        isDefault: addr.is_default,
+        createdAt: addr.created_at,
+        updatedAt: addr.updated_at
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch addresses' });
+  }
+});
+
+// Create user address
+router.post('/addresses', authenticateUser, async (req, res) => {
+  const userId = req.user.id;
+  const {
+    type = 'shipping',
+    firstName,
+    lastName,
+    company,
+    addressLine1,
+    addressLine2,
+    city,
+    state,
+    postalCode,
+    country = 'US',
+    phone,
+    isDefault = false
+  } = req.body;
+
+  // Validate required fields
+  if (!firstName || !lastName || !addressLine1 || !city || !state || !postalCode) {
+    return res.status(400).json({
+      error: 'Missing required fields: firstName, lastName, addressLine1, city, state, postalCode'
+    });
+  }
+
+  try {
+    await database.beginTransaction();
+
+    // If this is set as default, unset other defaults of the same type
+    if (isDefault) {
+      await database.execute(`
+        UPDATE user_addresses 
+        SET is_default = FALSE 
+        WHERE user_id = $1 AND type = $2
+      `, [userId, type]);
+    }
+
+    // Create the new address
+    const result = await database.execute(`
+      INSERT INTO user_addresses (
+        user_id, type, first_name, last_name, company, address_line_1, address_line_2,
+        city, state, postal_code, country, phone, is_default
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    `, [
+      userId, type, firstName, lastName, company || null, addressLine1, addressLine2 || null,
+      city, state, postalCode, country, phone || null, isDefault
+    ]);
+
+    await database.commit();
+
+    // Get the created address
+    const newAddress = await database.get(`
+      SELECT * FROM user_addresses WHERE id = $1
+    `, [result.id]);
+
+    res.status(201).json({
+      message: 'Address created successfully',
+      address: {
+        id: newAddress.id,
+        type: newAddress.type,
+        firstName: newAddress.first_name,
+        lastName: newAddress.last_name,
+        company: newAddress.company,
+        addressLine1: newAddress.address_line_1,
+        addressLine2: newAddress.address_line_2,
+        city: newAddress.city,
+        state: newAddress.state,
+        postalCode: newAddress.postal_code,
+        country: newAddress.country,
+        phone: newAddress.phone,
+        isDefault: newAddress.is_default,
+        createdAt: newAddress.created_at,
+        updatedAt: newAddress.updated_at
+      }
+    });
+  } catch (error) {
+    await database.rollback();
+    res.status(500).json({ error: 'Failed to create address' });
+  }
+});
+
+// Update user address
+router.put('/addresses/:id', authenticateUser, idValidation, async (req, res) => {
+  const userId = req.user.id;
+  const addressId = req.params.id;
+  const {
+    type,
+    firstName,
+    lastName,
+    company,
+    addressLine1,
+    addressLine2,
+    city,
+    state,
+    postalCode,
+    country,
+    phone,
+    isDefault
+  } = req.body;
+
+  try {
+    // Check if address exists and belongs to user
+    const existingAddress = await database.get(`
+      SELECT * FROM user_addresses WHERE id = $1 AND user_id = $2
+    `, [addressId, userId]);
+
+    if (!existingAddress) {
+      return res.status(404).json({ error: 'Address not found' });
+    }
+
+    await database.beginTransaction();
+
+    // If this is set as default, unset other defaults of the same type
+    if (isDefault) {
+      await database.execute(`
+        UPDATE user_addresses 
+        SET is_default = FALSE 
+        WHERE user_id = $1 AND type = $2 AND id != $3
+      `, [userId, type || existingAddress.type, addressId]);
+    }
+
+    // Build update query
+    const updates = [];
+    const params = [];
+
+    if (type !== undefined) {
+      updates.push('type = $1');
+      params.push(type);
+    }
+    if (firstName !== undefined) {
+      updates.push('first_name = $1');
+      params.push(firstName);
+    }
+    if (lastName !== undefined) {
+      updates.push('last_name = $1');
+      params.push(lastName);
+    }
+    if (company !== undefined) {
+      updates.push('company = $1');
+      params.push(company);
+    }
+    if (addressLine1 !== undefined) {
+      updates.push('address_line_1 = $1');
+      params.push(addressLine1);
+    }
+    if (addressLine2 !== undefined) {
+      updates.push('address_line_2 = $1');
+      params.push(addressLine2);
+    }
+    if (city !== undefined) {
+      updates.push('city = $1');
+      params.push(city);
+    }
+    if (state !== undefined) {
+      updates.push('state = $1');
+      params.push(state);
+    }
+    if (postalCode !== undefined) {
+      updates.push('postal_code = $1');
+      params.push(postalCode);
+    }
+    if (country !== undefined) {
+      updates.push('country = $1');
+      params.push(country);
+    }
+    if (phone !== undefined) {
+      updates.push('phone = $1');
+      params.push(phone);
+    }
+    if (isDefault !== undefined) {
+      updates.push('is_default = $1');
+      params.push(isDefault);
+    }
+
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    params.push(addressId);
+
+    await database.execute(`
+      UPDATE user_addresses
+      SET ${updates.join(', ')}
+      WHERE id = $1
+    `, params);
+
+    await database.commit();
+
+    // Get the updated address
+    const updatedAddress = await database.get(`
+      SELECT * FROM user_addresses WHERE id = $1
+    `, [addressId]);
+
+    res.json({
+      message: 'Address updated successfully',
+      address: {
+        id: updatedAddress.id,
+        type: updatedAddress.type,
+        firstName: updatedAddress.first_name,
+        lastName: updatedAddress.last_name,
+        company: updatedAddress.company,
+        addressLine1: updatedAddress.address_line_1,
+        addressLine2: updatedAddress.address_line_2,
+        city: updatedAddress.city,
+        state: updatedAddress.state,
+        postalCode: updatedAddress.postal_code,
+        country: updatedAddress.country,
+        phone: updatedAddress.phone,
+        isDefault: updatedAddress.is_default,
+        createdAt: updatedAddress.created_at,
+        updatedAt: updatedAddress.updated_at
+      }
+    });
+  } catch (error) {
+    await database.rollback();
+    res.status(500).json({ error: 'Failed to update address' });
+  }
+});
+
+// Delete user address
+router.delete('/addresses/:id', authenticateUser, idValidation, async (req, res) => {
+  const userId = req.user.id;
+  const addressId = req.params.id;
+
+  try {
+    // Check if address exists and belongs to user
+    const existingAddress = await database.get(`
+      SELECT * FROM user_addresses WHERE id = $1 AND user_id = $2
+    `, [addressId, userId]);
+
+    if (!existingAddress) {
+      return res.status(404).json({ error: 'Address not found' });
+    }
+
+    await database.execute(`
+      DELETE FROM user_addresses WHERE id = $1 AND user_id = $2
+    `, [addressId, userId]);
+
+    res.json({
+      message: 'Address deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete address' });
+  }
+});
+
+// Set address as default
+router.put('/addresses/:id/default', authenticateUser, idValidation, async (req, res) => {
+  const userId = req.user.id;
+  const addressId = req.params.id;
+
+  try {
+    // Check if address exists and belongs to user
+    const existingAddress = await database.get(`
+      SELECT * FROM user_addresses WHERE id = $1 AND user_id = $2
+    `, [addressId, userId]);
+
+    if (!existingAddress) {
+      return res.status(404).json({ error: 'Address not found' });
+    }
+
+    await database.beginTransaction();
+
+    // Unset other defaults of the same type
+    await database.execute(`
+      UPDATE user_addresses 
+      SET is_default = FALSE 
+      WHERE user_id = $1 AND type = $2
+    `, [userId, existingAddress.type]);
+
+    // Set this address as default
+    await database.execute(`
+      UPDATE user_addresses 
+      SET is_default = TRUE, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+    `, [addressId]);
+
+    await database.commit();
+
+    res.json({
+      message: 'Address set as default successfully'
+    });
+  } catch (error) {
+    await database.rollback();
+    res.status(500).json({ error: 'Failed to set address as default' });
+  }
 });
 
 module.exports = router; 

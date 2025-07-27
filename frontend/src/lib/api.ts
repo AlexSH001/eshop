@@ -80,6 +80,60 @@ async function apiRequest<T>(
     const data: ApiResponse<T> = await response.json();
 
     if (!response.ok) {
+      // If we get a 401 and have a refresh token, try to refresh
+      if (response.status === 401 && localStorage.getItem('refresh_token')) {
+        try {
+          const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              refreshToken: localStorage.getItem('refresh_token') 
+            }),
+          });
+
+          if (refreshResponse.ok) {
+            const refreshData = await refreshResponse.json();
+            localStorage.setItem('auth_token', refreshData.accessToken);
+            
+            // Retry the original request with the new token
+            const retryConfig = {
+              ...config,
+              headers: {
+                ...config.headers,
+                Authorization: `Bearer ${refreshData.accessToken}`,
+              },
+            };
+            
+            const retryResponse = await fetch(url, retryConfig);
+            const retryData: ApiResponse<T> = await retryResponse.json();
+            
+            if (!retryResponse.ok) {
+              throw new ApiError(
+                retryResponse.status,
+                retryData.error || 'API request failed',
+                retryData.details
+              );
+            }
+            
+            return retryData.data || retryData as T;
+          } else {
+            // Refresh failed, clear tokens and throw error
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user');
+            throw new ApiError(401, 'Authentication expired');
+          }
+        } catch (refreshError) {
+          // Refresh failed, clear tokens and throw error
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user');
+          throw new ApiError(401, 'Authentication expired');
+        }
+      }
+      
       throw new ApiError(
         response.status,
         data.error || 'API request failed',
@@ -335,6 +389,45 @@ export const adminApi = {
       method: 'DELETE',
     });
   },
+};
+
+// User Addresses API
+export const getUserAddresses = async (): Promise<any> => {
+  return apiRequest('/users/addresses');
+};
+
+export const createUserAddress = async (addressData: any): Promise<any> => {
+  return apiRequest('/users/addresses', {
+    method: 'POST',
+    body: JSON.stringify(addressData),
+  });
+};
+
+export const updateUserAddress = async (addressId: number, addressData: any): Promise<any> => {
+  return apiRequest(`/users/addresses/${addressId}`, {
+    method: 'PUT',
+    body: JSON.stringify(addressData),
+  });
+};
+
+export const deleteUserAddress = async (addressId: number): Promise<any> => {
+  return apiRequest(`/users/addresses/${addressId}`, {
+    method: 'DELETE',
+  });
+};
+
+export const setDefaultAddress = async (addressId: number): Promise<any> => {
+  return apiRequest(`/users/addresses/${addressId}/default`, {
+    method: 'PUT',
+  });
+};
+
+// Update user profile
+export const updateUserProfile = async (profileData: any): Promise<any> => {
+  return apiRequest('/auth/profile', {
+    method: 'PUT',
+    body: JSON.stringify(profileData),
+  });
 };
 
 export { ApiError }; 

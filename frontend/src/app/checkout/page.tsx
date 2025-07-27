@@ -22,16 +22,21 @@ import {
 } from "lucide-react";
 import { useCart, type CartItem } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import AddressSelector from "@/components/AddressSelector";
+import AuthModal from "@/components/AuthModal";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export default function CheckoutPage() {
   const { state, clearCart } = useCart();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
   const [selectedPayment, setSelectedPayment] = useState("credit_card");
   const [isProcessing, setIsProcessing] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<any>(null);
+  const [saveShippingAddress, setSaveShippingAddress] = useState(false);
+  const [useSavedAddress, setUseSavedAddress] = useState(false);
 
   const handleSubmitOrder = async () => {
     setIsProcessing(true);
@@ -40,12 +45,26 @@ export default function CheckoutPage() {
       // Get form data
       const email = (document.getElementById('email') as HTMLInputElement)?.value;
       const phone = (document.getElementById('phone') as HTMLInputElement)?.value;
-      const firstName = (document.getElementById('firstName') as HTMLInputElement)?.value;
-      const lastName = (document.getElementById('lastName') as HTMLInputElement)?.value;
-      const address = (document.getElementById('address') as HTMLInputElement)?.value;
-      const city = (document.getElementById('city') as HTMLInputElement)?.value;
-      const stateValue = (document.getElementById('state') as HTMLInputElement)?.value;
-      const zipCode = (document.getElementById('zipCode') as HTMLInputElement)?.value;
+      
+      let firstName, lastName, address, city, stateValue, zipCode;
+      
+      if (useSavedAddress && selectedAddress) {
+        // Use saved address
+        firstName = selectedAddress.firstName;
+        lastName = selectedAddress.lastName;
+        address = selectedAddress.addressLine1;
+        city = selectedAddress.city;
+        stateValue = selectedAddress.state;
+        zipCode = selectedAddress.postalCode;
+      } else {
+        // Use form data
+        firstName = (document.getElementById('firstName') as HTMLInputElement)?.value;
+        lastName = (document.getElementById('lastName') as HTMLInputElement)?.value;
+        address = (document.getElementById('address') as HTMLInputElement)?.value;
+        city = (document.getElementById('city') as HTMLInputElement)?.value;
+        stateValue = (document.getElementById('state') as HTMLInputElement)?.value;
+        zipCode = (document.getElementById('zipCode') as HTMLInputElement)?.value;
+      }
 
       // Validate required fields
       if (!email || !firstName || !lastName || !address || !city || !stateValue || !zipCode) {
@@ -88,18 +107,20 @@ export default function CheckoutPage() {
           name: item.name,
           quantity: item.quantity,
           price: item.price
-        }))
+        })),
+        saveShippingAddress: saveShippingAddress && isAuthenticated
       };
 
-      // Create order
+      // Create order - user must be authenticated at this point
       const authToken = localStorage.getItem('auth_token');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
+      if (!authToken) {
+        throw new Error('Authentication required');
       }
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      };
 
       const response = await fetch('http://localhost:3001/api/orders', {
         method: 'POST',
@@ -157,6 +178,66 @@ export default function CheckoutPage() {
     // No need for finally block as setIsProcessing is handled in error case.
     // In success cases, the page redirects away.
   };
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+            <Truck className="h-8 w-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading...</h3>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user is authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-white">
+        <header className="border-b border-gray-100">
+          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between">
+              <Link href="/" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="text-sm">Back to Shopping</span>
+              </Link>
+              <div className="flex items-center space-x-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white">
+                  <ShoppingBag className="h-5 w-5" />
+                </div>
+                <span className="text-xl font-semibold text-gray-900">Shop</span>
+              </div>
+            </div>
+          </div>
+        </header>
+        
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 text-center">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+            <Lock className="h-8 w-8 text-gray-400" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Sign In Required</h1>
+          <p className="text-gray-600 mb-8">
+            Please sign in to proceed with checkout
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <AuthModal>
+              <Button size="lg" className="bg-gray-50 hover:bg-gray-800">
+                Sign In
+              </Button>
+            </AuthModal>
+            <Link href="/">
+              <Button variant="outline" size="lg">
+                Continue Shopping
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (state.items.length === 0) {
     return (
@@ -286,34 +367,104 @@ export default function CheckoutPage() {
                   <CardTitle className="text-lg font-semibold">Shipping Address</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" placeholder="John" />
+                  {isAuthenticated && (
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="useSavedAddress" 
+                          checked={useSavedAddress}
+                          onCheckedChange={(checked) => setUseSavedAddress(checked as boolean)}
+                        />
+                        <Label htmlFor="useSavedAddress" className="text-sm">
+                          Use saved address
+                        </Label>
+                      </div>
+                      
+                      {useSavedAddress && (
+                        <AddressSelector
+                          selectedAddressId={selectedAddress?.id}
+                          onAddressSelect={setSelectedAddress}
+                        />
+                      )}
+                      
+                      {!useSavedAddress && (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                              <Label htmlFor="firstName">First Name</Label>
+                              <Input id="firstName" placeholder="John" />
+                            </div>
+                            <div>
+                              <Label htmlFor="lastName">Last Name</Label>
+                              <Input id="lastName" placeholder="Doe" />
+                            </div>
+                          </div>
+                          <div>
+                            <Label htmlFor="address">Address</Label>
+                            <Input id="address" placeholder="123 Main Street" />
+                          </div>
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                            <div>
+                              <Label htmlFor="city">City</Label>
+                              <Input id="city" placeholder="New York" />
+                            </div>
+                            <div>
+                              <Label htmlFor="state">State</Label>
+                              <Input id="state" placeholder="NY" />
+                            </div>
+                            <div>
+                              <Label htmlFor="zipCode">ZIP Code</Label>
+                              <Input id="zipCode" placeholder="10001" />
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="saveShippingAddress" 
+                              checked={saveShippingAddress}
+                              onCheckedChange={(checked) => setSaveShippingAddress(checked as boolean)}
+                            />
+                            <Label htmlFor="saveShippingAddress" className="text-sm">
+                              Save this address for future orders
+                            </Label>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" placeholder="Doe" />
+                  )}
+                  
+                  {!isAuthenticated && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                          <Label htmlFor="firstName">First Name</Label>
+                          <Input id="firstName" placeholder="John" />
+                        </div>
+                        <div>
+                          <Label htmlFor="lastName">Last Name</Label>
+                          <Input id="lastName" placeholder="Doe" />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="address">Address</Label>
+                        <Input id="address" placeholder="123 Main Street" />
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div>
+                          <Label htmlFor="city">City</Label>
+                          <Input id="city" placeholder="New York" />
+                        </div>
+                        <div>
+                          <Label htmlFor="state">State</Label>
+                          <Input id="state" placeholder="NY" />
+                        </div>
+                        <div>
+                          <Label htmlFor="zipCode">ZIP Code</Label>
+                          <Input id="zipCode" placeholder="10001" />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="address">Address</Label>
-                    <Input id="address" placeholder="123 Main Street" />
-                  </div>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <div>
-                      <Label htmlFor="city">City</Label>
-                      <Input id="city" placeholder="New York" />
-                    </div>
-                    <div>
-                      <Label htmlFor="state">State</Label>
-                      <Input id="state" placeholder="NY" />
-                    </div>
-                    <div>
-                      <Label htmlFor="zipCode">ZIP Code</Label>
-                      <Input id="zipCode" placeholder="10001" />
-                    </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
 

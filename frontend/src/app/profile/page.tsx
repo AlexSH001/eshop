@@ -1,326 +1,284 @@
 "use client";
 
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import {
-  Heart,
   User,
-  ShoppingBag,
-  Edit2,
-  Save,
-  X,
-  Package,
-  CreditCard,
   MapPin,
-  Bell,
-  Shield,
-  Trash2,
-  Mail
+  ShoppingBag,
+  Heart,
+  Settings,
+  ArrowLeft,
+  Edit,
+  Save,
+  X
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import ShoppingCartSheet from "@/components/ShoppingCart";
-import SearchBar from "@/components/SearchBar";
-import AuthModal from "@/components/AuthModal";
-import UserDropdown from "@/components/UserDropdown";
 import { useAuth } from "@/contexts/AuthContext";
-import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
+import AddressSelector from "@/components/AddressSelector";
+import { updateUserProfile } from "@/lib/api";
 
 export default function ProfilePage() {
-  const { user, isAuthenticated, logout } = useAuth();
-  const { state: wishlistState } = useWishlist();
-  const router = useRouter();
-
+  const { user, isAuthenticated } = useAuth();
+  const [activeTab, setActiveTab] = useState("profile");
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: '',
-    address: '',
-    city: '',
-    zipCode: '',
-    country: 'United States'
+  const [profileData, setProfileData] = useState({
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    phone: user?.phone || "",
   });
 
-  // Redirect to home if not authenticated
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        phone: user.phone || "",
+      });
+    }
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    try {
+      await updateUserProfile(profileData);
+      setIsEditing(false);
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      toast.error("Failed to update profile");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setProfileData({
+      firstName: user?.firstName || "",
+      lastName: user?.lastName || "",
+      phone: user?.phone || "",
+    });
+    setIsEditing(false);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-white">
-        <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur-sm">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex h-16 items-center justify-between">
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white">
-                  <ShoppingBag className="h-5 w-5" />
-                </div>
-                <span className="text-xl font-semibold text-gray-900">Shop</span>
-              </Link>
-
-              <div className="flex items-center space-x-4">
-                <div className="hidden md:block">
-                  <SearchBar />
-                </div>
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
-                  <Heart className="h-5 w-5" />
-                </Button>
-                <AuthModal>
-                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </AuthModal>
-                <ShoppingCartSheet />
-              </div>
-            </div>
-          </div>
-        </header>
-
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 text-center">
           <User className="mx-auto h-16 w-16 text-gray-300 mb-4" />
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Sign In Required</h1>
           <p className="text-gray-600 mb-8">
             Please sign in to view your profile
           </p>
-          <AuthModal>
+          <Link href="/">
             <Button size="lg" className="bg-gray-50 hover:bg-gray-800">
-              Sign In
+              Go Home
             </Button>
-          </AuthModal>
+          </Link>
         </div>
       </div>
     );
   }
 
-  const handleSave = () => {
-    // In a real app, this would make an API call to update the profile
-    toast.success('Profile updated successfully!');
-    setIsEditing(false);
-  };
-
-  const handleDeleteAccount = () => {
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      logout();
-      toast.success('Account deleted successfully');
-      router.push('/');
-    }
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white">
-                <ShoppingBag className="h-5 w-5" />
-              </div>
-              <span className="text-xl font-semibold text-gray-900">Shop</span>
+      <header className="border-b border-gray-100">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="text-sm">Back to Shopping</span>
             </Link>
-
-            <div className="flex items-center space-x-4">
-              <div className="hidden md:block">
-                <SearchBar />
+            <div className="flex items-center space-x-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white">
+                <User className="h-5 w-5" />
               </div>
-
-              <Link href="/wishlist">
-                <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full">
-                  <Heart className="h-5 w-5" />
-                  {wishlistState.itemCount > 0 && (
-                    <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs">
-                      {wishlistState.itemCount}
-                    </Badge>
-                  )}
-                </Button>
-              </Link>
-
-              <UserDropdown />
-              <ShoppingCartSheet />
+              <span className="text-xl font-semibold text-gray-900">Profile</span>
             </div>
+            <div className="w-20"></div>
           </div>
         </div>
       </header>
 
-      {/* Breadcrumb */}
-      <div className="border-b border-gray-100 bg-gray-50">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 text-sm">
-            <Link href="/" className="text-gray-600 hover:text-gray-900">Home</Link>
-            <span className="text-gray-400">/</span>
-            <span className="font-medium text-gray-900">Profile</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-          <p className="text-gray-600 mt-1">Manage your account settings and preferences</p>
+          <h1 className="text-3xl font-bold text-gray-900">My Account</h1>
+          <p className="text-gray-600 mt-1">Manage your profile and preferences</p>
         </div>
 
-        <Tabs defaultValue="account" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="account">Account</TabsTrigger>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="addresses">Addresses</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Profile
+            </TabsTrigger>
+            <TabsTrigger value="addresses" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Addresses
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4" />
+              Orders
+            </TabsTrigger>
+            <TabsTrigger value="wishlist" className="flex items-center gap-2">
+              <Heart className="h-4 w-4" />
+              Wishlist
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="account" className="space-y-6">
+          {/* Profile Tab */}
+          <TabsContent value="profile" className="space-y-6">
             <Card>
-              <CardHeader className="pb-4">
+              <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-16 w-16">
-                      <AvatarFallback className="bg-black text-white text-lg font-medium">
-                        {getInitials(user?.name || "")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle className="text-xl">{user?.name || ""}</CardTitle>
-                      <p className="text-gray-600">{user?.email || ""}</p>
-                    </div>
-                  </div>
-                  <Button
-                    variant={isEditing ? "outline" : "default"}
-                    onClick={() => {
-                      if (isEditing) {
-                        setIsEditing(false);
-                        setFormData({
-                          name: user?.name || '',
-                          email: user?.email || '',
-                          phone: '',
-                          address: '',
-                          city: '',
-                          zipCode: '',
-                          country: 'United States'
-                        });
-                      } else {
-                        setIsEditing(true);
-                      }
-                    }}
-                  >
-                    {isEditing ? (
-                      <>
+                  <CardTitle className="text-lg font-semibold">Personal Information</CardTitle>
+                  {!isEditing ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelEdit}
+                      >
                         <X className="h-4 w-4 mr-2" />
                         Cancel
-                      </>
-                    ) : (
-                      <>
-                        <Edit2 className="h-4 w-4 mr-2" />
-                        Edit
-                      </>
-                    )}
-                  </Button>
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleSaveProfile}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Save
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      disabled={!isEditing}
+                      value={user?.email || ""}
+                      disabled
+                      className="bg-gray-50"
                     />
+                    <p className="text-sm text-gray-500 mt-1">Email cannot be changed</p>
                   </div>
-                  <div className="space-y-2">
+                  <div>
                     <Label htmlFor="phone">Phone</Label>
                     <Input
                       id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                      value={profileData.phone}
+                      onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                       disabled={!isEditing}
-                      placeholder="(555) 123-4567"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
-                    <Input
-                      id="country"
-                      value={formData.country}
-                      onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                      disabled={!isEditing}
+                      placeholder="+1 (555) 123-4567"
                     />
                   </div>
                 </div>
-
-                {isEditing && (
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button onClick={handleSave} className="bg-black hover:bg-gray-800">
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Changes
-                    </Button>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      value={profileData.firstName}
+                      onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
+                      disabled={!isEditing}
+                      placeholder="John"
+                    />
                   </div>
-                )}
+                  <div>
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      value={profileData.lastName}
+                      onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
+                      disabled={!isEditing}
+                      placeholder="Doe"
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Account Stats</CardTitle>
+                <CardTitle className="text-lg font-semibold">Account Information</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">0</div>
-                    <div className="text-sm text-gray-600">Orders</div>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Member Since</p>
+                    <p className="text-sm text-gray-600">
+                      {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
+                    </p>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">{wishlistState.itemCount}</div>
-                    <div className="text-sm text-gray-600">Wishlist Items</div>
+                  <Badge variant="secondary">Active Member</Badge>
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Email Verification</p>
+                    <p className="text-sm text-gray-600">
+                      {user?.emailVerified ? "Verified" : "Not verified"}
+                    </p>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">0</div>
-                    <div className="text-sm text-gray-600">Reviews</div>
-                  </div>
+                  {!user?.emailVerified && (
+                    <Button variant="outline" size="sm">
+                      Verify Email
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Addresses Tab */}
+          <TabsContent value="addresses" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Shipping Addresses</CardTitle>
+                <p className="text-sm text-gray-600">
+                  Manage your shipping addresses for faster checkout
+                </p>
+              </CardHeader>
+              <CardContent>
+                <AddressSelector
+                  onAddressSelect={() => {}}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Orders Tab */}
           <TabsContent value="orders" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Order History</CardTitle>
+                <CardTitle className="text-lg font-semibold">Order History</CardTitle>
+                <p className="text-sm text-gray-600">
+                  View and track your past orders
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
-                  <Package className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
-                  <p className="text-gray-600 mb-4">
-                    When you place orders, they'll appear here
-                  </p>
-                  <Link href="/categories">
-                    <Button className="bg-black hover:bg-gray-800">
-                      Start Shopping
+                  <ShoppingBag className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                  <p className="text-gray-500">View your order history</p>
+                  <Link href="/orders">
+                    <Button className="mt-4">
+                      View Orders
                     </Button>
                   </Link>
                 </div>
@@ -328,91 +286,24 @@ export default function ProfilePage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="addresses" className="space-y-6">
+          {/* Wishlist Tab */}
+          <TabsContent value="wishlist" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Saved Addresses</CardTitle>
+                <CardTitle className="text-lg font-semibold">Wishlist</CardTitle>
+                <p className="text-sm text-gray-600">
+                  Your saved items and favorites
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
-                  <MapPin className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No addresses saved</h3>
-                  <p className="text-gray-600 mb-4">
-                    Add addresses for faster checkout
-                  </p>
-                  <Button className="bg-black hover:bg-gray-800">
-                    Add Address
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notifications</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Email notifications</div>
-                    <div className="text-sm text-gray-600">Receive order updates and promotions</div>
-                  </div>
-                  <input type="checkbox" className="rounded" defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Marketing emails</div>
-                    <div className="text-sm text-gray-600">Promotional offers and new products</div>
-                  </div>
-                  <input type="checkbox" className="rounded" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Privacy & Security</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button variant="outline" className="w-full justify-start">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Change Password
-                </Button>
-                <Link href="/forgot-password">
-                  <Button variant="outline" className="w-full justify-start">
-                    <Mail className="h-4 w-4 mr-2" />
-                    Reset Password
-                  </Button>
-                </Link>
-                <Button variant="outline" className="w-full justify-start">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Payment Methods
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="border-red-200">
-              <CardHeader>
-                <CardTitle className="text-red-600">Danger Zone</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <div className="font-medium text-red-600">Delete Account</div>
-                    <div className="text-sm text-gray-600">
-                      Permanently delete your account and all associated data
-                    </div>
-                  </div>
-                  <Button
-                    variant="destructive"
-                    onClick={handleDeleteAccount}
-                    className="w-full justify-start"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Account
-                  </Button>
+                  <Heart className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                  <p className="text-gray-500">View your wishlist</p>
+                  <Link href="/wishlist">
+                    <Button className="mt-4">
+                      View Wishlist
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>

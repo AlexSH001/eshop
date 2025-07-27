@@ -15,7 +15,7 @@ const alipayService = require('../services/alipayService');
 const router = express.Router();
 
 // Create order (checkout)
-router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
+router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
   const {
     email,
     phone,
@@ -23,7 +23,8 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
     billingAddress,
     shippingAddress,
     cartItems,
-    sessionId
+    sessionId,
+    saveShippingAddress = false
   } = req.body;
 
   const userId = req.user ? req.user.id : null;
@@ -156,6 +157,39 @@ router.post('/', optionalAuth, createOrderValidation, async (req, res) => {
         SET stock = stock - $1, sales_count = sales_count + $2, updated_at = CURRENT_TIMESTAMP
         WHERE id = $3
       `, [item.quantity, item.quantity, item.productId]);
+    }
+
+    // Save shipping address if requested and user is authenticated
+    if (saveShippingAddress && userId) {
+      // Check if this address already exists
+      const existingAddress = await database.get(`
+        SELECT id FROM user_addresses 
+        WHERE user_id = $1 AND type = 'shipping' 
+        AND first_name = $2 AND last_name = $3 
+        AND address_line_1 = $4 AND city = $5 AND state = $6 AND postal_code = $7
+      `, [
+        userId, 
+        shippingAddress.firstName, 
+        shippingAddress.lastName, 
+        shippingAddress.addressLine1, 
+        shippingAddress.city, 
+        shippingAddress.state, 
+        shippingAddress.postalCode
+      ]);
+
+      if (!existingAddress) {
+        await database.execute(`
+          INSERT INTO user_addresses (
+            user_id, type, first_name, last_name, company, address_line_1, address_line_2,
+            city, state, postal_code, country, phone, is_default
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        `, [
+          userId, 'shipping', shippingAddress.firstName, shippingAddress.lastName,
+          shippingAddress.company || null, shippingAddress.addressLine1, shippingAddress.addressLine2 || null,
+          shippingAddress.city, shippingAddress.state, shippingAddress.postalCode, shippingAddress.country,
+          phone || null, false // Don't set as default automatically
+        ]);
+      }
     }
 
     // Clear cart

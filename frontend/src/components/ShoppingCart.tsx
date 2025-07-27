@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ShoppingCart, Plus, Minus, Trash2, ShoppingBag } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
+import AuthModal from "@/components/AuthModal";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -15,6 +17,7 @@ interface ShoppingCartSheetProps {
 
 export default function ShoppingCartSheet({ children }: ShoppingCartSheetProps) {
   const { state, removeItem, updateQuantity } = useCart();
+  const { isAuthenticated } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleQuantityChange = (id: number, newQuantity: number) => {
@@ -121,11 +124,19 @@ export default function ShoppingCartSheet({ children }: ShoppingCartSheetProps) 
                 </div>
 
                 <div className="space-y-2">
-                  <Link href="/checkout" onClick={() => setIsOpen(false)}>
-                    <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
-                      Proceed to Checkout
-                    </Button>
-                  </Link>
+                  {isAuthenticated ? (
+                    <Link href="/checkout" onClick={() => setIsOpen(false)}>
+                      <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                        Proceed to Checkout
+                      </Button>
+                    </Link>
+                  ) : (
+                    <AuthModal>
+                      <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                        Sign In to Checkout
+                      </Button>
+                    </AuthModal>
+                  )}
                   <Button
                     variant="outline"
                     className="w-full"
