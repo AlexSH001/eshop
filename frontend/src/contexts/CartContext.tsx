@@ -113,7 +113,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     itemCount: 0,
   });
 
-  // Load cart from API on mount
+  // Load cart from API on mount and when auth state changes
   useEffect(() => {
     const loadCart = async () => {
       try {
@@ -148,13 +148,42 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           })) || [];
 
           dispatch({ type: 'SET_CART', payload: items });
+        } else {
+          // If request fails, clear cart state
+          dispatch({ type: 'SET_CART', payload: [] });
         }
       } catch (error) {
         console.error('Failed to load cart:', error);
+        // On error, clear cart state
+        dispatch({ type: 'SET_CART', payload: [] });
       }
     };
 
     loadCart();
+
+    // Listen for auth state changes to reload cart
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'auth_token' || e.key === 'session_id') {
+        // Add a small delay to ensure localStorage is updated
+        setTimeout(loadCart, 100);
+      }
+    };
+
+    // Also listen for custom logout event
+    const handleLogout = () => {
+      // Clear cart immediately on logout
+      dispatch({ type: 'SET_CART', payload: [] });
+      // Then reload cart for guest session
+      setTimeout(loadCart, 100);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('logout', handleLogout);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('logout', handleLogout);
+    };
   }, []);
 
   const addItem = async (product: Omit<CartItem, 'quantity' | 'id' | 'productId'> & { id: number }) => {
@@ -162,9 +191,13 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const sessionId = localStorage.getItem('session_id');
       const token = localStorage.getItem('auth_token');
 
-      // Optimistically check if item is already in cart to decide quantity
+      // Check if item is already in cart to prevent duplicate requests
       const existingItem = state.items.find(item => item.productId === product.id);
-      const quantity = (existingItem?.quantity || 0) + 1;
+      if (existingItem) {
+        // If item exists, update quantity instead of adding
+        await updateQuantity(existingItem.id, existingItem.quantity + 1);
+        return;
+      }
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/cart/items`, {
         method: 'POST',
@@ -175,7 +208,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         },
         body: JSON.stringify({
           productId: product.id,
-          quantity: 1, // Always add 1, backend handles aggregation
+          quantity: 1,
         }),
       });
 
@@ -187,7 +220,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const fullNewItem: CartItem = {
           id: backendItem.id,
-          productId: product.id, // Use product.id from the input, which is the real product ID
+          productId: product.id,
           name: product.name,
           price: product.price,
           originalPrice: product.originalPrice,

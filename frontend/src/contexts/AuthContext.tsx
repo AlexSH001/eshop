@@ -186,6 +186,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false,
       });
 
+      // Merge guest cart with user cart if session exists
+      const sessionId = localStorage.getItem('session_id');
+      if (sessionId) {
+        try {
+          const mergeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/cart/merge`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${data.tokens.accessToken}`,
+            },
+            body: JSON.stringify({ sessionId }),
+          });
+
+          if (mergeResponse.ok) {
+            // Clear session ID after successful merge
+            localStorage.removeItem('session_id');
+            
+            // Trigger cart reload after successful merge
+            window.dispatchEvent(new StorageEvent('storage', {
+              key: 'auth_token',
+              newValue: data.tokens.accessToken,
+              oldValue: null
+            }));
+          }
+        } catch (mergeError) {
+          console.error('Failed to merge cart:', mergeError);
+          // Don't fail login if cart merge fails
+        }
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
@@ -231,6 +261,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false,
       });
 
+      // Merge guest cart with user cart if session exists
+      const sessionId = localStorage.getItem('session_id');
+      if (sessionId) {
+        try {
+          const mergeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/cart/merge`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${data.tokens.accessToken}`,
+            },
+            body: JSON.stringify({ sessionId }),
+          });
+
+          if (mergeResponse.ok) {
+            // Clear session ID after successful merge
+            localStorage.removeItem('session_id');
+            
+            // Trigger cart reload after successful merge
+            window.dispatchEvent(new StorageEvent('storage', {
+              key: 'auth_token',
+              newValue: data.tokens.accessToken,
+              oldValue: null
+            }));
+          }
+        } catch (mergeError) {
+          console.error('Failed to merge cart:', mergeError);
+          // Don't fail signup if cart merge fails
+        }
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Signup error:', error);
@@ -243,6 +303,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('wishlist');
+    
+    // Trigger custom logout event for cart context
+    window.dispatchEvent(new CustomEvent('logout'));
+    
+    // Also trigger storage event to notify cart context
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'auth_token',
+      newValue: null,
+      oldValue: localStorage.getItem('auth_token')
+    }));
+    
     setState({
       user: null,
       isAuthenticated: false,
