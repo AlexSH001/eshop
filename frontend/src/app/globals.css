@@ -34,4 +34,32 @@
     transform: scale(0.98);
     transition: transform 0.1s ease;
   }
+
+  /* Toast notification positioning */
+  .toaster {
+    z-index: 9999 !important;
+    position: fixed !important;
+    top: 20px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+
+  /* Ensure toasts are properly positioned */
+  [data-sonner-toaster] {
+    position: fixed !important;
+    top: 20px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+
+  /* Mobile adjustments */
+  @media (max-width: 768px) {
+    .toaster {
+      top: 16px !important;
+    }
+    
+    [data-sonner-toaster] {
+      top: 16px !important;
+    }
+  }
 }

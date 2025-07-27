@@ -22,6 +22,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
           cancelButton:
             "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
+        style: {
+          zIndex: 9999, // 确保在其他元素之上
+        },
       }}
       {...props}
     />

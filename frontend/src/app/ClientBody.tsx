@@ -6,7 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { SearchProvider } from "@/contexts/SearchContext";
 import { AdminProvider } from "@/contexts/AdminContext";
-import { Toaster } from "@/components/ui/sonner";
+
 
 export default function ClientBody({
   children,
@@ -27,7 +27,6 @@ export default function ClientBody({
             <CartProvider>
               <div className="antialiased">
                 {children}
-                <Toaster richColors position="top-right" />
               </div>
             </CartProvider>
           </SearchProvider>
