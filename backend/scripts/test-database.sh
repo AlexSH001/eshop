@@ -34,8 +34,8 @@ if [ "$DB_TYPE" = "sqlite" ]; then
     exit 1
   fi
 else
-  if ! grep -q "DB_CLIENT=pg" .env; then
-    echo "❌ DB_CLIENT not set to pg in .env"
+  if ! grep -q "DB_CLIENT=postgres" .env; then
+    echo "❌ DB_CLIENT not set to postgres in .env"
     exit 1
   fi
 fi

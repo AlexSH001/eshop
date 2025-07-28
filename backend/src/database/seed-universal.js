@@ -131,7 +131,7 @@ async function seedData(client = null) {
     
     // Extract image URLs from the images array
     const imageUrls = product.images && product.images.length > 0 
-      ? product.images.map(img => img.download_link || img.image)
+      ? product.images.map(img => img.image)
       : [];
     const featuredImage = imageUrls.length > 0 ? imageUrls[0] : null;
     
