@@ -73,7 +73,7 @@ export default function AdminUsersPage() {
         throw new Error('No admin token found');
       }
 
-      const res = await fetch('http://localhost:3001/api/users/authenticated', {
+      const res = await fetch('http://localhost:3001/api/admin/users/authenticated', {
         headers: {
           'Authorization': `Bearer ${adminToken}`,
           'Content-Type': 'application/json'
