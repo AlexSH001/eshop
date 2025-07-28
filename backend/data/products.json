@@ -1,94 +1,697 @@
 {
-    "products": [
+  "products": [
+    {
+      "id": 1001,
+      "name": "Wireless Bluetooth Headphones",
+      "categoryid": 1,
+      "price": 89.99,
+      "stock": 99,
+      "images": [
         {
-            "id": 1001, "name": "Wireless Bluetooth Headphones", "categoryid": 1, "price": 89.99, "originalprice": 129.99, "stock": 99,
-            "images": [
-                {"image": "/uploads/products/1001/1.jpg", "download_link": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop"},
-                {"image": "/uploads/products/1001/2.jpg", "download_link": "https://ts1.tc.mm.bing.net/th/id/OIP-C.8slszXguL-U_XH9jVQLj5AHaEK?rs=1&pid=ImgDetMain"}
-            ],
-            "description": "",
-            "specifications": [
-                {"key": "", "value": ""}
-            ],
-            "shipping": ""
-        },
-        {
-            "id": 1002, "name": "Smart Phone", "categoryid": 1, "price": 699.99, "originalprice": 799.99, "stock": 99,
-            "images": [
-                {"image": "/uploads/products/1002/1.jpg", "download_link": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&h=300&fit=crop"},
-                {"image": "/uploads/products/1002/2.jpg", "download_link": "https://ts2.tc.mm.bing.net/th/id/OIP-C.L_IBmQ5JmWqU-k1Ezm9DjgHaFj?rs=1&pid=ImgDetMain"}
-          ],
-          "description": "",
-          "specifications": [
-              {"key": "", "value": ""}
-          ],
-          "shipping": ""
-        },
-        {
-            "id": 1003, "name": "Laptop", "categoryid": 1, "price": 999.99, "originalprice": 1299.99, "stock": 99,
-            "images": [
-                {"image": "/uploads/products/1003/1.jpg", "download_link": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=300&h=300&fit=crop"}
-            ],
-            "description": "",
-            "specifications": [
-                {"key": "", "value": ""}
-            ],
-            "shipping": ""
-        },
-        {
-            "id": 1004, "name": "Smart Watch", "categoryid": 1, "price": 299.99, "originalprice": 399.99, "stock": 99,
-            "images": [
-                {"image": "/uploads/products/1004/1.jpg", "download_link": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=300&h=300&fit=crop"}
-            ],
-            "description": "",
-            "specifications": [
-                {"key": "", "value": ""}
-            ],
-            "shipping": ""
-        },
-        {
-            "id": 1005, "name": "Tablet", "categoryid": 1, "price": 449.99, "originalprice": 549.99, "stock": 99,
-            "images": [
-                {"image": "/uploads/products/1005/1.jpg", "download_link": "https://images.unsplash.com/photo-1561154464-82e9adf32764?w=300&h=300&fit=crop"}
-            ],
-            "description": "",
-            "specifications": [
-                {"key": "", "value": ""}
-            ],
-            "shipping": ""
-        },
-        {
-            "id": 1006, "name": "Digital Camera", "categoryid": 1, "price": 799.99, "originalprice": 999.99, "stock": 99,
-            "images": [
-                {"image": "/uploads/products/1006/1.jpg", "download_link": "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=300&h=300&fit=crop"}
-            ],
-            "description": "",
-            "specifications": [
-                {"key": "", "value": ""}
-            ],
-            "shipping": ""
-        },
-        {
-            "id": 1007, "name": "Gaming Console", "categoryid": 1, "price": 499.99, "originalprice": 599.99, "stock": 99,
-            "images": [
-                {"image": "/uploads/products/1007/1.jpg", "download_link": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=300&h=300&fit=crop"}
-            ],
-            "description": "",
-            "specifications": [
-                {"key": "", "value": ""}
-            ],
-            "shipping": ""
-        },
-        {
-            "id": 1008, "name": "Bluetooth Speakers", "categoryid": 1, "price": 199.99, "originalprice": 299.99, "stock": 99,
-            "images": [
-                {"image": "/uploads/products/1008/1.jpg", "download_link": "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=300&h=300&fit=crop"}
-            ],
-            "description": "",
-            "specifications": [
-                {"key": "", "value": ""}
-            ],
-            "shipping": ""
+          "image": "/uploads/products/1001/1.jpg",
+          "download_link": "/static/images/products/product_1001.jpg"
         }
-    ]
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 1002,
+      "name": "Smart Phone",
+      "categoryid": 1,
+      "price": 699.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/1002/1.jpg",
+          "download_link": "/static/images/products/product_1002.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 1003,
+      "name": "Laptop",
+      "categoryid": 1,
+      "price": 999.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/1003/1.jpg",
+          "download_link": "/static/images/products/product_1003.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 1004,
+      "name": "Smart Watch",
+      "categoryid": 1,
+      "price": 299.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/1004/1.jpg",
+          "download_link": "/static/images/products/product_1004.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 1005,
+      "name": "Tablet",
+      "categoryid": 1,
+      "price": 449.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/1005/1.jpg",
+          "download_link": "/static/images/products/product_1005.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 1006,
+      "name": "Digital Camera",
+      "categoryid": 1,
+      "price": 799.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/1006/1.jpg",
+          "download_link": "/static/images/products/product_1006.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 1007,
+      "name": "Gaming Console",
+      "categoryid": 1,
+      "price": 499.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/1007/1.jpg",
+          "download_link": "/static/images/products/product_1007.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 1008,
+      "name": "Bluetooth Speakers",
+      "categoryid": 1,
+      "price": 199.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/1008/1.jpg",
+          "download_link": "/static/images/products/product_1008.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 2001,
+      "name": "Cotton T-Shirt",
+      "categoryid": 2,
+      "price": 24.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/2001/1.jpg",
+          "download_link": "/static/images/products/product_2001.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 2002,
+      "name": "Denim Jeans",
+      "categoryid": 2,
+      "price": 79.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/2002/1.jpg",
+          "download_link": "/static/images/products/product_2002.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 2003,
+      "name": "Sneakers",
+      "categoryid": 2,
+      "price": 129.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/2003/1.jpg",
+          "download_link": "/static/images/products/product_2003.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 2004,
+      "name": "Leather Jacket",
+      "categoryid": 2,
+      "price": 199.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/2004/1.jpg",
+          "download_link": "/static/images/products/product_2004.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 2005,
+      "name": "Summer Dress",
+      "categoryid": 2,
+      "price": 89.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/2005/1.jpg",
+          "download_link": "/static/images/products/product_2005.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 2006,
+      "name": "Sunglasses",
+      "categoryid": 2,
+      "price": 49.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/2006/1.jpg",
+          "download_link": "/static/images/products/product_2006.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 2007,
+      "name": "Winter Coat",
+      "categoryid": 2,
+      "price": 249.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/2007/1.jpg",
+          "download_link": "/static/images/products/product_2007.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 2008,
+      "name": "Handbag",
+      "categoryid": 2,
+      "price": 159.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/2008/1.jpg",
+          "download_link": "/static/images/products/product_2008.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 3001,
+      "name": "Desk Lamp",
+      "categoryid": 3,
+      "price": 45.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/3001/1.jpg",
+          "download_link": "/static/images/products/product_3001.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 3002,
+      "name": "Coffee Maker",
+      "categoryid": 3,
+      "price": 159.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/3002/1.jpg",
+          "download_link": "/static/images/products/product_3002.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 3003,
+      "name": "Plant Pot",
+      "categoryid": 3,
+      "price": 29.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/3003/1.jpg",
+          "download_link": "/static/images/products/product_3003.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 3004,
+      "name": "Throw Pillow",
+      "categoryid": 3,
+      "price": 19.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/3004/1.jpg",
+          "download_link": "/static/images/products/product_3004.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 3006,
+      "name": "Wall Art",
+      "categoryid": 3,
+      "price": 89.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/3006/1.jpg",
+          "download_link": "/static/images/products/product_3006.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 3007,
+      "name": "Garden Tools",
+      "categoryid": 3,
+      "price": 79.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/3007/1.jpg",
+          "download_link": "/static/images/products/product_3007.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 4009,
+      "name": "Mechanical Keyboard",
+      "categoryid": 4,
+      "price": 129.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/4009/1.jpg",
+          "download_link": "/static/images/products/product_4009.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 4000,
+      "name": "Gaming Mouse",
+      "categoryid": 4,
+      "price": 79.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/4000/1.jpg",
+          "download_link": "/static/images/products/product_4000.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 4002,
+      "name": "Controller",
+      "categoryid": 4,
+      "price": 59.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/4002/1.jpg",
+          "download_link": "/static/images/products/product_4002.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 4004,
+      "name": "Gaming Monitor",
+      "categoryid": 4,
+      "price": 399.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/4004/1.jpg",
+          "download_link": "/static/images/products/product_4004.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 4005,
+      "name": "Gaming Desk",
+      "categoryid": 4,
+      "price": 249.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/4005/1.jpg",
+          "download_link": "/static/images/products/product_4005.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 5007,
+      "name": "Running Shoes",
+      "categoryid": 5,
+      "price": 89.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/5007/1.jpg",
+          "download_link": "/static/images/products/product_5007.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 5008,
+      "name": "Yoga Mat",
+      "categoryid": 5,
+      "price": 29.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/5008/1.jpg",
+          "download_link": "/static/images/products/product_5008.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 5009,
+      "name": "Dumbbells Set",
+      "categoryid": 5,
+      "price": 79.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/5009/1.jpg",
+          "download_link": "/static/images/products/product_5009.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 5000,
+      "name": "Sports Water Bottle",
+      "categoryid": 5,
+      "price": 19.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/5000/1.jpg",
+          "download_link": "/static/images/products/product_5000.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 5001,
+      "name": "Fitness Tracker",
+      "categoryid": 5,
+      "price": 149.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/5001/1.jpg",
+          "download_link": "/static/images/products/product_5001.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    },
+    {
+      "id": 5002,
+      "name": "Tennis Racket",
+      "categoryid": 5,
+      "price": 99.99,
+      "stock": 99,
+      "images": [
+        {
+          "image": "/uploads/products/5002/1.jpg",
+          "download_link": "/static/images/products/product_5002.jpg"
+        }
+      ],
+      "description": "",
+      "specifications": [
+        {
+          "key": "",
+          "value": ""
+        }
+      ],
+      "shipping": ""
+    }
+  ]
 }

@@ -9,7 +9,7 @@ export const allCategories = [
     description: "Phones, Laptops, Gadgets",
     href: "/categories/electronics",
     productCount: 12,
-    image: "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400&h=300&fit=crop"
+    image: "/static/images/categories/category_1001.jpg"
   },
   {
     name: "Fashion",
@@ -17,7 +17,7 @@ export const allCategories = [
     description: "Clothing, Shoes, Accessories",
     href: "/categories/fashion",
     productCount: 8,
-    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop"
+    image: "/static/images/categories/category_fashion.jpg"
   },
   {
     name: "Home & Garden",
@@ -25,7 +25,7 @@ export const allCategories = [
     description: "Furniture, Decor, Tools",
     href: "/categories/home-garden",
     productCount: 8,
-    image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop"
+    image: "/static/images/categories/category_home_garden.jpg"
   },
   {
     name: "Gaming",
@@ -33,7 +33,7 @@ export const allCategories = [
     description: "Consoles, Games, Accessories",
     href: "/categories/gaming",
     productCount: 8,
-    image: "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=400&h=300&fit=crop"
+    image: "/static/images/categories/category_gaming.jpg"
   },
   {
     name: "Sports",
@@ -41,7 +41,7 @@ export const allCategories = [
     description: "Fitness, Camping, Sports",
     href: "/categories/sports",
     productCount: 6,
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop"
+    image: "/static/images/categories/category_sports.jpg"
   },
   {
     name: "Photography",
@@ -49,7 +49,7 @@ export const allCategories = [
     description: "Cameras, Lenses, Equipment",
     href: "/categories/photography",
     productCount: 5,
-    image: "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400&h=300&fit=crop"
+    image: "/static/images/categories/category_photography.jpg"
   },
   {
     name: "Books",
@@ -57,7 +57,7 @@ export const allCategories = [
     description: "Books, Movies, Music",
     href: "/categories/books",
     productCount: 4,
-    image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop"
+    image: "/static/images/categories/category_books.jpg"
   },
   {
     name: "Automotive",
@@ -65,7 +65,7 @@ export const allCategories = [
     description: "Parts, Accessories, Tools",
     href: "/categories/automotive",
     productCount: 6,
-    image: "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=400&h=300&fit=crop"
+    image: "/static/images/categories/category_automotive.jpg"
   },
   {
     name: "Music",
@@ -73,7 +73,7 @@ export const allCategories = [
     description: "Instruments, Audio, Equipment",
     href: "/categories/music",
     productCount: 5,
-    image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=300&fit=crop"
+    image: "/static/images/categories/category_music.jpg"
   },
   {
     name: "Baby & Kids",
@@ -81,7 +81,7 @@ export const allCategories = [
     description: "Toys, Clothes, Safety",
     href: "/categories/baby-kids",
     productCount: 7,
-    image: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop"
+    image: "/static/images/categories/category_music.jpg"
   }
 ]; 
 
@@ -90,7 +90,7 @@ export const bannerSlides = [
     id: 1,
     title: "Summer Sale",
     subtitle: "Up to 70% off on all electronics",
-    image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&h=400&fit=crop",
+    image: "/static/images/banners/banner_1.jpg",
     cta: "Shop Electronics",
     link: "/categories/electronics"
   },
@@ -98,7 +98,7 @@ export const bannerSlides = [
     id: 2,
     title: "New Fashion Collection",
     subtitle: "Discover the latest trends",
-    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=400&fit=crop",
+    image: "/static/images/banners/banner_2.jpg",
     cta: "Shop Fashion",
     link: "/categories/fashion"
   },
@@ -106,7 +106,7 @@ export const bannerSlides = [
     id: 3,
     title: "Home & Garden Sale",
     subtitle: "Transform your living space",
-    image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&h=400&fit=crop",
+    image: "/static/images/banners/banner_3.jpg",
     cta: "Shop Home",
     link: "/categories/home-garden"
   },
@@ -114,7 +114,7 @@ export const bannerSlides = [
     id: 4,
     title: "Gaming Gear",
     subtitle: "Level up your gaming experience",
-    image: "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=1200&h=400&fit=crop",
+    image: "/static/images/banners/banner_4.jpg",
     cta: "Shop Gaming",
     link: "/categories/gaming"
   }

@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0 --turbopack",
+    "dev:fast": "./scripts/dev-optimized.sh",
+    "dev:webpack": "./scripts/dev-optimized.sh --no-turbopack",
+    "dev:turbo": "./scripts/dev-optimized.sh --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "bunx biome lint --write && bunx tsc --noEmit",

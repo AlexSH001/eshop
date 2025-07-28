@@ -56,8 +56,44 @@ const nextConfig = {
     'http://localhost:3001',
     'http://127.0.0.1:3001'
   ],
+  
+  // Optimize for development performance
+  experimental: {
+    // Disable image optimization in development for faster builds
+    optimizePackageImports: ['lucide-react'],
+  },
+  
+  // Webpack configuration for development optimization
+  webpack: (config, { dev, isServer }) => {
+    if (dev && !isServer) {
+      // Exclude images from webpack processing in development
+      config.module.rules.push({
+        test: /\.(jpg|jpeg|png|gif|webp)$/,
+        type: 'asset/resource',
+        generator: {
+          filename: 'static/images/[name][ext]',
+        },
+      });
+      
+      // Optimize webpack for development
+      config.watchOptions = {
+        ignored: [
+          '**/node_modules/**',
+          '**/.next/**',
+          '**/public/images/**', // Ignore image changes in development
+        ],
+      };
+    }
+    
+    return config;
+  },
+  
   images: {
     unoptimized: true,
+    // Disable image optimization in development
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     domains: [
       "source.unsplash.com",
       "images.unsplash.com",

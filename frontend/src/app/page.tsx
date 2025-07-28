@@ -19,6 +19,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useEffect, useState } from "react";
 import { allCategories, bannerSlides } from "@/data/categories";
+import { electronicsProducts, fashionProducts, homeGardenProducts, gamingProducts, sportsProducts } from "@/data/products";
+import { getImagePath } from "@/lib/imageUtils";
+
 interface Product {
   id: number;
   name: string;
@@ -46,13 +49,30 @@ export default function Home() {
         setIsLoading(true);
         setError(null);
         
-        // Fetch all products
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/products?limit=50`);
+        console.log('Starting to fetch products...');
+        
+        // Fetch all products with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/products?limit=50`, {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
         if (!response.ok) {
-          throw new Error('Failed to fetch products');
+          throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`);
         }
         
         const data: { products: Record<string, unknown>[] } = await response.json();
+        
+        console.log('API Response:', data);
+        console.log('Products count:', data.products.length);
+        
+        if (!data.products || data.products.length === 0) {
+          throw new Error('No products found in API response');
+        }
         
         // Group products by category
         const groupedProducts: Record<string, Product[]> = {};
@@ -68,17 +88,38 @@ export default function Home() {
             name: product.name as string,
             price: product.price as number,
             originalPrice: product.original_price as number | undefined,
-            image: (product.featured_image as string) || ((product.images as string[] | undefined)?.[0] ?? (product.image as string)),
+            image: getImagePath('products', product.id as number),
             category: categoryName
           };
+          
+          console.log(`Product ${transformedProduct.id}: ${transformedProduct.name} - Image: ${transformedProduct.image}`);
           
           groupedProducts[categoryName].push(transformedProduct);
         });
         
+        console.log('Grouped products:', groupedProducts);
+        
         setCategoryProducts(groupedProducts);
       } catch (err) {
         console.error('Error fetching products:', err);
-        setError('Failed to load products. Please try again later.');
+        
+        // Fallback to static data if API fails
+        console.log('Falling back to static product data...');
+        const fallbackProducts: Record<string, Product[]> = {
+          'Electronics': electronicsProducts.slice(0, 4).map(p => ({ ...p, category: 'Electronics' })),
+          'Fashion': fashionProducts.slice(0, 4).map(p => ({ ...p, category: 'Fashion' })),
+          'Home & Garden': homeGardenProducts.slice(0, 4).map(p => ({ ...p, category: 'Home & Garden' })),
+          'Gaming': gamingProducts.slice(0, 4).map(p => ({ ...p, category: 'Gaming' })),
+          'Sports': sportsProducts.slice(0, 4).map(p => ({ ...p, category: 'Sports' }))
+        };
+        
+        setCategoryProducts(fallbackProducts);
+        
+        if (err instanceof Error) {
+          console.warn(`API failed, using fallback data: ${err.message}`);
+        } else {
+          console.warn('API failed, using fallback data');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -106,8 +147,8 @@ export default function Home() {
     });
   }, [api]);
 
-  // Loading state
-  if (isLoading) {
+  // Loading state (only show if no products are available)
+  if (isLoading && Object.keys(categoryProducts).length === 0) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex items-center space-x-2">
@@ -118,8 +159,8 @@ export default function Home() {
     );
   }
 
-  // Error state
-  if (error) {
+  // Error state (only show if no products are available)
+  if (error && Object.keys(categoryProducts).length === 0) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -342,6 +383,12 @@ export default function Home() {
                             src={product.image}
                             alt={product.name}
                             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            onLoad={() => console.log(`Image loaded successfully: ${product.name}`)}
+                            onError={(e) => {
+                              console.error(`Image failed to load for ${product.name}:`, product.image);
+                              const target = e.target as HTMLImageElement;
+                              target.src = getImagePath('products', product.id);
+                            }}
                           />
 
                           {/* Quick View Overlay - Hidden on mobile, shown on hover for desktop */}

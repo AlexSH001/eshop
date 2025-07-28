@@ -22,6 +22,7 @@ import {
   Loader2
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { getImagePath } from "@/lib/imageUtils";
 
 interface ProductQuickViewProps {
   product: {
@@ -147,7 +148,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                   onMouseLeave={() => setIsZoomed(false)}
                 >
                   <img
-                    src={images[selectedImage]}
+                    src={getImagePath('products', product.id)}
                     alt={product.name}
                     className={`w-full h-full object-cover transition-transform duration-200 ${
                       isZoomed ? 'scale-150' : 'scale-100'
@@ -196,7 +197,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                       onClick={() => setSelectedImage(index)}
                     >
                       <img
-                        src={image}
+                        src={getImagePath('products', product.id)}
                         alt={`${product.name} ${index + 1}`}
                         className="w-full h-full object-cover"
                       />

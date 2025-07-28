@@ -3,9 +3,9 @@ const { hashPassword, generateSlug, generateSKU } = require('../utils/auth');
 const fs = require('fs');
 const path = require('path');
 
-async function seedCompleteDatabase() {
+async function seedFromJsonFiles() {
   try {
-    console.log('🌱 Starting complete database seeding...');
+    console.log('🌱 Starting database seeding from JSON files...');
 
     // Initialize database first
     await initializeDatabase();
@@ -24,7 +24,7 @@ async function seedCompleteDatabase() {
     await database.execute('DELETE FROM users');
     await database.execute('DELETE FROM admins');
 
-    // Read JSON files for categories and products
+    // Read JSON files
     const dataPath = path.join(__dirname, '../../data');
     const categoriesPath = path.join(dataPath, 'categories.json');
     const productsPath = path.join(dataPath, 'products.json');
@@ -49,11 +49,17 @@ async function seedCompleteDatabase() {
     // Seed Products
     console.log('📦 Seeding products...');
     for (const product of productsData.products) {
+      const slug = generateSlug(product.name);
+      // Generate a unique SKU using product ID
+      const sku = `SKU-${product.id.toString().padStart(4, '0')}`;
+      
       await database.execute(
-        'INSERT INTO products (id, name, category_id, price, original_price, stock, description, specifications, shipping) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO products (id, name, slug, sku, category_id, price, original_price, stock, description, specifications, shipping) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [
           product.id,
           product.name,
+          slug,
+          sku,
           product.categoryid,
           product.price,
           product.originalprice,
@@ -63,14 +69,6 @@ async function seedCompleteDatabase() {
           product.shipping
         ]
       );
-
-      // Insert product images
-      for (const image of product.images) {
-        await database.execute(
-          'INSERT INTO product_images (product_id, image_url, download_link) VALUES (?, ?, ?)',
-          [product.id, image.image, image.download_link]
-        );
-      }
     }
     console.log(`✅ Seeded ${productsData.products.length} products`);
 
@@ -78,41 +76,41 @@ async function seedCompleteDatabase() {
     console.log('👤 Seeding admin user...');
     const adminPassword = await hashPassword('admin123');
     await database.execute(
-      'INSERT INTO admins (username, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
-      ['admin', 'admin@eshop.com', adminPassword, 'super_admin', true]
+      'INSERT INTO admins (email, password, name, role) VALUES (?, ?, ?, ?)',
+      ['admin@eshop.com', adminPassword, 'Admin User', 'super_admin']
     );
-    console.log('✅ Seeded admin user (username: admin, password: admin123)');
+    console.log('✅ Seeded admin user (email: admin@eshop.com, password: admin123)');
 
     // Seed Test User
     console.log('👤 Seeding test user...');
     const userPassword = await hashPassword('user123');
     await database.execute(
-      'INSERT INTO users (username, email, password_hash, first_name, last_name, phone, is_active, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      ['user', 'user@eshop.com', userPassword, 'Test', 'User', '+1234567890', true, true]
+      'INSERT INTO users (email, password, first_name, last_name, phone, email_verified) VALUES (?, ?, ?, ?, ?, ?)',
+      ['user@eshop.com', userPassword, 'Test', 'User', '+1234567890', true]
     );
-    console.log('✅ Seeded test user (username: user, password: user123)');
+    console.log('✅ Seeded test user (email: user@eshop.com, password: user123)');
 
     await database.commit();
     console.log('🎉 Database seeding completed successfully!');
-    
-    console.log('\n📊 Summary:');
-    console.log(`📁 Categories: ${categoriesData.categories.length}`);
-    console.log(`📦 Products: ${productsData.products.length}`);
-    console.log(`👤 Admin: 1`);
-    console.log(`👤 Test User: 1`);
-    
+
   } catch (error) {
     await database.rollback();
     console.error('❌ Error seeding database:', error);
     throw error;
-  } finally {
-    await database.close();
   }
 }
 
-// Run the seeding if this file is executed directly
+// Run the script
 if (require.main === module) {
-  seedCompleteDatabase().catch(console.error);
+  seedFromJsonFiles()
+    .then(() => {
+      console.log('✅ Seeding completed successfully!');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ Seeding failed:', error);
+      process.exit(1);
+    });
 }
 
-module.exports = { seedCompleteDatabase }; 
+module.exports = { seedFromJsonFiles }; 
