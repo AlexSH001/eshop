@@ -32,7 +32,6 @@ export default function ProfilePage() {
   const [profileData, setProfileData] = useState({
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
-    phone: user?.phone || "",
   });
 
   useEffect(() => {
@@ -40,7 +39,6 @@ export default function ProfilePage() {
       setProfileData({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
-        phone: user.phone || "",
       });
     }
   }, [user]);
@@ -59,7 +57,6 @@ export default function ProfilePage() {
     setProfileData({
       firstName: user?.firstName || "",
       lastName: user?.lastName || "",
-      phone: user?.phone || "",
     });
     setIsEditing(false);
   };
@@ -178,16 +175,7 @@ export default function ProfilePage() {
                     />
                     <p className="text-sm text-gray-500 mt-1">Email cannot be changed</p>
                   </div>
-                  <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={profileData.phone}
-                      onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                      disabled={!isEditing}
-                      placeholder="+1 (555) 123-4567"
-                    />
-                  </div>
+
                 </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
@@ -223,7 +211,7 @@ export default function ProfilePage() {
                   <div>
                     <p className="font-medium">Member Since</p>
                     <p className="text-sm text-gray-600">
-                      {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
+                      N/A
                     </p>
                   </div>
                   <Badge variant="secondary">Active Member</Badge>
@@ -233,14 +221,12 @@ export default function ProfilePage() {
                   <div>
                     <p className="font-medium">Email Verification</p>
                     <p className="text-sm text-gray-600">
-                      {user?.emailVerified ? "Verified" : "Not verified"}
+                      Not verified
                     </p>
                   </div>
-                  {!user?.emailVerified && (
-                    <Button variant="outline" size="sm">
-                      Verify Email
-                    </Button>
-                  )}
+                  <Button variant="outline" size="sm">
+                    Verify Email
+                  </Button>
                 </div>
               </CardContent>
             </Card>

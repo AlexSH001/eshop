@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lock, Eye, EyeOff, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get('token');
@@ -34,7 +34,7 @@ export default function ResetPasswordPage() {
     }
 
     verifyToken();
-  }, [token]);
+  }, [token, router]);
 
   const verifyToken = async () => {
     try {
@@ -101,7 +101,7 @@ export default function ResetPasswordPage() {
       }
     } catch (error) {
       console.error('Password reset error:', error);
-      toast.error('An error occurred. Please try again.');
+      toast.error('Failed to reset password');
     } finally {
       setIsLoading(false);
     }
@@ -109,37 +109,13 @@ export default function ResetPasswordPage() {
 
   if (isVerifying) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="w-full max-w-md">
-          <CardContent className="text-center py-8">
-            <Loader2 className="mx-auto h-8 w-8 animate-spin text-gray-400 mb-4" />
-            <p className="text-gray-600">Verifying reset link...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!isValidToken) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <AlertCircle className="h-6 w-6 text-red-600" />
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-gray-500 mb-4" />
+              <p className="text-gray-600">Verifying reset link...</p>
             </div>
-            <CardTitle className="text-2xl">Invalid Reset Link</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-center text-gray-600">
-              This password reset link is invalid or has expired.
-            </p>
-            <Button 
-              onClick={() => router.push('/forgot-password')} 
-              className="w-full bg-black hover:bg-gray-800"
-            >
-              Request New Reset Link
-            </Button>
           </CardContent>
         </Card>
       </div>
@@ -148,24 +124,36 @@ export default function ResetPasswordPage() {
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Success!</h1>
+              <p className="text-gray-600 mb-6">Your password has been reset successfully.</p>
+              <Button onClick={() => router.push('/login')} className="w-full">
+                Sign In
+              </Button>
             </div>
-            <CardTitle className="text-2xl">Password Reset Successfully</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-center text-gray-600">
-              Your password has been reset successfully. You can now sign in with your new password.
-            </p>
-            <Button 
-              onClick={() => router.push('/login')} 
-              className="w-full bg-black hover:bg-gray-800"
-            >
-              Sign In
-            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isValidToken) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Invalid Link</h1>
+              <p className="text-gray-600 mb-6">This reset link is invalid or has expired.</p>
+              <Button onClick={() => router.push('/forgot-password')} className="w-full">
+                Request New Link
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -173,68 +161,74 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Reset Password</CardTitle>
-          <p className="text-gray-600">
-            Enter your new password for <strong>{userEmail}</strong>
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+            <Lock className="h-6 w-6 text-gray-600" />
+          </div>
+          <CardTitle className="mt-4 text-2xl font-bold text-gray-900">Reset Password</CardTitle>
+          <p className="mt-2 text-sm text-gray-600">
+            Enter your new password for {userEmail}
           </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="newPassword">New Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
                   id="newPassword"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter new password"
                   value={formData.newPassword}
-                  onChange={(e) => setFormData(prev => ({ ...prev, newPassword: e.target.value }))}
-                  className="pl-10 pr-10"
+                  onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                  placeholder="Enter new password"
                   required
+                  minLength={8}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
                 </button>
               </div>
-              <p className="text-xs text-gray-500">
-                Password must be at least 8 characters long with uppercase, lowercase, number, and special character.
-              </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+            <div>
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm new password"
                   value={formData.confirmPassword}
-                  onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                  className="pl-10 pr-10"
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  placeholder="Confirm new password"
                   required
+                  minLength={8}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3"
                 >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
                 </button>
               </div>
             </div>
 
             <Button
               type="submit"
-              className="w-full bg-black hover:bg-gray-800"
+              className="w-full"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -243,12 +237,31 @@ export default function ResetPasswordPage() {
                   Resetting Password...
                 </>
               ) : (
-                'Reset Password'
+                "Reset Password"
               )}
             </Button>
           </form>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-gray-500 mb-4" />
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   );
 } 
