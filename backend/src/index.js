@@ -51,17 +51,30 @@ app.use(securityValidation);
 app.use(securityHeaders);
 app.use(validateRequest);
 
-// Production CORS configuration
+// CORS configuration for development and production
 const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
       process.env.FRONTEND_URL,
       'https://yourdomain.com',
-      'https://www.yourdomain.com'
+      'https://www.yourdomain.com',
+      // Development origins
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://0.0.0.0:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+      'http://0.0.0.0:3001'
     ];
     
     // Allow requests with no origin (mobile apps, etc.)
     if (!origin) return callback(null, true);
+    
+    // In development, allow all localhost origins
+    if (process.env.NODE_ENV !== 'production' && 
+        (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('0.0.0.0'))) {
+      return callback(null, true);
+    }
     
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);

@@ -25,8 +25,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import AddressSelector from "@/components/AddressSelector";
 import AuthModal from "@/components/AuthModal";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { createUserAddress } from "@/lib/api";
 
 export default function CheckoutPage() {
   const { state, clearCart } = useCart();
@@ -35,21 +36,71 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
-  const [saveShippingAddress, setSaveShippingAddress] = useState(false);
+  const [saveContactAndAddress, setSaveContactAndAddress] = useState(false);
   const [useSavedAddress, setUseSavedAddress] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    phone: '',
+    firstName: '',
+    lastName: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: ''
+  });
+
+  // Populate form with user data when available
+  useEffect(() => {
+    if (user && isAuthenticated) {
+      setFormData(prev => ({
+        ...prev,
+        email: user.email || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || ''
+      }));
+    }
+  }, [user?.id, isAuthenticated]);
+
+  // Clear form when switching to saved address
+  useEffect(() => {
+    if (useSavedAddress && selectedAddress) {
+      setFormData(prev => ({
+        ...prev,
+        email: prev.email, // Keep email as it's not part of address
+        phone: selectedAddress.phone || '',
+        firstName: selectedAddress.firstName,
+        lastName: selectedAddress.lastName,
+        address: selectedAddress.addressLine1,
+        city: selectedAddress.city,
+        state: selectedAddress.state,
+        zipCode: selectedAddress.postalCode
+      }));
+    } else if (!useSavedAddress) {
+      // Clear address fields when switching away from saved address
+      setFormData(prev => ({
+        ...prev,
+        phone: '',
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        address: '',
+        city: '',
+        state: '',
+        zipCode: ''
+      }));
+    }
+  }, [useSavedAddress, selectedAddress?.id, user?.id]);
 
   const handleSubmitOrder = async () => {
     setIsProcessing(true);
 
     try {
       // Get form data
-      const email = (document.getElementById('email') as HTMLInputElement)?.value;
-      const phone = (document.getElementById('phone') as HTMLInputElement)?.value;
-      
-      let firstName, lastName, address, city, stateValue, zipCode;
+      let email, phone, firstName, lastName, address, city, stateValue, zipCode;
       
       if (useSavedAddress && selectedAddress) {
         // Use saved address
+        email = formData.email || (document.getElementById('email') as HTMLInputElement)?.value;
+        phone = selectedAddress.phone || formData.phone || (document.getElementById('phone') as HTMLInputElement)?.value;
         firstName = selectedAddress.firstName;
         lastName = selectedAddress.lastName;
         address = selectedAddress.addressLine1;
@@ -58,12 +109,14 @@ export default function CheckoutPage() {
         zipCode = selectedAddress.postalCode;
       } else {
         // Use form data
-        firstName = (document.getElementById('firstName') as HTMLInputElement)?.value;
-        lastName = (document.getElementById('lastName') as HTMLInputElement)?.value;
-        address = (document.getElementById('address') as HTMLInputElement)?.value;
-        city = (document.getElementById('city') as HTMLInputElement)?.value;
-        stateValue = (document.getElementById('state') as HTMLInputElement)?.value;
-        zipCode = (document.getElementById('zipCode') as HTMLInputElement)?.value;
+        email = formData.email || (document.getElementById('email') as HTMLInputElement)?.value;
+        phone = formData.phone || (document.getElementById('phone') as HTMLInputElement)?.value;
+        firstName = formData.firstName || (document.getElementById('firstName') as HTMLInputElement)?.value;
+        lastName = formData.lastName || (document.getElementById('lastName') as HTMLInputElement)?.value;
+        address = formData.address || (document.getElementById('address') as HTMLInputElement)?.value;
+        city = formData.city || (document.getElementById('city') as HTMLInputElement)?.value;
+        stateValue = formData.state || (document.getElementById('state') as HTMLInputElement)?.value;
+        zipCode = formData.zipCode || (document.getElementById('zipCode') as HTMLInputElement)?.value;
       }
 
       // Validate required fields
@@ -71,6 +124,24 @@ export default function CheckoutPage() {
         toast.error("Please fill in all required fields");
         setIsProcessing(false);
         return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        toast.error("Please enter a valid email address");
+        setIsProcessing(false);
+        return;
+      }
+
+      // Validate phone format if provided
+      if (phone && phone.trim()) {
+        const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+        if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
+          toast.error("Please enter a valid phone number");
+          setIsProcessing(false);
+          return;
+        }
       }
       
       if (!termsAccepted) {
@@ -82,7 +153,7 @@ export default function CheckoutPage() {
       // Prepare order data
       const orderData = {
         email,
-        phone: phone || null,
+        phone: phone && phone.trim() ? phone.trim() : null,
         paymentMethod: selectedPayment,
         billingAddress: {
           firstName,
@@ -108,8 +179,33 @@ export default function CheckoutPage() {
           quantity: item.quantity,
           price: item.price
         })),
-        saveShippingAddress: saveShippingAddress && isAuthenticated
+        saveShippingAddress: saveContactAndAddress && isAuthenticated
       };
+
+      console.log('Cart items being sent:', state.items);
+      console.log('Order data being sent:', orderData);
+
+      // Save contact and address information if requested
+      if (saveContactAndAddress && isAuthenticated && !useSavedAddress) {
+        try {
+          await createUserAddress({
+            type: 'shipping',
+            firstName,
+            lastName,
+            addressLine1: address,
+            city,
+            state: stateValue,
+            postalCode: zipCode,
+            country: 'US',
+            phone: phone || null,
+            isDefault: false
+          });
+          toast.success("Contact and address information saved for future orders");
+        } catch (error) {
+          console.warn('Failed to save address:', error);
+          // Don't fail the order if address saving fails
+        }
+      }
 
       // Create order - user must be authenticated at this point
       const authToken = localStorage.getItem('auth_token');
@@ -129,8 +225,21 @@ export default function CheckoutPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create order');
+        let errorMessage = 'Failed to create order';
+        try {
+          const errorData = await response.json();
+          console.error('Order creation failed:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorData: errorData
+          });
+          errorMessage = errorData.error || errorData.message || `Server error (${response.status})`;
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          console.error('Response status:', response.status, response.statusText);
+          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const orderResult = await response.json();
@@ -342,31 +451,12 @@ export default function CheckoutPage() {
           {/* Checkout Form */}
           <div className="mt-8 lg:col-span-7 lg:mt-0">
             <div className="space-y-8">
-              {/* Contact Information */}
+              {/* Contact Information & Shipping Address */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg font-semibold">Contact Information</CardTitle>
+                  <CardTitle className="text-lg font-semibold">Contact Information & Shipping Address</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" placeholder="john@example.com" />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Shipping Address */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold">Shipping Address</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                   {isAuthenticated && (
                     <div className="space-y-4">
                       <div className="flex items-center space-x-2">
@@ -386,83 +476,115 @@ export default function CheckoutPage() {
                           onAddressSelect={setSelectedAddress}
                         />
                       )}
-                      
-                      {!useSavedAddress && (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <div>
-                              <Label htmlFor="firstName">First Name</Label>
-                              <Input id="firstName" placeholder="John" />
-                            </div>
-                            <div>
-                              <Label htmlFor="lastName">Last Name</Label>
-                              <Input id="lastName" placeholder="Doe" />
-                            </div>
-                          </div>
-                          <div>
-                            <Label htmlFor="address">Address</Label>
-                            <Input id="address" placeholder="123 Main Street" />
-                          </div>
-                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                            <div>
-                              <Label htmlFor="city">City</Label>
-                              <Input id="city" placeholder="New York" />
-                            </div>
-                            <div>
-                              <Label htmlFor="state">State</Label>
-                              <Input id="state" placeholder="NY" />
-                            </div>
-                            <div>
-                              <Label htmlFor="zipCode">ZIP Code</Label>
-                              <Input id="zipCode" placeholder="10001" />
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="saveShippingAddress" 
-                              checked={saveShippingAddress}
-                              onCheckedChange={(checked) => setSaveShippingAddress(checked as boolean)}
-                            />
-                            <Label htmlFor="saveShippingAddress" className="text-sm">
-                              Save this address for future orders
-                            </Label>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                   
-                  {!isAuthenticated && (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                          <Label htmlFor="firstName">First Name</Label>
-                          <Input id="firstName" placeholder="John" />
-                        </div>
-                        <div>
-                          <Label htmlFor="lastName">Last Name</Label>
-                          <Input id="lastName" placeholder="Doe" />
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="address">Address</Label>
-                        <Input id="address" placeholder="123 Main Street" />
-                      </div>
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        <div>
-                          <Label htmlFor="city">City</Label>
-                          <Input id="city" placeholder="New York" />
-                        </div>
-                        <div>
-                          <Label htmlFor="state">State</Label>
-                          <Input id="state" placeholder="NY" />
-                        </div>
-                        <div>
-                          <Label htmlFor="zipCode">ZIP Code</Label>
-                          <Input id="zipCode" placeholder="10001" />
+                  {(!isAuthenticated || !useSavedAddress) && (
+                    <div className="space-y-6">
+                      {/* Contact Information */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-medium text-gray-900">Contact Information</h4>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <div>
+                            <Label htmlFor="email">Email *</Label>
+                            <Input 
+                              id="email" 
+                              type="email" 
+                              placeholder="john@example.com"
+                              value={formData.email}
+                              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="phone">Phone</Label>
+                            <Input 
+                              id="phone" 
+                              type="tel" 
+                              placeholder="+1 (555) 123-4567"
+                              value={formData.phone}
+                              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            />
+                          </div>
                         </div>
                       </div>
+
+                      <Separator />
+
+                      {/* Shipping Address */}
+                      <div className="space-y-4">
+                        <h4 className="text-md font-medium text-gray-900">Shipping Address</h4>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <div>
+                            <Label htmlFor="firstName">First Name *</Label>
+                            <Input 
+                              id="firstName" 
+                              placeholder="John"
+                              value={formData.firstName}
+                              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="lastName">Last Name *</Label>
+                            <Input 
+                              id="lastName" 
+                              placeholder="Doe"
+                              value={formData.lastName}
+                              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="address">Address *</Label>
+                          <Input 
+                            id="address" 
+                            placeholder="123 Main Street"
+                            value={formData.address}
+                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                          <div>
+                            <Label htmlFor="city">City *</Label>
+                            <Input 
+                              id="city" 
+                              placeholder="New York"
+                              value={formData.city}
+                              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="state">State *</Label>
+                            <Input 
+                              id="state" 
+                              placeholder="NY"
+                              value={formData.state}
+                              onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="zipCode">ZIP Code *</Label>
+                            <Input 
+                              id="zipCode" 
+                              placeholder="10001"
+                              value={formData.zipCode}
+                              onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {isAuthenticated && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="saveContactAndAddress" 
+                            checked={saveContactAndAddress}
+                            onCheckedChange={(checked) => setSaveContactAndAddress(checked as boolean)}
+                          />
+                          <Label htmlFor="saveContactAndAddress" className="text-sm">
+                            Save this contact and address information for future orders
+                          </Label>
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>

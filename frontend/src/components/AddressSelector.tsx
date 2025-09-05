@@ -354,6 +354,10 @@ export default function AddressSelector({
             formData={formData}
             setFormData={setFormData}
             onSubmit={handleAddAddress}
+            onCancel={() => {
+              setShowAddDialog(false);
+              resetForm();
+            }}
             submitLabel="Add Address"
           />
         </DialogContent>
@@ -369,6 +373,11 @@ export default function AddressSelector({
             formData={formData}
             setFormData={setFormData}
             onSubmit={handleEditAddress}
+            onCancel={() => {
+              setShowEditDialog(false);
+              setEditingAddress(null);
+              resetForm();
+            }}
             submitLabel="Update Address"
           />
         </DialogContent>
@@ -381,10 +390,11 @@ interface AddressFormProps {
   formData: any;
   setFormData: (data: any) => void;
   onSubmit: () => void;
+  onCancel: () => void;
   submitLabel: string;
 }
 
-function AddressForm({ formData, setFormData, onSubmit, submitLabel }: AddressFormProps) {
+function AddressForm({ formData, setFormData, onSubmit, onCancel, submitLabel }: AddressFormProps) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -488,7 +498,7 @@ function AddressForm({ formData, setFormData, onSubmit, submitLabel }: AddressFo
       <Separator />
 
       <div className="flex justify-end space-x-2">
-        <Button variant="outline" onClick={() => setFormData({ ...formData, isDefault: false })}>
+        <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>
         <Button onClick={onSubmit}>

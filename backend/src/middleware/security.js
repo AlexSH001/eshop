@@ -24,10 +24,10 @@ const generalLimiter = createRateLimit(
   'Too many requests from this IP, please try again later.'
 );
 
-// Auth rate limiting (stricter)
+// Auth rate limiting (stricter in production, more lenient in development)
 const authLimiter = createRateLimit(
   15 * 60 * 1000, // 15 minutes
-  5, // 5 requests per window
+  process.env.NODE_ENV === 'production' ? 5 : 50, // 5 in production, 50 in development
   'Too many authentication attempts, please try again later.'
 );
 

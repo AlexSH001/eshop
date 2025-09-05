@@ -189,7 +189,12 @@ const createOrderValidation = [
     .withMessage('Please provide a valid email'),
   body('phone')
     .optional()
-    .isMobilePhone()
+    .custom((value) => {
+      if (!value || value === null) return true; // Allow null/empty
+      // More lenient phone validation - just check it's not empty and has reasonable length
+      const cleaned = value.replace(/[\s\-\(\)]/g, '');
+      return cleaned.length >= 7 && cleaned.length <= 15 && /^[\+]?[0-9]+$/.test(cleaned);
+    })
     .withMessage('Please provide a valid phone number'),
   body('paymentMethod')
     .isIn(['credit_card', 'paypal', 'alipay', 'wechat_pay'])
@@ -206,8 +211,8 @@ const createOrderValidation = [
     .withMessage('Billing last name must be between 2 and 50 characters'),
   body('billingAddress.addressLine1')
     .trim()
-    .isLength({ min: 5, max: 100 })
-    .withMessage('Billing address line 1 must be between 5 and 100 characters'),
+    .isLength({ min: 3, max: 100 })
+    .withMessage('Billing address line 1 must be between 3 and 100 characters'),
   body('billingAddress.city')
     .trim()
     .isLength({ min: 2, max: 50 })
@@ -236,8 +241,8 @@ const createOrderValidation = [
     .withMessage('Shipping last name must be between 2 and 50 characters'),
   body('shippingAddress.addressLine1')
     .trim()
-    .isLength({ min: 5, max: 100 })
-    .withMessage('Shipping address line 1 must be between 5 and 100 characters'),
+    .isLength({ min: 3, max: 100 })
+    .withMessage('Shipping address line 1 must be between 3 and 100 characters'),
   body('shippingAddress.city')
     .trim()
     .isLength({ min: 2, max: 50 })

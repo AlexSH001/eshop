@@ -29,17 +29,29 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
 
   const userId = req.user ? req.user.id : null;
 
+  console.log('Order creation request:', {
+    email,
+    phone,
+    paymentMethod,
+    userId,
+    cartItemsCount: cartItems ? cartItems.length : 0,
+    billingAddress: billingAddress ? 'present' : 'missing',
+    shippingAddress: shippingAddress ? 'present' : 'missing'
+  });
+
   try {
     await database.beginTransaction();
 
     // Get cart items if not provided
     let orderItems = cartItems;
     if (!orderItems || orderItems.length === 0) {
+      console.log('No cart items provided, fetching from database...');
       const cartQuery = userId
         ? 'SELECT ci.*, p.name, p.price, p.stock FROM cart_items ci JOIN products p ON ci.product_id = p.id WHERE ci.user_id = $1'
         : 'SELECT ci.*, p.name, p.price, p.stock FROM cart_items ci JOIN products p ON ci.product_id = p.id WHERE ci.session_id = $1';
 
       const cartData = await database.query(cartQuery, [userId || sessionId]);
+      console.log('Cart data from database:', cartData);
 
       if (cartData.length === 0) {
         await database.rollback();
@@ -53,6 +65,8 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
         price: item.price
       }));
     }
+
+    console.log('Order items to process:', orderItems);
 
     // Validate stock availability
     for (const item of orderItems) {
@@ -227,8 +241,14 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
     });
 
   } catch (error) {
+    console.error('Order creation error:', error);
     await database.rollback();
-    throw error;
+    
+    // Send proper error response
+    res.status(500).json({
+      error: error.message || 'Failed to create order',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
