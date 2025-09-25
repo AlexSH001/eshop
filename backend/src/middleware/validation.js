@@ -197,7 +197,7 @@ const createOrderValidation = [
     })
     .withMessage('Please provide a valid phone number'),
   body('paymentMethod')
-    .isIn(['credit_card', 'paypal', 'alipay', 'wechat_pay'])
+    .isIn(['credit_card', 'paypal', 'alipay', 'wechat_pay', 'stripe'])
     .withMessage('Invalid payment method'),
 
   // Billing address validation

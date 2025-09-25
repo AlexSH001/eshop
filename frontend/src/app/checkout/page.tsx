@@ -5,20 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Removed Tabs import - no longer using payment method selection
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
-  CreditCard,
   ShieldCheck,
   Truck,
   ArrowLeft,
   Lock,
-  Smartphone,
-  Wallet,
-  DollarSign,
-  ShoppingBag
+  ShoppingBag,
+  Zap
 } from "lucide-react";
 import { useCart, type CartItem } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,7 +29,7 @@ import { createUserAddress } from "@/lib/api";
 export default function CheckoutPage() {
   const { state, clearCart } = useCart();
   const { isAuthenticated, user, isLoading } = useAuth();
-  const [selectedPayment, setSelectedPayment] = useState("credit_card");
+  // Removed payment method selection - using Stripe payment links directly
   const [isProcessing, setIsProcessing] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
@@ -154,7 +151,7 @@ export default function CheckoutPage() {
       const orderData = {
         email,
         phone: phone && phone.trim() ? phone.trim() : null,
-        paymentMethod: selectedPayment,
+        paymentMethod: 'stripe', // Using Stripe payment links for all payments
         billingAddress: {
           firstName,
           lastName,
@@ -245,38 +242,26 @@ export default function CheckoutPage() {
       const orderResult = await response.json();
       const orderId = orderResult.order.id;
       
-      // After creating the order, handle payment flow
-      if (selectedPayment === 'alipay') {
-        toast.info("Redirecting to Alipay for payment...");
-        const payResponse = await fetch(`http://localhost:3001/api/orders/${orderId}/pay/alipay`, {
-          method: 'POST',
-          headers,
-        });
-        if (!payResponse.ok) {
-          const errorData = await payResponse.json();
-          throw new Error(errorData.error || 'Failed to initiate Alipay payment');
-        }
-        const { payUrl } = await payResponse.json();
-        window.location.href = payUrl;
-
-      } else if (selectedPayment === 'paypal') {
-        toast.info("Redirecting to PayPal for payment...");
-        const payResponse = await fetch(`http://localhost:3001/api/orders/${orderId}/pay/paypal`, {
-          method: 'POST',
-          headers,
-        });
-        if (!payResponse.ok) {
-          const errorData = await payResponse.json();
-          throw new Error(errorData.error || 'Failed to initiate PayPal payment');
-        }
-        const { approvalUrl } = await payResponse.json();
-        window.location.href = approvalUrl;
+      // After creating the order, redirect to Stripe payment link
+      toast.info("Redirecting to secure payment page...");
       
+      const payResponse = await fetch(`http://localhost:3001/api/orders/${orderId}/pay/stripe`, {
+        method: 'POST',
+        headers,
+      });
+      
+      if (!payResponse.ok) {
+        const errorData = await payResponse.json();
+        throw new Error(errorData.error || 'Failed to initiate payment');
+      }
+      
+      const responseData = await payResponse.json();
+      const paymentUrl = responseData.paymentUrl || responseData.url;
+      
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
       } else {
-        // For 'credit_card' or other methods that don't have a redirect flow implemented
-        toast.success("Order placed successfully! You will receive a confirmation email shortly.");
-        clearCart();
-        window.location.href = `/orders/order-success?orderId=${orderId}`;
+        throw new Error('No payment URL received from server');
       }
       
     } catch (error) {
@@ -590,91 +575,25 @@ export default function CheckoutPage() {
                 </CardContent>
               </Card>
 
-              {/* Payment Method */}
+              {/* Payment Information */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg font-semibold">
                     <Lock className="h-5 w-5" />
-                    Payment Method
+                    Payment
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Tabs value={selectedPayment} onValueChange={setSelectedPayment}>
-                    <TabsList className="grid w-full grid-cols-4">
-                      <TabsTrigger value="credit_card" className="text-xs">
-                        Card
-                      </TabsTrigger>
-                      <TabsTrigger value="alipay" className="text-xs">
-                        Alipay
-                      </TabsTrigger>
-                      <TabsTrigger value="wechat_pay" className="text-xs">
-                        WeChat
-                      </TabsTrigger>
-                      <TabsTrigger value="paypal" className="text-xs">
-                        PayPal
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="credit_card" className="mt-6 space-y-4">
-                      <div>
-                        <Label htmlFor="cardNumber">Card Number</Label>
-                        <Input id="cardNumber" placeholder="1234 5678 9012 3456" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="expiryDate">Expiry Date</Label>
-                          <Input id="expiryDate" placeholder="MM/YY" />
-                        </div>
-                        <div>
-                          <Label htmlFor="cvv">CVV</Label>
-                          <Input id="cvv" placeholder="123" />
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="cardName">Name on Card</Label>
-                        <Input id="cardName" placeholder="John Doe" />
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="alipay" className="mt-6">
-                      <div className="rounded-lg border border-gray-200 p-6 text-center">
-                        <Smartphone className="mx-auto mb-4 h-12 w-12 text-blue-600" />
-                        <h3 className="mb-2 text-lg font-semibold">Pay with Alipay</h3>
-                        <p className="text-sm text-gray-600">
-                          You'll be redirected to Alipay to complete your payment securely.
-                        </p>
-                        <Badge variant="outline" className="mt-3">
-                          QR code and mobile payments supported
-                        </Badge>
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="wechat_pay" className="mt-6">
-                      <div className="rounded-lg border border-gray-200 p-6 text-center">
-                        <Wallet className="mx-auto mb-4 h-12 w-12 text-green-600" />
-                        <h3 className="mb-2 text-lg font-semibold">Pay with WeChat Pay</h3>
-                        <p className="text-sm text-gray-600">
-                          Scan the QR code with your WeChat app to complete the payment.
-                        </p>
-                        <Badge variant="outline" className="mt-3">
-                          Quick and secure mobile payment
-                        </Badge>
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="paypal" className="mt-6">
-                      <div className="rounded-lg border border-gray-200 p-6 text-center">
-                        <DollarSign className="mx-auto mb-4 h-12 w-12 text-blue-600" />
-                        <h3 className="mb-2 text-lg font-semibold">Pay with PayPal</h3>
-                        <p className="text-sm text-gray-600">
-                          You'll be redirected to PayPal to log in and complete your payment.
-                        </p>
-                        <Badge variant="outline" className="mt-3">
-                          Buyer protection included
-                        </Badge>
-                      </div>
-                    </TabsContent>
-                  </Tabs>
+                  <div className="rounded-lg border border-gray-200 p-6 text-center">
+                    <Zap className="mx-auto mb-4 h-12 w-12 text-purple-600" />
+                    <h3 className="mb-2 text-lg font-semibold">Secure Payment</h3>
+                    <p className="text-sm text-gray-600">
+                      You'll be redirected to Stripe's secure payment page to complete your payment.
+                    </p>
+                    <Badge variant="outline" className="mt-3">
+                      Credit cards, Apple Pay, Google Pay supported
+                    </Badge>
+                  </div>
 
                   <div className="mt-6 space-y-4">
                     <div className="flex items-center space-x-2">

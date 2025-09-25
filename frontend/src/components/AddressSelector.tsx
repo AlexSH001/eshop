@@ -365,7 +365,7 @@ export default function AddressSelector({
 
       {/* Edit Address Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-white">
           <DialogHeader>
             <DialogTitle>Edit Address</DialogTitle>
           </DialogHeader>
@@ -477,7 +477,7 @@ function AddressForm({ formData, setFormData, onSubmit, onCancel, submitLabel }:
       </div>
 
       <div>
-        <Label htmlFor="phone">Phone (Optional)</Label>
+        <Label htmlFor="phone">Phone Number</Label>
         <Input
           id="phone"
           type="tel"

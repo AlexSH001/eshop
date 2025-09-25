@@ -114,7 +114,7 @@ export default function AdminSettingsPage() {
       fromName: ''
     },
     payment: {
-      stripeEnabled: false,
+      stripeEnabled: true,
       stripePublishableKey: '',
       stripeSecretKey: '',
       paypalEnabled: false,

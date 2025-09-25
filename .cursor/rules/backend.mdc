@@ -1,0 +1,45 @@
+---
+description: backend rules
+globs:
+alwaysApply: false
+---
+
+# Project Background
+This is a multi-language online shop web application built with Next.js 15 App Router using TypeScript and styled with Tailwind CSS
+
+# Coding Standards
+- Use functional components and Hooks, avoid class components
+- Prefer `const` over `let` for variable declarations
+- Use camelCase for variables and functions, PascalCase for component names
+
+# Preferred Libraries
+- Use Next.js for navigation
+- Use next-intl for internationalization
+- Use Tailwind CSS for styling
+
+# File Structure
+- components: Reusable UI components
+- app/[locale]: Next.js pages supporting multiple languages
+- data/blog: Multi-language blog files
+- app/api: API service functions
+
+# Data
+
+# Performance Optimization Guidelines
+- Use React.memo for pure function components
+- Implement lazy loading for route components
+- Optimize useEffect dependencies to prevent unnecessary re-renders
+
+# Testing Requirements
+- Write unit tests using Jest and React Testing Library
+- Ensure at least 80% test coverage
+- Use snapshot testing for UI components
+
+# Documentation Standards
+- Write comments for functions and components using JSDoc format
+- Include PropTypes validation in components
+- Each major directory must contain a README.md file in both English and Chinese
+
+# Error Handling Preferences
+- Use try/catch blocks for asynchronous operations
+- Implement a global error boundary component
