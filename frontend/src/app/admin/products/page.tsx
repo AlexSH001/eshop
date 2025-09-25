@@ -30,7 +30,7 @@ import {
   Package,
   DollarSign
 } from "lucide-react";
-
+import { getImagePath } from "@/lib/imageUtils";
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
@@ -153,7 +153,7 @@ export default function AdminProductsPage() {
           category: (p.category_name as string) || '',
           stock: p.stock as number,
           description: p.description as string,
-          image: (p.featured_image as string) || ((p.images as string[] | undefined)?.[0] ?? ''),
+          image: getImagePath('products', p.id as number),
           status: p.status as 'active' | 'inactive',
           createdAt: p.created_at as string,
           sales: (p.sales_count as number) || 0,
