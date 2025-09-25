@@ -196,9 +196,6 @@ const createOrderValidation = [
       return cleaned.length >= 7 && cleaned.length <= 15 && /^[\+]?[0-9]+$/.test(cleaned);
     })
     .withMessage('Please provide a valid phone number'),
-  body('paymentMethod')
-    .isIn(['credit_card', 'paypal', 'alipay', 'wechat_pay', 'stripe'])
-    .withMessage('Invalid payment method'),
 
   // Billing address validation
   body('billingAddress.firstName')

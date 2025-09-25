@@ -18,7 +18,6 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
   const {
     email,
     phone,
-    paymentMethod,
     billingAddress,
     shippingAddress,
     cartItems,
@@ -31,7 +30,6 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
   console.log('Order creation request:', {
     email,
     phone,
-    paymentMethod,
     userId,
     cartItemsCount: cartItems ? cartItems.length : 0,
     billingAddress: billingAddress ? 'present' : 'missing',
@@ -116,7 +114,7 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
       phone || null,
       'pending',
       'pending',
-      paymentMethod,
+      'stripe',
       null, // payment_id
       billingAddress.firstName,
       billingAddress.lastName,

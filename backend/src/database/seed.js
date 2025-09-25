@@ -418,7 +418,7 @@ async function seedDatabase() {
         email: 'john.doe@example.com',
         status: 'delivered',
         paymentStatus: 'paid',
-        paymentMethod: 'credit_card',
+        paymentMethod: 'stripe',
         total: 219.98
       },
       {
@@ -426,7 +426,7 @@ async function seedDatabase() {
         email: 'jane.smith@example.com',
         status: 'shipped',
         paymentStatus: 'paid',
-        paymentMethod: 'paypal',
+        paymentMethod: 'stripe',
         total: 129.99
       }
     ];
