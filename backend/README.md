@@ -124,15 +124,15 @@ Authorization: Bearer <access_token>
 POST /api/auth/admin/login
 Content-Type: application/json
 {
-  "email": "admin@shop.com",
+  "email": "admin@eshop.com",
   "password": "admin123"
 }
 ```
 
 ### Test Credentials
 - **User**: `user@example.com` / `password123`
-- **Admin**: `admin@shop.com` / `admin123`
-- **Super Admin**: `superadmin@shop.com` / `super123`
+- **Admin**: `admin@eshop.com` / `admin123`
+- **Super Admin**: `superadmin@eshop.com` / `super123`
 
 ## 📝 API Endpoints
 

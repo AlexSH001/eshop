@@ -389,13 +389,13 @@ async function seedDatabase() {
     console.log('👨‍💼 Seeding admins...');
     const admins = [
       {
-        email: 'admin@shop.com',
+        email: 'admin@eshop.com',
         password: 'admin123',
         name: 'Admin User',
         role: 'admin'
       },
       {
-        email: 'superadmin@shop.com',
+        email: 'superadmin@eshop.com',
         password: 'super123',
         name: 'Super Admin',
         role: 'super_admin'
@@ -470,8 +470,8 @@ async function seedDatabase() {
 
     console.log('\n🔑 Test Credentials:');
     console.log('   User: user@example.com / password123');
-    console.log('   Admin: admin@shop.com / admin123');
-    console.log('   Super Admin: superadmin@shop.com / super123');
+    console.log('   Admin: admin@eshop.com / admin123');
+    console.log('   Super Admin: superadmin@eshop.com / super123');
 
   } catch (error) {
     await database.rollback();
