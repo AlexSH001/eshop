@@ -12,6 +12,64 @@ const { NotFoundError } = require('../middleware/errorHandler');
 
 const router = express.Router();
 
+// Ensure slug is unique by suffixing -2, -3, ... if needed
+async function ensureUniqueSlug(baseSlug) {
+  const existing = await db.query(
+    'SELECT slug FROM products WHERE slug = $1 OR slug LIKE $2',
+    [baseSlug, `${baseSlug}-%`]
+  );
+
+  if (!existing || existing.length === 0) {
+    return baseSlug;
+  }
+
+  const existingSet = new Set(existing.map(row => row.slug));
+  if (!existingSet.has(baseSlug)) {
+    return baseSlug;
+  }
+
+  let maxSuffix = 1;
+  for (const s of existingSet) {
+    if (s.startsWith(`${baseSlug}-`)) {
+      const part = s.slice(baseSlug.length + 1);
+      const num = parseInt(part, 10);
+      if (!Number.isNaN(num)) {
+        if (num >= maxSuffix) maxSuffix = num + 1;
+      }
+    }
+  }
+  return `${baseSlug}-${maxSuffix}`;
+}
+
+// Ensure SKU is unique by suffixing -2, -3, ... if needed
+async function ensureUniqueSku(baseSku) {
+  const existing = await db.query(
+    'SELECT sku FROM products WHERE sku = $1 OR sku LIKE $2',
+    [baseSku, `${baseSku}-%`]
+  );
+
+  if (!existing || existing.length === 0) {
+    return baseSku;
+  }
+
+  const existingSet = new Set(existing.map(row => row.sku));
+  if (!existingSet.has(baseSku)) {
+    return baseSku;
+  }
+
+  let maxSuffix = 1;
+  for (const s of existingSet) {
+    if (s.startsWith(`${baseSku}-`)) {
+      const part = s.slice(baseSku.length + 1);
+      const num = parseInt(part, 10);
+      if (!Number.isNaN(num)) {
+        if (num >= maxSuffix) maxSuffix = num + 1;
+      }
+    }
+  }
+  return `${baseSku}-${maxSuffix}`;
+}
+
 // Get all products with filtering and pagination
 router.get('/', paginationValidation, async (req, res) => {
   const {
@@ -307,8 +365,8 @@ router.post('/', createProductValidation, async (req, res) => {
   // Use categoryId or category_id, default to first available category if not provided
   const finalCategoryId = categoryId || category_id;
 
-  // Generate slug and SKU
-  const slug = generateSlug(name);
+  // Generate slug and ensure uniqueness
+  const slug = await ensureUniqueSlug(generateSlug(name));
 
   // Get category name for SKU generation
   const category = await db.get('SELECT name FROM categories WHERE id = $1', [finalCategoryId]);
@@ -316,7 +374,7 @@ router.post('/', createProductValidation, async (req, res) => {
     throw new NotFoundError('Category not found');
   }
 
-  const sku = generateSKU(category.name, name);
+  const sku = await ensureUniqueSku(generateSKU(category.name, name));
 
   // Create product
   const result = await db.execute(`
@@ -326,6 +384,7 @@ router.post('/', createProductValidation, async (req, res) => {
       attributes, status, is_featured, meta_title, meta_description,
       specifications, shipping
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+    RETURNING id
   `, [
     name,
     slug,
@@ -350,7 +409,8 @@ router.post('/', createProductValidation, async (req, res) => {
     shipping
   ]);
 
-  const product = await db.get('SELECT * FROM products WHERE id = $1', [result.rows[0].id]);
+  const insertedId = result.id || (result.rows && result.rows[0] && result.rows[0].id);
+  const product = await db.get('SELECT * FROM products WHERE id = $1', [insertedId]);
 
   res.status(201).json({
     message: 'Product created successfully',
@@ -390,8 +450,8 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
     shipping = ''
   } = req.body;
 
-  // Generate slug and SKU
-  const slug = generateSlug(name);
+  // Generate slug and ensure uniqueness
+  const slug = await ensureUniqueSlug(generateSlug(name));
 
   // Get category name for SKU generation
   const category = await db.get('SELECT name FROM categories WHERE id = $1', [categoryId]);
@@ -399,7 +459,7 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
     throw new NotFoundError('Category not found');
   }
 
-  const sku = generateSKU(category.name, name);
+  const sku = await ensureUniqueSku(generateSKU(category.name, name));
 
   // Create product
   const result = await db.execute(`
@@ -409,6 +469,7 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
       attributes, status, is_featured, meta_title, meta_description,
       specifications, shipping
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+    RETURNING id
   `, [
     name,
     slug,
@@ -433,7 +494,8 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
     shipping
   ]);
 
-  const product = await db.get('SELECT * FROM products WHERE id = $1', [result.rows[0].id]);
+  const insertedId = result.id || (result.rows && result.rows[0] && result.rows[0].id);
+  const product = await db.get('SELECT * FROM products WHERE id = $1', [insertedId]);
 
   res.status(201).json({
     message: 'Product created successfully',
