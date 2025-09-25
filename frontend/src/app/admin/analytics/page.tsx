@@ -131,7 +131,7 @@ export default function AdminAnalyticsPage() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'SGD'
     }).format(amount);
   };
 

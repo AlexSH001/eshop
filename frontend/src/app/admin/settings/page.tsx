@@ -102,7 +102,7 @@ export default function AdminSettingsPage() {
       email: '',
       phone: '',
       address: '',
-      currency: 'USD',
+      currency: 'SGD',
       timezone: 'UTC'
     },
     email: {
@@ -300,6 +300,7 @@ export default function AdminSettingsPage() {
                         <SelectItem value="EUR">EUR (€)</SelectItem>
                         <SelectItem value="GBP">GBP (£)</SelectItem>
                         <SelectItem value="CAD">CAD (C$)</SelectItem>
+                        <SelectItem value="SGD">SGD (S$)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

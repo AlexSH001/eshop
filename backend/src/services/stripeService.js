@@ -12,7 +12,7 @@ const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STR
  * @param {Object} params - Payment parameters
  * @param {string} params.orderId - Order ID
  * @param {number} params.total - Total amount in cents
- * @param {string} params.currency - Currency code (default: 'usd')
+ * @param {string} params.currency - Currency code (default: 'sgd')
  * @param {string} params.customerEmail - Customer email
  * @param {Object} params.metadata - Additional metadata
  * @param {string} params.successUrl - Success redirect URL
