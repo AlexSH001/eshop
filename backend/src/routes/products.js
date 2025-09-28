@@ -527,6 +527,11 @@ router.put('/:id', updateProductValidation, async (req, res) => {
   // Handle categoryId or category_id field
   const categoryId = req.body.categoryId || req.body.category_id;
 
+  // Debug: Log the request body
+  console.log('Product update request body:', req.body);
+  console.log('Featured image from request (featuredImage):', req.body.featuredImage);
+  console.log('Featured image from request (featured_image):', req.body.featured_image);
+
   // Build dynamic update query
   const allowedFields = [
     'name', 'description', 'short_description', 'price', 'original_price',
@@ -537,6 +542,7 @@ router.put('/:id', updateProductValidation, async (req, res) => {
 
   for (const field of allowedFields) {
     if (req.body[field] !== undefined) {
+      console.log(`Updating field ${field} with value:`, req.body[field]);
       if (['dimensions', 'images', 'tags', 'attributes'].includes(field)) {
         updates.push(`${field} = $${params.length + 1}`);
         params.push(JSON.stringify(req.body[field]));
@@ -572,10 +578,11 @@ router.put('/:id', updateProductValidation, async (req, res) => {
   updates.push('updated_at = CURRENT_TIMESTAMP');
   params.push(productId);
 
-  await db.execute(
-    `UPDATE products SET ${updates.join(', ')} WHERE id = $${params.length + 1}`,
-    [...params, productId]
-  );
+  const sqlQuery = `UPDATE products SET ${updates.join(', ')} WHERE id = $${params.length}`;
+  console.log('Executing SQL query:', sqlQuery);
+  console.log('Query parameters:', params);
+
+  await db.execute(sqlQuery, params);
 
   const updatedProduct = await db.get('SELECT * FROM products WHERE id = $1', [productId]);
 
@@ -597,15 +604,79 @@ router.put('/:id', updateProductValidation, async (req, res) => {
 router.delete('/:id', idValidation, async (req, res) => {
   const productId = req.params.id;
 
-  const product = await db.get('SELECT id FROM products WHERE id = $1', [productId]);
+  const product = await db.get('SELECT id, featured_image, images FROM products WHERE id = $1', [productId]);
   if (!product) {
     throw new NotFoundError('Product not found');
+  }
+
+  // Move images to deleted folder before deleting product
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const deletedDir = path.join(__dirname, '../../uploads/products/_DELETED');
+    
+    // Create deleted directory if it doesn't exist
+    if (!fs.existsSync(deletedDir)) {
+      fs.mkdirSync(deletedDir, { recursive: true });
+    }
+
+    // Move featured image
+    if (product.featured_image) {
+      const featuredImagePath = path.join(__dirname, '../../uploads', product.featured_image.replace('/uploads/', ''));
+      if (fs.existsSync(featuredImagePath)) {
+        const deletedFeaturedPath = path.join(deletedDir, path.basename(featuredImagePath));
+        fs.renameSync(featuredImagePath, deletedFeaturedPath);
+        console.log(`Moved featured image to deleted folder: ${deletedFeaturedPath}`);
+      }
+    }
+
+    // Move all images from images array
+    if (product.images) {
+      try {
+        const images = JSON.parse(product.images);
+        images.forEach((imageUrl) => {
+          const imagePath = path.join(__dirname, '../../uploads', imageUrl.replace('/uploads/', ''));
+          if (fs.existsSync(imagePath)) {
+            const deletedImagePath = path.join(deletedDir, path.basename(imagePath));
+            fs.renameSync(imagePath, deletedImagePath);
+            console.log(`Moved image to deleted folder: ${deletedImagePath}`);
+          }
+        });
+      } catch (e) {
+        console.error('Error parsing images JSON:', e);
+      }
+    }
+  } catch (error) {
+    console.error('Error moving images to deleted folder:', error);
+    // Continue with product deletion even if image cleanup fails
   }
 
   await db.execute('DELETE FROM products WHERE id = $1', [productId]);
 
   res.json({
     message: 'Product deleted successfully'
+  });
+});
+
+// Get single product by ID
+router.get('/:id', idValidation, async (req, res) => {
+  const productId = req.params.id;
+
+  const product = await db.get('SELECT * FROM products WHERE id = $1', [productId]);
+  if (!product) {
+    throw new NotFoundError('Product not found');
+  }
+
+  res.json({
+    product: {
+      ...product,
+      images: product.images ? JSON.parse(product.images) : [],
+      tags: product.tags ? JSON.parse(product.tags) : [],
+      attributes: product.attributes ? JSON.parse(product.attributes) : {},
+      dimensions: product.dimensions ? JSON.parse(product.dimensions) : null,
+      specifications: product.specifications ? JSON.parse(product.specifications) : {},
+      shipping: product.shipping || ''
+    }
   });
 });
 

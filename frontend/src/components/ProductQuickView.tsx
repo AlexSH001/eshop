@@ -22,7 +22,7 @@ import {
   Loader2
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import { getImagePath } from "@/lib/imageUtils";
+import { getImagePath, resolveProductImage, normalizeImageUrl } from "@/lib/imageUtils";
 
 interface ProductQuickViewProps {
   product: {
@@ -78,7 +78,28 @@ export default function ProductQuickView({ product, children }: ProductQuickView
           if (!res.ok) throw new Error('Failed to fetch product details');
           const data = await res.json();
           setDetails(data.product);
-          setImages(data.product.images && data.product.images.length > 0 ? data.product.images : [product.image]);
+          const rawImages = data.product.images;
+          const featuredImage = data.product.featured_image;
+          
+          // Use the same resolution logic as other components
+          const primaryImage = resolveProductImage(featuredImage, rawImages, product.id);
+          
+          // Normalize all images for the gallery
+          const normalized: string[] = Array.isArray(rawImages)
+            ? rawImages.map((img: unknown) => {
+                if (typeof img === 'string') return normalizeImageUrl(img);
+                if (img && typeof img === 'object') {
+                  const anyImg = img as Record<string, unknown>;
+                  const url = (anyImg.image || anyImg.url || anyImg.src) as string | undefined;
+                  if (url && url.trim().length > 0) return normalizeImageUrl(url);
+                }
+                return '';
+              }).filter((u: string) => u && u.trim().length > 0)
+            : [];
+          
+          // Use primary image first, then other images
+          const allImages = [primaryImage, ...normalized.filter(img => img !== primaryImage)];
+          setImages(allImages.length > 0 ? allImages : [product.image]);
         } catch (error: unknown) {
           if (error instanceof Error) {
             console.error("Failed to fetch product details:", error.message);

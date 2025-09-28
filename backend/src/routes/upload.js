@@ -124,9 +124,19 @@ router.post('/product-image', authenticateAdmin, (req, res) => {
   });
 });
 
-// Upload multiple product images
+// Upload multiple product images with category-based folder structure
 router.post('/product-images', authenticateAdmin, (req, res) => {
-  uploadProductImages.array('images', 10)(req, res, (err) => {
+  // Use memory storage to first get the form data and files
+  const tempStorage = multer.memoryStorage();
+  const tempUpload = multer({ 
+    storage: tempStorage,
+    fileFilter,
+    limits: {
+      fileSize: 5 * 1024 * 1024 // 5MB limit
+    }
+  });
+  
+  tempUpload.array('images', 10)(req, res, async (err) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(413).json({ error: 'One or more files too large. Maximum size is 5MB per file.' });
@@ -140,18 +150,63 @@ router.post('/product-images', authenticateAdmin, (req, res) => {
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
-    const uploadedFiles = req.files.map(file => ({
-      originalName: file.originalname,
-      filename: file.filename,
-      size: file.size,
-      url: `/uploads/products/${file.filename}`,
-      path: file.path
-    }));
+    const { categoryId, productName } = req.body;
+    
+    if (!categoryId) {
+      return res.status(400).json({ error: 'Category ID is required. Please select a category before uploading images.' });
+    }
 
-    res.json({
-      message: `${req.files.length} images uploaded successfully`,
-      files: uploadedFiles
-    });
+    try {
+      // Get category name from database
+      const { db } = require('../database');
+      const category = await db.get('SELECT name FROM categories WHERE id = $1', [categoryId]);
+      
+      if (!category) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+
+      // Create category folder name (replace spaces with minus, lowercase)
+      const categoryFolderName = category.name.toLowerCase().replace(/\s+/g, '-');
+      const categoryDir = path.join(productImagesDir, categoryFolderName);
+      
+      // Create category directory if it doesn't exist
+      if (!fs.existsSync(categoryDir)) {
+        fs.mkdirSync(categoryDir, { recursive: true });
+      }
+
+      // Now save the files to the correct location
+      const uploadedFiles = [];
+      
+      for (const file of req.files) {
+        // Generate filename: product-name-yyyymmdd-xxxxx.ext
+        const productNameSlug = (productName || 'product').toLowerCase().replace(/\s+/g, '-');
+        const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const randomNum = Math.floor(Math.random() * 90000) + 10000; // 5-digit random number
+        const extension = path.extname(file.originalname);
+        const filename = `${productNameSlug}-${date}-${randomNum}${extension}`;
+        
+        const filePath = path.join(categoryDir, filename);
+        
+        // Write file to disk
+        fs.writeFileSync(filePath, file.buffer);
+        
+        uploadedFiles.push({
+          originalName: file.originalname,
+          filename: filename,
+          size: file.size,
+          url: `/uploads/products/${categoryFolderName}/${filename}`,
+          path: filePath
+        });
+      }
+
+      res.json({
+        message: `${uploadedFiles.length} images uploaded successfully`,
+        files: uploadedFiles
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      res.status(500).json({ error: 'Failed to process upload' });
+    }
   });
 });
 
@@ -256,6 +311,71 @@ router.delete('/file', authenticateAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error deleting file:', error);
     res.status(500).json({ error: 'Failed to delete file' });
+  }
+});
+
+// Delete product image by URL
+router.delete('/product-image', authenticateAdmin, async (req, res) => {
+  const { imageUrl } = req.body;
+
+  console.log('Delete image request body:', req.body);
+
+  if (!imageUrl) {
+    return res.status(400).json({ error: 'Image URL is required' });
+  }
+
+  try {
+    // Extract filename from URL
+    const urlParts = imageUrl.split('/');
+    const filename = urlParts[urlParts.length - 1];
+    const categoryFolder = urlParts[urlParts.length - 2];
+    
+    console.log('Image deletion request:', { imageUrl, filename, categoryFolder });
+    
+    let filePath;
+    if (categoryFolder && categoryFolder !== 'products') {
+      // Image is in a category subfolder
+      filePath = path.join(productImagesDir, categoryFolder, filename);
+    } else {
+      // Image is in the main products folder
+      filePath = path.join(productImagesDir, filename);
+    }
+
+    console.log('Looking for file at path:', filePath);
+    console.log('File exists:', fs.existsSync(filePath));
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      console.log('File not found at:', filePath);
+      
+      // Try alternative path resolution
+      const alternativePath = path.join(__dirname, '../../uploads', imageUrl.replace('/uploads/', ''));
+      console.log('Trying alternative path:', alternativePath);
+      
+      if (fs.existsSync(alternativePath)) {
+        filePath = alternativePath;
+        console.log('Found file at alternative path:', filePath);
+      } else {
+        return res.status(404).json({ error: 'File not found' });
+      }
+    }
+
+    // Move to deleted folder instead of permanently deleting
+    const deletedDir = path.join(__dirname, '../../uploads/products/_DELETED');
+    if (!fs.existsSync(deletedDir)) {
+      fs.mkdirSync(deletedDir, { recursive: true });
+    }
+
+    const deletedFilePath = path.join(deletedDir, filename);
+    fs.renameSync(filePath, deletedFilePath);
+
+    res.json({
+      message: 'Image moved to deleted folder successfully',
+      filename
+    });
+  } catch (error) {
+    console.error('Error moving image to deleted folder:', error);
+    res.status(500).json({ error: 'Failed to delete image' });
   }
 });
 
@@ -372,8 +492,8 @@ router.post('/cleanup', authenticateAdmin, async (req, res) => {
 
     if (category === 'products') {
       // Get all referenced image files from products table
-      const { database } = require('../database');
-      const products = await database.query('SELECT featured_image, images FROM products');
+      const { db } = require('../database');
+      const products = await db.query('SELECT featured_image, images FROM products');
       const referencedFiles = new Set();
 
       products.forEach(product => {
@@ -403,8 +523,8 @@ router.post('/cleanup', authenticateAdmin, async (req, res) => {
       });
     } else {
       // For other categories, check single column reference
-      const { database } = require('../database');
-      const referencedFiles = await database.query(
+      const { db } = require('../database');
+      const referencedFiles = await db.query(
         `SELECT DISTINCT ${columnName} FROM ${tableName} WHERE ${columnName} IS NOT NULL`
       );
 

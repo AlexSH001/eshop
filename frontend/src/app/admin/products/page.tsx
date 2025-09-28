@@ -30,7 +30,8 @@ import {
   Package,
   DollarSign
 } from "lucide-react";
-import { getImagePath } from "@/lib/imageUtils";
+import { getImagePath, resolveProductImage, normalizeImageUrl } from "@/lib/imageUtils";
+import { Upload, X, Image as ImageIcon } from "lucide-react";
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
@@ -61,6 +62,8 @@ type ProductFormData = {
   status: string;
   specifications: Array<{ key: string; value: string }>;
   shipping: string;
+  images: string[]; // Multiple images
+  featuredImage: string; // Featured image URL
 };
 
 // Helper to robustly parse specifications
@@ -119,14 +122,136 @@ export default function AdminProductsPage() {
     image: "",
     status: "active",
     specifications: [{ key: '', value: '' }],
-    shipping: ""
+    shipping: "",
+    images: [],
+    featuredImage: ""
   });
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Helper function to get category ID by name
   const getCategoryIdByName = (categoryName: string) => {
     const category = categories.find(cat => cat.name === categoryName);
     return category ? category.id.toString() : '';
+  };
+
+  // Image upload functions
+  const handleImageUpload = async (files: FileList) => {
+    setUploadingImages(true);
+    try {
+      const uploadFormData = new FormData();
+      Array.from(files).forEach(file => {
+        uploadFormData.append('images', file);
+      });
+
+      // Add categoryId and productName to form data
+      console.log('Form data:', { categoryId: formData.categoryId, name: formData.name });
+      
+      if (formData.categoryId) {
+        uploadFormData.append('categoryId', formData.categoryId);
+        console.log('Added categoryId to form:', formData.categoryId);
+      } else {
+        toast.error('Please select a category before uploading images');
+        setUploadingImages(false);
+        return;
+      }
+      if (formData.name) {
+        uploadFormData.append('productName', formData.name);
+        console.log('Added productName to form:', formData.name);
+      } else {
+        toast.error('Please enter a product name before uploading images');
+        setUploadingImages(false);
+        return;
+      }
+
+      console.log('Uploading images...', Array.from(files).map(f => f.name));
+
+      // Get admin token from localStorage
+      const adminToken = localStorage.getItem('admin_token');
+      if (!adminToken) {
+        throw new Error('Admin authentication required. Please login again.');
+      }
+
+      const res = await fetch('http://localhost:3001/api/upload/product-images', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          // Don't set Content-Type, let browser set it with boundary for FormData
+        },
+        body: uploadFormData
+      });
+
+      console.log('Upload response status:', res.status);
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Upload error response:', errorData);
+        throw new Error(`Upload failed: ${res.status} ${res.statusText} - ${errorData.error || 'Unknown error'}`);
+      }
+      
+      const data = await res.json();
+      console.log('Upload success:', data);
+      
+      const newImageUrls = data.files.map((file: any) => file.url);
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...newImageUrls],
+        featuredImage: prev.featuredImage || newImageUrls[0] // Set first as featured if none selected
+      }));
+      
+      toast.success(`${data.files.length} images uploaded successfully`);
+    } catch (err) {
+      console.error('Upload error:', err);
+      toast.error(`Failed to upload images: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const removeImage = async (imageUrl: string) => {
+    try {
+      // Call backend to delete the image file
+      const adminToken = localStorage.getItem('admin_token');
+      if (!adminToken) {
+        throw new Error('Admin authentication required. Please login again.');
+      }
+
+      const res = await fetch('http://localhost:3001/api/upload/product-image', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        credentials: 'include',
+        body: JSON.stringify({ imageUrl })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`Failed to delete image: ${errorData.error || 'Unknown error'}`);
+      }
+
+      // Update form data to remove the image
+      setFormData(prev => ({
+        ...prev,
+        images: prev.images.filter(img => img !== imageUrl),
+        featuredImage: prev.featuredImage === imageUrl ? '' : prev.featuredImage
+      }));
+
+      toast.success('Image deleted successfully');
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      toast.error(`Failed to delete image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const setFeaturedImage = (imageUrl: string) => {
+    setFormData(prev => ({
+      ...prev,
+      featuredImage: imageUrl
+    }));
   };
 
   // Redirect if not authenticated
@@ -145,21 +270,28 @@ export default function AdminProductsPage() {
         const res = await fetch('http://localhost:3001/api/products');
         if (!res.ok) throw new Error('Failed to fetch products');
         const data = await res.json();
-        const mappedProducts: Product[] = data.products.map((p: Record<string, unknown>) => ({
-          id: p.id as number,
-          name: p.name as string,
-          price: p.price as number,
-          originalPrice: p.original_price as number | undefined,
-          category: (p.category_name as string) || '',
-          stock: p.stock as number,
-          description: p.description as string,
-          image: getImagePath('products', p.id as number),
-          status: p.status as 'active' | 'inactive',
-          createdAt: p.created_at as string,
-          sales: (p.sales_count as number) || 0,
-          specifications: p.specifications as Record<string, string> | undefined,
-          shipping: p.shipping as string | undefined
-        }));
+        const mappedProducts: Product[] = data.products.map((p: Record<string, unknown>) => {
+          const images = p.images as unknown;
+          const featuredImage = (p as any).featured_image as string | null | undefined;
+          const dbImages = Array.isArray(images) ? images : undefined;
+          const resolvedImage = resolveProductImage(featuredImage, dbImages, p.id as number);
+
+          return {
+            id: p.id as number,
+            name: p.name as string,
+            price: p.price as number,
+            originalPrice: p.original_price as number | undefined,
+            category: (p.category_name as string) || '',
+            stock: p.stock as number,
+            description: p.description as string,
+            image: resolvedImage,
+            status: p.status as 'active' | 'inactive',
+            createdAt: p.created_at as string,
+            sales: (p.sales_count as number) || 0,
+            specifications: p.specifications as Record<string, string> | undefined,
+            shipping: p.shipping as string | undefined
+          };
+        });
         setProducts(mappedProducts);
       } catch (err) {
         setError((err as Error).message || 'Unknown error');
@@ -194,7 +326,8 @@ export default function AdminProductsPage() {
           categoryId: formData.categoryId,
           stock: parseInt(formData.stock),
           status: formData.status,
-          featuredImage: formData.image,
+          featuredImage: formData.featuredImage,
+          images: formData.images,
           specifications: Object.fromEntries(formData.specifications.filter(s => s.key).map(s => [s.key, s.value])),
           shipping: formData.shipping
         })
@@ -210,7 +343,7 @@ export default function AdminProductsPage() {
           category: categories.find(cat => cat.id === Number(formData.categoryId))?.name || '',
           stock: product.stock,
           description: product.description,
-          image: product.featured_image || (product.images && product.images[0]) || '',
+          image: resolveProductImage(product.featured_image, product.images, product.id),
           status: product.status,
           createdAt: product.created_at,
           sales: product.sales_count || 0,
@@ -230,7 +363,9 @@ export default function AdminProductsPage() {
         image: "",
         status: "active",
         specifications: [{ key: '', value: '' }],
-        shipping: ""
+        shipping: "",
+        images: [],
+        featuredImage: ""
       });
       toast.success('Product added successfully');
     } catch (err) {
@@ -258,13 +393,22 @@ export default function AdminProductsPage() {
           categoryId: formData.categoryId,
           stock: parseInt(formData.stock),
           status: formData.status,
-          featuredImage: formData.image,
+          featured_image: formData.featuredImage, // Use snake_case for backend
+          images: formData.images,
           specifications: Object.fromEntries(formData.specifications.filter(s => s.key).map(s => [s.key, s.value])),
           shipping: formData.shipping
         })
       });
       if (!res.ok) throw new Error('Failed to update product');
       const { product } = await res.json();
+      
+      // Debug: Log the updated product data
+      console.log('Updated product from API:', {
+        featured_image: product.featured_image,
+        images: product.images,
+        id: product.id
+      });
+      
       setProducts(prev => prev.map(p =>
         p.id === editingProduct.id
           ? {
@@ -276,7 +420,7 @@ export default function AdminProductsPage() {
               category: categories.find(cat => cat.id === Number(formData.categoryId))?.name || '',
               stock: product.stock,
               description: product.description,
-              image: product.featured_image || (product.images && product.images[0]) || '',
+              image: resolveProductImage(product.featured_image, product.images, product.id),
               status: product.status,
               createdAt: product.created_at,
               sales: product.sales_count || 0,
@@ -296,7 +440,9 @@ export default function AdminProductsPage() {
         image: "",
         status: "active",
         specifications: [{ key: '', value: '' }],
-        shipping: ""
+        shipping: "",
+        images: [],
+        featuredImage: ""
       });
       toast.success('Product updated successfully');
     } catch (err) {
@@ -353,7 +499,24 @@ export default function AdminProductsPage() {
             onChange={e => setSearchTerm(e.target.value)}
             className="w-1/3"
           />
-          <Button onClick={() => setIsAddModalOpen(true)}>
+          <Button onClick={() => {
+            // Reset form data when opening add modal
+            setFormData({
+              name: "",
+              price: "",
+              originalPrice: "",
+              categoryId: "",
+              stock: "",
+              description: "",
+              image: "",
+              status: "active",
+              specifications: [{ key: '', value: '' }],
+              shipping: "",
+              images: [],
+              featuredImage: ""
+            });
+            setIsAddModalOpen(true);
+          }}>
             <Plus className="h-4 w-4 mr-2" /> Add Product
           </Button>
         </div>
@@ -391,20 +554,65 @@ export default function AdminProductsPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-2">
-                    <Button size="sm" variant="outline" onClick={() => {
+                    <Button size="sm" variant="outline" onClick={async () => {
                       setEditingProduct(product);
-                      setFormData({
-                        name: product.name,
-                        price: product.price.toString(),
-                        originalPrice: product.originalPrice?.toString() || '',
-                        categoryId: getCategoryIdByName(product.category),
-                        stock: product.stock.toString(),
-                        description: product.description,
-                        image: product.image,
-                        status: product.status,
-                        specifications: parseSpecifications(product.specifications),
-                        shipping: product.shipping || ''
-                      });
+                      
+                      // Fetch full product details including images
+                      try {
+                        const res = await fetch(`http://localhost:3001/api/products/${product.id}`, {
+                          credentials: 'include'
+                        });
+                        if (res.ok) {
+                          const { product: fullProduct } = await res.json();
+                          setFormData({
+                            name: fullProduct.name,
+                            price: fullProduct.price.toString(),
+                            originalPrice: fullProduct.original_price?.toString() || '',
+                            categoryId: fullProduct.category_id?.toString() || getCategoryIdByName(product.category),
+                            stock: fullProduct.stock.toString(),
+                            description: fullProduct.description,
+                            image: product.image,
+                            status: fullProduct.status,
+                            specifications: parseSpecifications(fullProduct.specifications),
+                            shipping: fullProduct.shipping || '',
+                            images: fullProduct.images || [],
+                            featuredImage: fullProduct.featured_image || ''
+                          });
+                        } else {
+                          // Fallback to basic product data
+                          setFormData({
+                            name: product.name,
+                            price: product.price.toString(),
+                            originalPrice: product.originalPrice?.toString() || '',
+                            categoryId: getCategoryIdByName(product.category),
+                            stock: product.stock.toString(),
+                            description: product.description,
+                            image: product.image,
+                            status: product.status,
+                            specifications: parseSpecifications(product.specifications),
+                            shipping: product.shipping || '',
+                            images: [],
+                            featuredImage: product.image
+                          });
+                        }
+                      } catch (error) {
+                        console.error('Error fetching product details:', error);
+                        // Fallback to basic product data
+                        setFormData({
+                          name: product.name,
+                          price: product.price.toString(),
+                          originalPrice: product.originalPrice?.toString() || '',
+                          categoryId: getCategoryIdByName(product.category),
+                          stock: product.stock.toString(),
+                          description: product.description,
+                          image: product.image,
+                          status: product.status,
+                          specifications: parseSpecifications(product.specifications),
+                          shipping: product.shipping || '',
+                          images: [],
+                          featuredImage: product.image
+                        });
+                      }
                     }}>
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -419,7 +627,26 @@ export default function AdminProductsPage() {
         </div>
 
         {/* Add Product Modal */}
-        <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <Dialog open={isAddModalOpen} onOpenChange={(open) => {
+          setIsAddModalOpen(open);
+          if (!open) {
+            // Reset form data when closing modal
+            setFormData({
+              name: "",
+              price: "",
+              originalPrice: "",
+              categoryId: "",
+              stock: "",
+              description: "",
+              image: "",
+              status: "active",
+              specifications: [{ key: '', value: '' }],
+              shipping: "",
+              images: [],
+              featuredImage: ""
+            });
+          }
+        }}>
           <DialogContent className="max-w-md bg-white max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Product</DialogTitle>
@@ -498,14 +725,117 @@ export default function AdminProductsPage() {
                   </Select>
                 </div>
               </div>
-              <div>
-                <Label htmlFor="image">Image URL</Label>
-                <Input
-                  id="image"
-                  value={formData.image}
-                  onChange={e => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="https://..."
-                />
+              <div className="space-y-4">
+                <div>
+                  <Label>Product Images</Label>
+                  <div 
+                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                      isDragOver 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(true);
+                    }}
+                    onDragEnter={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(false);
+                      const files = e.dataTransfer.files;
+                      if (files && files.length > 0) {
+                        handleImageUpload(files);
+                      }
+                    }}
+                  >
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
+                      className="hidden"
+                      id="image-upload"
+                      disabled={uploadingImages}
+                    />
+                    <label htmlFor="image-upload" className="cursor-pointer">
+                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                      <p className="mt-2 text-sm text-gray-600">
+                        {uploadingImages ? 'Uploading...' : 'Click to upload images or drag and drop'}
+                      </p>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB each</p>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Image Preview Grid */}
+                {formData.images.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Uploaded Images</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {formData.images.map((imageUrl, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={normalizeImageUrl(imageUrl)}
+                            alt={`Product image ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 flex space-x-1">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setFeaturedImage(imageUrl);
+                                }}
+                                className={`h-8 w-8 p-0 ${
+                                  formData.featuredImage === imageUrl 
+                                    ? 'bg-blue-500 text-white' 
+                                    : 'bg-white text-gray-700'
+                                }`}
+                                title={formData.featuredImage === imageUrl ? 'Featured Image' : 'Set as Featured'}
+                              >
+                                <ImageIcon className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  removeImage(imageUrl);
+                                }}
+                                className="h-8 w-8 p-0"
+                                title="Remove Image"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          {formData.featuredImage === imageUrl && (
+                            <div className="absolute top-1 left-1">
+                              <Badge className="bg-blue-500 text-white text-xs">Featured</Badge>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <Label htmlFor="status">Status</Label>
@@ -646,14 +976,117 @@ export default function AdminProductsPage() {
                   </Select>
                 </div>
               </div>
-              <div>
-                <Label htmlFor="image">Image URL</Label>
-                <Input
-                  id="image"
-                  value={formData.image}
-                  onChange={e => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="https://..."
-                />
+              <div className="space-y-4">
+                <div>
+                  <Label>Product Images</Label>
+                  <div 
+                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                      isDragOver 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(true);
+                    }}
+                    onDragEnter={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(false);
+                      const files = e.dataTransfer.files;
+                      if (files && files.length > 0) {
+                        handleImageUpload(files);
+                      }
+                    }}
+                  >
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
+                      className="hidden"
+                      id="image-upload"
+                      disabled={uploadingImages}
+                    />
+                    <label htmlFor="image-upload" className="cursor-pointer">
+                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                      <p className="mt-2 text-sm text-gray-600">
+                        {uploadingImages ? 'Uploading...' : 'Click to upload images or drag and drop'}
+                      </p>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB each</p>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Image Preview Grid */}
+                {formData.images.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Uploaded Images</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {formData.images.map((imageUrl, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={normalizeImageUrl(imageUrl)}
+                            alt={`Product image ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 flex space-x-1">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setFeaturedImage(imageUrl);
+                                }}
+                                className={`h-8 w-8 p-0 ${
+                                  formData.featuredImage === imageUrl 
+                                    ? 'bg-blue-500 text-white' 
+                                    : 'bg-white text-gray-700'
+                                }`}
+                                title={formData.featuredImage === imageUrl ? 'Featured Image' : 'Set as Featured'}
+                              >
+                                <ImageIcon className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  removeImage(imageUrl);
+                                }}
+                                className="h-8 w-8 p-0"
+                                title="Remove Image"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          {formData.featuredImage === imageUrl && (
+                            <div className="absolute top-1 left-1">
+                              <Badge className="bg-blue-500 text-white text-xs">Featured</Badge>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <Label htmlFor="status">Status</Label>

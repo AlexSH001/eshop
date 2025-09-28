@@ -20,7 +20,7 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import { useEffect, useState } from "react";
 import { allCategories, bannerSlides } from "@/data/categories";
 import { electronicsProducts, fashionProducts, homeGardenProducts, gamingProducts, sportsProducts } from "@/data/products";
-import { getImagePath } from "@/lib/imageUtils";
+import { getImagePath, resolveProductImage } from "@/lib/imageUtils";
 
 interface Product {
   id: number;
@@ -83,12 +83,16 @@ export default function Home() {
           }
           
           // Transform product data to match frontend expectations
+          const dbImages = (product.images as unknown) as unknown[] | undefined;
+          const featuredImage = (product as any).featured_image as string | null | undefined;
+          const resolvedImage = resolveProductImage(featuredImage, dbImages, product.id as number);
+
           const transformedProduct: Product = {
             id: product.id as number,
             name: product.name as string,
             price: product.price as number,
             originalPrice: product.original_price as number | undefined,
-            image: getImagePath('products', product.id as number),
+            image: resolvedImage,
             category: categoryName
           };
           
