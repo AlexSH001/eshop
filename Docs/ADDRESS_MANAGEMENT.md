@@ -103,7 +103,7 @@ The order creation endpoint now supports saving shipping addresses:
 ```
 POST /api/orders
 {
-  "email": "user@example.com",
+  "email": "user@eshop.com",
   "shippingAddress": { ... },
   "saveShippingAddress": true
 }

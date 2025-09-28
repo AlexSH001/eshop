@@ -99,7 +99,7 @@ A comprehensive e-commerce backend built with Node.js, Express, and SQLite. This
 POST /api/auth/register
 Content-Type: application/json
 {
-  "email": "user@example.com",
+  "email": "user@eshop.com",
   "password": "password123",
   "firstName": "John",
   "lastName": "Doe"
@@ -109,7 +109,7 @@ Content-Type: application/json
 POST /api/auth/login
 Content-Type: application/json
 {
-  "email": "user@example.com",
+  "email": "user@eshop.com",
   "password": "password123"
 }
 
@@ -130,7 +130,7 @@ Content-Type: application/json
 ```
 
 ### Test Credentials
-- **User**: `user@example.com` / `password123`
+- **User**: `user@eshop.com` / `password123`
 - **Admin**: `admin@eshop.com` / `admin123`
 - **Super Admin**: `superadmin@eshop.com` / `super123`
 
@@ -427,7 +427,7 @@ curl http://localhost:3001/api/products
 # Login
 curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"password123"}'
+  -d '{"email":"user@eshop.com","password":"password123"}'
 ```
 
 ### Testing with Postman

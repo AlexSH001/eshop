@@ -369,7 +369,7 @@ async function seedDatabase() {
         phone: '+1234567891'
       },
       {
-        email: 'user@example.com',
+        email: 'user@eshop.com',
         password: 'password123',
         firstName: 'Test',
         lastName: 'User',
@@ -469,7 +469,7 @@ async function seedDatabase() {
     console.log(`   Sample Orders: ${sampleOrders.length}`);
 
     console.log('\n🔑 Test Credentials:');
-    console.log('   User: user@example.com / password123');
+    console.log('   User: user@eshop.com / password123');
     console.log('   Admin: admin@eshop.com / admin123');
     console.log('   Super Admin: superadmin@eshop.com / super123');
 
