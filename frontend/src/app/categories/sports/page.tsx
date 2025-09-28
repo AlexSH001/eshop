@@ -3,18 +3,25 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, User, ShoppingBag, Eye } from "lucide-react";
+import { Heart, User, ShoppingBag, Eye, Loader2 } from "lucide-react";
 import Link from "next/link";
 import ShoppingCartSheet from "@/components/ShoppingCart";
+import ProductQuickView from "@/components/ProductQuickView";
 import AuthModal from "@/components/AuthModal";
 import UserDropdown from "@/components/UserDropdown";
+import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { sportsProducts } from "@/data/products";
+import { useCategoryProducts } from "@/hooks/useCategoryProducts";
 
 export default function SportsPage() {
+  const { addItem } = useCart();
   const { isAuthenticated } = useAuth();
-  const { state: wishlistState } = useWishlist();
+  const { state: wishlistState, toggleWishlist, isInWishlist } = useWishlist();
+  
+  const fallbackProducts = sportsProducts.map(p => ({ ...p, category: 'Sports' }));
+  const { products, isLoading, error } = useCategoryProducts('Sports', fallbackProducts);
 
   return (
     <div className="min-h-screen bg-white">
@@ -80,30 +87,107 @@ export default function SportsPage() {
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900">Sports Products</h2>
-          <p className="text-gray-600 mt-1">{sportsProducts.length} products available</p>
+          <p className="text-gray-600 mt-1">{products.length} products available</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {sportsProducts.map((product) => (
-            <Card key={product.id} className="cursor-pointer transition-all duration-200 hover:shadow-lg">
-              <div className="aspect-square overflow-hidden rounded-t-lg">
-                <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
-              </div>
-              <CardContent className="p-4">
-                <h3 className="mb-2 text-sm font-medium text-gray-900">{product.name}</h3>
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="font-semibold text-gray-900">${product.price}</span>
-                  {product.originalPrice && (
-                    <span className="text-sm text-gray-500 line-through">${product.originalPrice}</span>
-                  )}
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center space-x-2">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="text-lg">Loading products...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Products Grid */}
+        {!isLoading && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {products.map((product) => (
+              <Card key={product.id} className="cursor-pointer transition-all duration-200 hover:shadow-lg group">
+                <div className="aspect-square overflow-hidden rounded-t-lg relative">
+                  <img 
+                    src={product.image} 
+                    alt={product.name} 
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                  />
+                  
+                  {/* Quick View Overlay */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <ProductQuickView
+                      product={{
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        originalPrice: product.originalPrice,
+                        image: product.image,
+                        category: "Sports"
+                      }}
+                    >
+                      <Button variant="secondary" size="sm" className="bg-white/90 hover:bg-white text-black">
+                        <Eye className="h-4 w-4 mr-2" />
+                        Quick View
+                      </Button>
+                    </ProductQuickView>
+                  </div>
                 </div>
-                <Button size="sm" className="w-full bg-gray-50 hover:bg-gray-800">
-                  Add to Cart
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="line-clamp-2 text-sm font-medium text-gray-900 flex-1">
+                      {product.name}
+                    </h3>
+                    {isAuthenticated && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 ml-2 flex-shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleWishlist({
+                            id: product.id,
+                            name: product.name,
+                            price: product.price,
+                            originalPrice: product.originalPrice,
+                            image: product.image,
+                            category: "Sports"
+                          });
+                        }}
+                      >
+                        <Heart
+                          className={`h-4 w-4 ${
+                            isInWishlist(product.id)
+                              ? 'fill-red-500 text-red-500'
+                              : 'text-gray-400 hover:text-red-500'
+                          }`}
+                        />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className="font-semibold text-gray-900">${product.price}</span>
+                    {product.originalPrice && (
+                      <span className="text-sm text-gray-500 line-through">${product.originalPrice}</span>
+                    )}
+                  </div>
+                  <Button 
+                    size="sm" 
+                    className="w-full bg-gray-50 hover:bg-gray-800"
+                    onClick={() => addItem({
+                      id: product.id,
+                      name: product.name,
+                      price: product.price,
+                      originalPrice: product.originalPrice,
+                      image: product.image,
+                      category: "Sports"
+                    })}
+                  >
+                    Add to Cart
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, User, ShoppingBag, Eye } from "lucide-react";
+import { Heart, User, ShoppingBag, Eye, Loader2 } from "lucide-react";
 import Link from "next/link";
 import ShoppingCartSheet from "@/components/ShoppingCart";
 import ProductQuickView from "@/components/ProductQuickView";
@@ -13,11 +13,15 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { fashionProducts } from "@/data/products";
+import { useCategoryProducts } from "@/hooks/useCategoryProducts";
 
 export default function FashionPage() {
   const { addItem } = useCart();
   const { isAuthenticated } = useAuth();
   const { state: wishlistState, toggleWishlist, isInWishlist } = useWishlist();
+  
+  const fallbackProducts = fashionProducts.map(p => ({ ...p, category: 'Fashion' }));
+  const { products, isLoading, error } = useCategoryProducts('Fashion', fallbackProducts);
 
   return (
     <div className="min-h-screen bg-white">
@@ -93,15 +97,27 @@ export default function FashionPage() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Fashion Products</h2>
-            <p className="text-gray-600 mt-1">{fashionProducts.length} products available</p>
+            <p className="text-gray-600 mt-1">{products.length} products available</p>
           </div>
           <Button variant="outline">
             Filter & Sort
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {fashionProducts.map((product) => (
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center space-x-2">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="text-lg">Loading products...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Products Grid */}
+        {!isLoading && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {products.map((product) => (
             <Card key={product.id} className="cursor-pointer transition-all duration-200 hover:shadow-lg group">
               <div className="aspect-square overflow-hidden rounded-t-lg relative">
                 <img
@@ -189,7 +205,8 @@ export default function FashionPage() {
               </CardContent>
             </Card>
           ))}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

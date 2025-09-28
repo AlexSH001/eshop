@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { SearchProvider } from "@/contexts/SearchContext";
 import { AdminProvider } from "@/contexts/AdminContext";
+import { CategoriesProvider } from "@/contexts/CategoriesContext";
 
 
 export default function ClientBody({
@@ -22,15 +23,17 @@ export default function ClientBody({
   return (
     <AuthProvider>
       <AdminProvider>
-        <WishlistProvider>
-          <SearchProvider>
-            <CartProvider>
-              <div className="antialiased">
-                {children}
-              </div>
-            </CartProvider>
-          </SearchProvider>
-        </WishlistProvider>
+        <CategoriesProvider>
+          <WishlistProvider>
+            <SearchProvider>
+              <CartProvider>
+                <div className="antialiased">
+                  {children}
+                </div>
+              </CartProvider>
+            </SearchProvider>
+          </WishlistProvider>
+        </CategoriesProvider>
       </AdminProvider>
     </AuthProvider>
   );
