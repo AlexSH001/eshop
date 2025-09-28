@@ -169,7 +169,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                   onMouseLeave={() => setIsZoomed(false)}
                 >
                   <img
-                    src={getImagePath('products', product.id)}
+                    src={images[selectedImage] || product.image}
                     alt={product.name}
                     className={`w-full h-full object-cover transition-transform duration-200 ${
                       isZoomed ? 'scale-150' : 'scale-100'
@@ -218,7 +218,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                       onClick={() => setSelectedImage(index)}
                     >
                       <img
-                        src={getImagePath('products', product.id)}
+                        src={image}
                         alt={`${product.name} ${index + 1}`}
                         className="w-full h-full object-cover"
                       />

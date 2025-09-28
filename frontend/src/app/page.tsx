@@ -391,7 +391,8 @@ export default function Home() {
                             onError={(e) => {
                               console.error(`Image failed to load for ${product.name}:`, product.image);
                               const target = e.target as HTMLImageElement;
-                              target.src = getImagePath('products', product.id);
+                              // Use a placeholder image instead of trying to load non-existent static images
+                              target.src = '/static/images/default.jpg';
                             }}
                           />
 

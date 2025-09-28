@@ -98,8 +98,8 @@ export const resolveProductImage = (featuredImage: string | null | undefined, im
         }
     }
     
-    // Fallback to static image
-    const fallbackUrl = getImagePath('products', productId);
+    // Fallback to default image
+    const fallbackUrl = defaultImage;
     console.log('Using fallback image:', fallbackUrl);
     return fallbackUrl;
 };
