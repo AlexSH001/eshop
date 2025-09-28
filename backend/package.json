@@ -15,6 +15,7 @@
     "test-performance": "node test-performance-optimization.js",
     "test-monitoring": "node test-monitoring-simple.js",
     "seed": "node src/database/seed-universal.js",
+    "seed-images": "node src/database/seed-with-images.js",
     "generate-json": "node scripts/generate-json-from-frontend.js",
     "sync-data": "npm run generate-json && npm run seed",
     "logs:view": "tail -f logs/combined-$(date +%Y-%m-%d).log",
