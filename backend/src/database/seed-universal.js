@@ -129,12 +129,6 @@ async function seedData(client = null) {
     const slug = generateSlug(product.name);
     const sku = `SKU-${product.id.toString().padStart(4, '0')}`;
     
-    // Extract image URLs from the images array
-    const imageUrls = product.images && product.images.length > 0 
-      ? product.images.map(img => img.image)
-      : [];
-    const featuredImage = imageUrls.length > 0 ? imageUrls[0] : null;
-    
     if (isPostgres) {
       await client.query(
         'INSERT INTO products (id, name, slug, sku, category_id, price, original_price, stock, description, images, featured_image, specifications, shipping) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)',
@@ -148,8 +142,8 @@ async function seedData(client = null) {
           product.originalprice,
           product.stock,
           product.description,
-          JSON.stringify(imageUrls),
-          featuredImage,
+          product.images,
+          product.featuredImage,
           JSON.stringify(product.specifications),
           product.shipping
         ]
@@ -167,8 +161,8 @@ async function seedData(client = null) {
           product.originalprice,
           product.stock,
           product.description,
-          JSON.stringify(imageUrls),
-          featuredImage,
+          JSON.stringify(product.images),
+          product.featuredImage,
           JSON.stringify(product.specifications),
           product.shipping
         ]

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { resolveProductImage } from "@/lib/imageUtils";
+import { resolveProductImage } from "@/lib/utils";
 import { useCategories } from "@/contexts/CategoriesContext";
 
 interface Product {

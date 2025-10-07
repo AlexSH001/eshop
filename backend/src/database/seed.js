@@ -108,7 +108,8 @@ async function seedDatabase() {
         category: 'Electronics',
         stock: 45,
         status: 'active',
-        images: ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500'],
+        images: ['/uploads/products/electronics/wireless-bluetooth-headphones-20250928-27694.jpg'],
+        featuredImage: '/uploads/products/electronics/wireless-bluetooth-headphones-20250928-27694.jpg',
         tags: ['wireless', 'bluetooth', 'headphones', 'audio'],
         isFeatured: true,
         specifications: {
@@ -120,7 +121,7 @@ async function seedDatabase() {
         shipping: 'Free shipping'
       },
       {
-        name: 'Smartphone Pro Max',
+        name: 'Smartphone',
         description: 'Latest flagship smartphone with advanced camera system, powerful processor, and all-day battery life. Available in multiple colors.',
         shortDescription: 'Latest flagship smartphone with advanced features',
         price: 699.99,
@@ -128,7 +129,8 @@ async function seedDatabase() {
         category: 'Electronics',
         stock: 23,
         status: 'active',
-        images: ['https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500'],
+        images: ['/uploads/products/electronics/smartphone-20250928-39548.jpg'],
+        featuredImage: '/uploads/products/electronics/smartphone-20250928-39548.jpg',
         tags: ['smartphone', 'mobile', 'phone', 'tech'],
         isFeatured: true,
         specifications: {
@@ -140,7 +142,7 @@ async function seedDatabase() {
         shipping: 'Standard shipping'
       },
       {
-        name: 'Gaming Laptop Pro',
+        name: 'Laptop',
         description: 'High-performance gaming laptop with dedicated graphics card, RGB keyboard, and fast SSD storage. Perfect for gaming and creative work.',
         shortDescription: 'High-performance gaming laptop',
         price: 999.99,
@@ -148,7 +150,8 @@ async function seedDatabase() {
         category: 'Electronics',
         stock: 12,
         status: 'active',
-        images: ['https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500'],
+        images: ['/uploads/products/electronics/laptop-20250928-97095.jpg'],
+        featuredImage: '/uploads/products/electronics/laptop-20250928-97095.jpg',
         tags: ['laptop', 'gaming', 'computer', 'tech'],
         specifications: {
           brand: 'GamerEdge',
@@ -159,7 +162,7 @@ async function seedDatabase() {
         shipping: 'Express shipping'
       },
       {
-        name: 'Smart Watch Series X',
+        name: 'Smart Watch',
         description: 'Advanced smartwatch with health monitoring, fitness tracking, and seamless smartphone integration.',
         shortDescription: 'Advanced smartwatch with health monitoring',
         price: 299.99,
@@ -167,7 +170,8 @@ async function seedDatabase() {
         category: 'Electronics',
         stock: 67,
         status: 'active',
-        images: ['https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=500'],
+        images: ['/uploads/products/electronics/smart-watch-20250928-38357.jpg'],
+        featuredImage: '/uploads/products/electronics/smart-watch-20250928-38357.jpg',
         tags: ['smartwatch', 'fitness', 'health', 'wearable'],
         specifications: {
           brand: 'FitTrack',
@@ -177,7 +181,93 @@ async function seedDatabase() {
         },
         shipping: 'Standard shipping'
       },
-
+      {
+        name: 'Earphone',
+        description: 'High-quality earphones with noise cancellation, 20-hour battery life, and premium sound quality. Perfect for music, calls, and travel.',
+        shortDescription: 'Premium earphones with noise cancellation',
+        price: 89.99,
+        originalPrice: 129.99,
+        category: 'Electronics',
+        stock: 45,
+        status: 'active',
+        images: ['/uploads/products/electronics/earphone-20250927-97807.jpg'],
+        featuredImage: '/uploads/products/electronics/earphone-20250927-97807.jpg',
+        tags: ['earphone', 'audio', 'noise', 'cancellation'],
+        isFeatured: true,
+        specifications: {
+          brand: 'TechPro',
+          model: 'BT-500',
+          color: 'Black',
+          weight: '0.5kg'
+        },
+        shipping: 'Free shipping'
+      },
+      {
+        name: 'Digital Camera',
+        description: 'Professional digital camera with advanced sensor technology, 4K video recording, and interchangeable lens system.',
+        shortDescription: 'Professional digital camera with 4K recording',
+        price: 799.99,
+        originalPrice: 999.99,
+        category: 'Electronics',
+        stock: 99,
+        status: 'active',
+        images: ['/uploads/products/electronics/digital-camera-20250928-54738.jpg'],
+        featuredImage: '/uploads/products/electronics/digital-camera-20250928-54738.jpg',
+        tags: ['camera', 'photography', '4k', 'professional'],
+        isFeatured: true,
+        specifications: {
+          brand: 'PhotoPro',
+          sensor: '24.2MP Full Frame',
+          video: '4K at 30fps',
+          iso: '100-51200',
+          lens: 'Interchangeable',
+          stabilization: '5-axis'
+        },
+        shipping: 'Express shipping'
+      },
+      {
+        name: 'Gaming Console',
+        description: 'High-performance gaming console with advanced graphics, 1TB storage, and 120Hz refresh rate. Perfect for gaming and entertainment.',
+        shortDescription: 'High-performance gaming console with advanced features',
+        price: 499.99,
+        originalPrice: 599.99,
+        category: 'Electronics',
+        stock: 99,
+        status: 'active',
+        images: ['/uploads/products/electronics/gaming-console-20250928-41450.jpg'],
+        featuredImage: '/uploads/products/electronics/gaming-console-20250928-41450.jpg',
+        tags: ['gaming', 'console', 'gaming', 'entertainment'],
+        isFeatured: true,
+        specifications: {
+          brand: 'GamingPro',
+          model: 'Gaming Console X',
+          storage: '1TB',
+          refreshRate: '120Hz',
+          graphics: 'Advanced'
+        },
+        shipping: 'Express shipping'
+      },
+      {
+        name: 'Bluetooth Speakers',
+        description: 'High-quality Bluetooth speakers with 30-hour battery life, 100W output, and wireless connectivity. Perfect for music, calls, and travel.',
+        shortDescription: 'High-quality Bluetooth speakers with 30-hour battery life',
+        price: 199.99,
+        originalPrice: 299.99,
+        category: 'Electronics',
+        stock: 99,
+        status: 'active',
+        images: ['/uploads/products/electronics/bluetooth-speakers-20250928-29588.jpg'],
+        featuredImage: '/uploads/products/electronics/bluetooth-speakers-20250928-29588.jpg',
+        tags: ['speakers', 'bluetooth', 'audio', 'wireless'],
+        isFeatured: true,
+        specifications: {
+          brand: 'SoundPro',
+          power: '100W',
+          battery: '30 hours',
+          connectivity: 'Bluetooth 5.0'
+        },
+        shipping: 'Standard shipping'
+      },
       // Fashion
       {
         name: 'Premium Cotton T-Shirt',
@@ -188,7 +278,8 @@ async function seedDatabase() {
         category: 'Fashion',
         stock: 156,
         status: 'active',
-        images: ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500'],
+        images: ['/uploads/products/fashion/cotton-tshirt-20250928-52129.jpg'],
+        featuredImage: '/uploads/products/fashion/cotton-tshirt-20250928-52129.jpg',
         tags: ['t-shirt', 'cotton', 'casual', 'organic'],
         isFeatured: true,
         specifications: {
@@ -208,7 +299,8 @@ async function seedDatabase() {
         category: 'Fashion',
         stock: 89,
         status: 'active',
-        images: ['https://images.unsplash.com/photo-1542272604-787c3835535d?w=500'],
+        images: ['/uploads/products/fashion/classic-denim-jeans-20250928-68013.jpg'],
+        featuredImage: '/uploads/products/fashion/classic-denim-jeans-20250928-68013.jpg',
         tags: ['jeans', 'denim', 'pants', 'casual'],
         specifications: {
           brand: 'Denim Master',
@@ -227,7 +319,8 @@ async function seedDatabase() {
         category: 'Fashion',
         stock: 34,
         status: 'active',
-        images: ['https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500'],
+        images: ['/uploads/products/fashion/running-sneakers-20250928-88500.jpg'],
+        featuredImage: '/uploads/products/fashion/running-sneakers-20250928-88500.jpg',
         tags: ['sneakers', 'running', 'shoes', 'athletic'],
         specifications: {
           brand: 'RunActive',
@@ -248,7 +341,8 @@ async function seedDatabase() {
         category: 'Home & Garden',
         stock: 78,
         status: 'active',
-        images: ['https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500'],
+        images: ['/uploads/products/home-garden/modern-desk-lamp-20250928-27694.jpg'],
+        featuredImage: '/uploads/products/home&garden/modern-desk-lamp-20250928-27694.jpg',
         tags: ['lamp', 'desk', 'lighting', 'office'],
         specifications: {
           brand: 'BrightLight',
@@ -267,7 +361,8 @@ async function seedDatabase() {
         category: 'Home & Garden',
         stock: 45,
         status: 'active',
-        images: ['https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=500'],
+        images: ['/uploads/products/home-garden/premium-coffee-maker-20250928-28699.jpg'],
+        featuredImage: '/uploads/products/home&garden/premium-coffee-maker-20250928-28699.jpg',
         tags: ['coffee', 'maker', 'kitchen', 'appliance'],
         specifications: {
           brand: 'CoffeePro',
@@ -288,7 +383,8 @@ async function seedDatabase() {
         category: 'Gaming',
         stock: 56,
         status: 'active',
-        images: ['https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=500'],
+        images: ['/uploads/products/gaming/mechanical-gaming-keyboard-20250928-27694.jpg'],
+        featuredImage: '/uploads/products/gaming/mechanical-gaming-keyboard-20250928-27694.jpg',
         tags: ['keyboard', 'gaming', 'mechanical', 'rgb'],
         isFeatured: true,
         specifications: {
@@ -308,7 +404,8 @@ async function seedDatabase() {
         category: 'Gaming',
         stock: 0, // Out of stock for testing
         status: 'inactive',
-        images: ['https://images.unsplash.com/photo-1527814050087-3793815479db?w=500'],
+        images: ['/uploads/products/gaming/gaming-mouse-pro-20250928-15197.jpg'],
+        featuredImage: '/uploads/products/gaming/gaming-mouse-pro-20250928-15197.jpg',
         tags: ['mouse', 'gaming', 'precision', 'ergonomic'],
         specifications: {
           brand: 'PrecisionPro',
@@ -342,7 +439,7 @@ async function seedDatabase() {
         categoryId,
         product.stock,
         JSON.stringify(product.images),
-        product.images[0],
+        product.featuredImage || product.images[0],
         JSON.stringify(product.tags),
         product.status || 'active',
         product.isFeatured || false,

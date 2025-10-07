@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, User, ShoppingBag, Eye } from "lucide-react";
+import { Heart, User, ShoppingBag, Eye, Loader2 } from "lucide-react";
 import Link from "next/link";
 import ShoppingCartSheet from "@/components/ShoppingCart";
 import ProductQuickView from "@/components/ProductQuickView";
@@ -12,16 +12,16 @@ import UserDropdown from "@/components/UserDropdown";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
-import { gamingProducts } from "@/data/products";
 import { useCategoryProducts } from "@/hooks/useCategoryProducts";
+import { fetchGroupedProducts } from "@/lib/utils";
 
 export default function GamingPage() {
   const { addItem } = useCart();
   const { isAuthenticated } = useAuth();
   const { state: wishlistState, toggleWishlist, isInWishlist } = useWishlist();
   
-  const fallbackProducts = gamingProducts.map(p => ({ ...p, category: 'Gaming' }));
-  const { products, isLoading, error } = useCategoryProducts('Gaming', fallbackProducts);
+  const groupedProducts = fetchGroupedProducts()
+  const { products, isLoading, error } = useCategoryProducts('Gaming', groupedProducts.Gaming);
 
   return (
     <div className="min-h-screen bg-white">

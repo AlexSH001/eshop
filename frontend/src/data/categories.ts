@@ -9,7 +9,7 @@ export const allCategories = [
     description: "Phones, Laptops, Gadgets",
     href: "/categories/electronics",
     productCount: 12,
-    image: "/static/images/categories/category_1001.jpg"
+    image: "/static/images/categories/category_electronics.jpg"
   },
   {
     name: "Fashion",

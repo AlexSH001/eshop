@@ -3,695 +3,706 @@
     {
       "id": 1001,
       "name": "Wireless Bluetooth Headphones",
-      "categoryid": 1,
+      "description": "High-quality wireless headphones with active noise cancellation, 30-hour battery life, and premium sound quality. Perfect for music, calls, and travel.",
+      "shortDescription": "Premium wireless headphones with noise cancellation",
       "price": 89.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/1001/1.jpg",
-          "download_link": "/static/images/products/product_1001.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 129.99,
+      "categoryid": 1,
+      "stock": 45,
+      "status": "active",
+      "images": ["/uploads/products/electronics/wireless-bluetooth-headphones-20250928-27694.jpg"],
+      "featuredImage": "/uploads/products/electronics/wireless-bluetooth-headphones-20250928-27694.jpg",
+      "tags": ["wireless", "bluetooth", "headphones", "audio"],
+      "isFeatured": true,
+      "specifications": {
+        "brand": "TechPro",
+        "model": "BT-500",
+        "color": "Black",
+        "weight": "0.5kg"
+      },
+      "shipping": "Free shipping"
     },
     {
       "id": 1002,
       "name": "Smart Phone",
-      "categoryid": 1,
+      "description": "Latest flagship smartphone with advanced camera system, powerful processor, and all-day battery life. Available in multiple colors.",
+      "shortDescription": "Latest flagship smartphone with advanced features",
       "price": 699.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/1002/1.jpg",
-          "download_link": "/static/images/products/product_1002.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 799.99,
+      "categoryid": 1,
+      "stock": 23,
+      "status": "active",
+      "images": ["/uploads/products/electronics/smart-phone-20250928-39548.jpg"],
+      "featuredImage": "/uploads/products/electronics/smart-phone-20250928-39548.jpg",
+      "tags": ["smartphone", "mobile", "phone", "tech"],
+      "isFeatured": true,
+      "specifications": {
+        "brand": "UltraTech",
+        "model": "ProMax 2023",
+        "storage": "128GB",
+        "ram": "12GB"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 1003,
       "name": "Laptop",
-      "categoryid": 1,
+      "description": "High-performance gaming laptop with dedicated graphics card, RGB keyboard, and fast SSD storage. Perfect for gaming and creative work.",
+      "shortDescription": "High-performance gaming laptop",
       "price": 999.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/1003/1.jpg",
-          "download_link": "/static/images/products/product_1003.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 1299.99,
+      "categoryid": 1,
+      "stock": 12,
+      "status": "active",
+      "images": ["/uploads/products/electronics/laptop-20250928-97095.jpg"],
+      "featuredImage": "/uploads/products/electronics/laptop-20250928-97095.jpg",
+      "tags": ["laptop", "gaming", "computer", "tech"],
+      "specifications": {
+        "brand": "GamerEdge",
+        "processor": "Intel Core i7",
+        "gpu": "NVIDIA RTX 3060",
+        "ram": "16GB"
+      },
+      "shipping": "Express shipping"
     },
     {
       "id": 1004,
       "name": "Smart Watch",
-      "categoryid": 1,
+      "description": "Advanced smartwatch with health monitoring, fitness tracking, and seamless smartphone integration.",
+      "shortDescription": "Advanced smartwatch with health monitoring",
       "price": 299.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/1004/1.jpg",
-          "download_link": "/static/images/products/product_1004.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 399.99,
+      "categoryid": 1,
+      "stock": 67,
+      "status": "active",
+      "images": ["/uploads/products/electronics/smart-watch-20250928-38357.jpg"],
+      "featuredImage": "/uploads/products/electronics/smart-watch-20250928-38357.jpg",
+      "tags": ["smartwatch", "fitness", "health", "wearable"],
+      "specifications": {
+        "brand": "FitTrack",
+        "model": "Series X",
+        "display": "OLED, 1.7 inches",
+        "battery": "400mAh"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 1005,
       "name": "Tablet",
-      "categoryid": 1,
+      "description": "High-performance tablet with large display, long battery life, and powerful processor. Perfect for work and entertainment.",
+      "shortDescription": "High-performance tablet with large display",
       "price": 449.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/1005/1.jpg",
-          "download_link": "/static/images/products/product_1005.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 599.99,
+      "categoryid": 1,
+      "stock": 34,
+      "status": "active",
+      "images": ["/uploads/products/electronics/tablet-20250928-67407.jpg"],
+      "featuredImage": "/uploads/products/electronics/tablet-20250928-67407.jpg",
+      "tags": ["tablet", "mobile", "entertainment", "work"],
+      "specifications": {
+        "brand": "TabletPro",
+        "screen": "10.9 inches",
+        "storage": "256GB",
+        "ram": "8GB"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 1006,
       "name": "Digital Camera",
-      "categoryid": 1,
+      "description": "Professional digital camera with advanced sensor technology, 4K video recording, and interchangeable lens system.",
+      "shortDescription": "Professional digital camera with 4K recording",
       "price": 799.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/1006/1.jpg",
-          "download_link": "/static/images/products/product_1006.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 999.99,
+      "categoryid": 1,
+      "stock": 15,
+      "status": "active",
+      "images": ["/uploads/products/electronics/digital-camera-20250928-54738.jpg"],
+      "featuredImage": "/uploads/products/electronics/digital-camera-20250928-54738.jpg",
+      "tags": ["camera", "photography", "4k", "professional"],
+      "isFeatured": true,
+      "specifications": {
+        "brand": "PhotoPro",
+        "sensor": "24.2MP Full Frame",
+        "video": "4K at 30fps",
+        "iso": "100-51200",
+        "lens": "Interchangeable",
+        "stabilization": "5-axis"
+      },
+      "shipping": "Express shipping"
     },
     {
       "id": 1007,
       "name": "Gaming Console",
-      "categoryid": 1,
+      "description": "High-performance gaming console with advanced graphics, 1TB storage, and 120Hz refresh rate. Perfect for gaming and entertainment.",
+      "shortDescription": "High-performance gaming console with advanced features",
       "price": 499.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/1007/1.jpg",
-          "download_link": "/static/images/products/product_1007.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 599.99,
+      "categoryid": 1,
+      "stock": 28,
+      "status": "active",
+      "images": ["/uploads/products/electronics/gaming-console-20250928-41450.jpg"],
+      "featuredImage": "/uploads/products/electronics/gaming-console-20250928-41450.jpg",
+      "tags": ["gaming", "console", "entertainment"],
+      "isFeatured": true,
+      "specifications": {
+        "brand": "GamingPro",
+        "model": "Gaming Console X",
+        "storage": "1TB",
+        "refreshRate": "120Hz",
+        "graphics": "Advanced"
+      },
+      "shipping": "Express shipping"
     },
     {
       "id": 1008,
       "name": "Bluetooth Speakers",
-      "categoryid": 1,
+      "description": "High-quality Bluetooth speakers with 30-hour battery life, 100W output, and wireless connectivity. Perfect for music, calls, and travel.",
+      "shortDescription": "High-quality Bluetooth speakers with 30-hour battery life",
       "price": 199.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/1008/1.jpg",
-          "download_link": "/static/images/products/product_1008.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 299.99,
+      "categoryid": 1,
+      "stock": 42,
+      "status": "active",
+      "images": ["/uploads/products/electronics/bluetooth-speakers-20250928-29588.jpg"],
+      "featuredImage": "/uploads/products/electronics/bluetooth-speakers-20250928-29588.jpg",
+      "tags": ["speakers", "bluetooth", "audio", "wireless"],
+      "isFeatured": true,
+      "specifications": {
+        "brand": "SoundPro",
+        "power": "100W",
+        "battery": "30 hours",
+        "connectivity": "Bluetooth 5.0"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 2001,
       "name": "Cotton T-Shirt",
-      "categoryid": 2,
+      "description": "Soft, comfortable cotton t-shirt made from 100% organic cotton. Available in multiple colors and sizes.",
+      "shortDescription": "Premium 100% organic cotton t-shirt",
       "price": 24.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/2001/1.jpg",
-          "download_link": "/static/images/products/product_2001.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 39.99,
+      "categoryid": 2,
+      "stock": 156,
+      "status": "active",
+      "images": ["/uploads/products/fashion/cotton-tshirt-20250928-52129.jpg"],
+      "featuredImage": "/uploads/products/fashion/cotton-tshirt-20250928-52129.jpg",
+      "tags": ["t-shirt", "cotton", "casual", "organic"],
+      "isFeatured": true,
+      "specifications": {
+        "brand": "Organic Cotton Co.",
+        "material": "100% organic cotton",
+        "size": "M, L, XL",
+        "color": "Multiple"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 2002,
       "name": "Denim Jeans",
-      "categoryid": 2,
+      "description": "Classic fit denim jeans made from premium denim fabric. Comfortable and durable for everyday wear.",
+      "shortDescription": "Classic fit premium denim jeans",
       "price": 79.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/2002/1.jpg",
-          "download_link": "/static/images/products/product_2002.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 99.99,
+      "categoryid": 2,
+      "stock": 89,
+      "status": "active",
+      "images": ["/uploads/products/fashion/denim-jeans-20250928-68013.jpg"],
+      "featuredImage": "/uploads/products/fashion/denim-jeans-20250928-68013.jpg",
+      "tags": ["jeans", "denim", "pants", "casual"],
+      "specifications": {
+        "brand": "Denim Master",
+        "style": "Straight fit",
+        "wash": "Light wash",
+        "size": "32, 34, 36"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 2003,
       "name": "Sneakers",
-      "categoryid": 2,
+      "description": "Lightweight running sneakers with advanced cushioning and breathable mesh upper. Perfect for daily runs and workouts.",
+      "shortDescription": "Lightweight running sneakers with advanced cushioning",
       "price": 129.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/2003/1.jpg",
-          "download_link": "/static/images/products/product_2003.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 159.99,
+      "categoryid": 2,
+      "stock": 34,
+      "status": "active",
+      "images": ["/uploads/products/fashion/sneakers-20250928-88500.jpg"],
+      "featuredImage": "/uploads/products/fashion/sneakers-20250928-88500.jpg",
+      "tags": ["sneakers", "running", "shoes", "athletic"],
+      "specifications": {
+        "brand": "RunActive",
+        "type": "Cushioned",
+        "material": "Synthetic, mesh",
+        "color": "Multiple"
+      },
+      "shipping": "Express shipping"
     },
     {
       "id": 2004,
       "name": "Leather Jacket",
-      "categoryid": 2,
+      "description": "Premium leather jacket made from genuine leather. Classic style with modern fit. Perfect for any occasion.",
+      "shortDescription": "Premium genuine leather jacket",
       "price": 199.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/2004/1.jpg",
-          "download_link": "/static/images/products/product_2004.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 299.99,
+      "categoryid": 2,
+      "stock": 18,
+      "status": "active",
+      "images": ["/uploads/products/fashion/leather-jacket-20250928-28714.jpg"],
+      "featuredImage": "/uploads/products/fashion/leather-jacket-20250928-28714.jpg",
+      "tags": ["jacket", "leather", "outerwear", "premium"],
+      "specifications": {
+        "brand": "LeatherCraft",
+        "material": "Genuine leather",
+        "style": "Classic",
+        "size": "S, M, L, XL"
+      },
+      "shipping": "Express shipping"
     },
     {
       "id": 2005,
       "name": "Summer Dress",
-      "categoryid": 2,
+      "description": "Elegant summer dress made from lightweight fabric. Perfect for warm weather and special occasions.",
+      "shortDescription": "Elegant lightweight summer dress",
       "price": 89.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/2005/1.jpg",
-          "download_link": "/static/images/products/product_2005.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 129.99,
+      "categoryid": 2,
+      "stock": 45,
+      "status": "active",
+      "images": ["/uploads/products/fashion/summer-dress-20250928-34174.jpg"],
+      "featuredImage": "/uploads/products/fashion/summer-dress-20250928-34174.jpg",
+      "tags": ["dress", "summer", "elegant", "women"],
+      "specifications": {
+        "brand": "SummerStyle",
+        "material": "Lightweight fabric",
+        "style": "Elegant",
+        "size": "XS, S, M, L"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 2006,
       "name": "Sunglasses",
-      "categoryid": 2,
+      "description": "Stylish sunglasses with UV protection and polarized lenses. Perfect for outdoor activities and sunny days.",
+      "shortDescription": "Stylish sunglasses with UV protection",
       "price": 49.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/2006/1.jpg",
-          "download_link": "/static/images/products/product_2006.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 79.99,
+      "categoryid": 2,
+      "stock": 67,
+      "status": "active",
+      "images": ["/uploads/products/fashion/sunglasses-20250928-55881.jpg"],
+      "featuredImage": "/uploads/products/fashion/sunglasses-20250928-55881.jpg",
+      "tags": ["sunglasses", "accessories", "uv-protection", "style"],
+      "specifications": {
+        "brand": "SunStyle",
+        "lens": "Polarized",
+        "protection": "UV400",
+        "frame": "Metal"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 2007,
       "name": "Winter Coat",
-      "categoryid": 2,
+      "description": "Warm winter coat with insulation and weather-resistant outer shell. Perfect for cold weather protection.",
+      "shortDescription": "Warm insulated winter coat",
       "price": 249.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/2007/1.jpg",
-          "download_link": "/static/images/products/product_2007.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 349.99,
+      "categoryid": 2,
+      "stock": 23,
+      "status": "active",
+      "images": ["/uploads/products/fashion/winter-coat-20250928-67753.jpg"],
+      "featuredImage": "/uploads/products/fashion/winter-coat-20250928-67753.jpg",
+      "tags": ["coat", "winter", "warm", "outerwear"],
+      "specifications": {
+        "brand": "WinterWear",
+        "insulation": "Synthetic",
+        "waterproof": "Yes",
+        "size": "S, M, L, XL"
+      },
+      "shipping": "Express shipping"
     },
     {
       "id": 2008,
       "name": "Handbag",
-      "categoryid": 2,
+      "description": "Elegant handbag made from premium materials. Spacious interior with multiple compartments for organization.",
+      "shortDescription": "Elegant premium handbag",
       "price": 159.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/2008/1.jpg",
-          "download_link": "/static/images/products/product_2008.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 229.99,
+      "categoryid": 2,
+      "stock": 31,
+      "status": "active",
+      "images": ["/uploads/products/fashion/handbag-20250928-11048.jpg"],
+      "featuredImage": "/uploads/products/fashion/handbag-20250928-11048.jpg",
+      "tags": ["handbag", "purse", "accessories", "elegant"],
+      "specifications": {
+        "brand": "EleganceBags",
+        "material": "Premium leather",
+        "compartments": "Multiple",
+        "style": "Classic"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 3001,
       "name": "Desk Lamp",
-      "categoryid": 3,
+      "description": "Sleek modern desk lamp with adjustable brightness and USB charging port. Perfect for home office or study.",
+      "shortDescription": "Modern adjustable desk lamp with USB charging",
       "price": 45.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/3001/1.jpg",
-          "download_link": "/static/images/products/product_3001.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 69.99,
+      "categoryid": 3,
+      "stock": 78,
+      "status": "active",
+      "images": ["/uploads/products/home&garden/desk-lamp-20250928-59607.jpg"],
+      "featuredImage": "/uploads/products/home&garden/desk-lamp-20250928-59607.jpg",
+      "tags": ["lamp", "desk", "lighting", "office"],
+      "specifications": {
+        "brand": "BrightLight",
+        "style": "Modern",
+        "color": "White",
+        "power": "60W"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 3002,
       "name": "Coffee Maker",
-      "categoryid": 3,
+      "description": "Programmable coffee maker with thermal carafe, auto-brew timer, and multiple brewing options.",
+      "shortDescription": "Programmable coffee maker with thermal carafe",
       "price": 159.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/3002/1.jpg",
-          "download_link": "/static/images/products/product_3002.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 219.99,
+      "categoryid": 3,
+      "stock": 45,
+      "status": "active",
+      "images": ["/uploads/products/home&garden/coffee-maker-20250928-28699.jpg"],
+      "featuredImage": "/uploads/products/home&garden/coffee-maker-20250928-28699.jpg",
+      "tags": ["coffee", "maker", "kitchen", "appliance"],
+      "specifications": {
+        "brand": "CoffeePro",
+        "model": "Thermal X",
+        "capacity": "12 cups",
+        "color": "Black"
+      },
+      "shipping": "Express shipping"
     },
     {
       "id": 3003,
       "name": "Plant Pot",
-      "categoryid": 3,
+      "description": "Decorative ceramic plant pot with drainage holes. Perfect for indoor plants and home decoration.",
+      "shortDescription": "Decorative ceramic plant pot",
       "price": 29.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/3003/1.jpg",
-          "download_link": "/static/images/products/product_3003.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 39.99,
+      "categoryid": 3,
+      "stock": 89,
+      "status": "active",
+      "images": ["/uploads/products/home&garden/plant-pot-20250928-13228.jpg"],
+      "featuredImage": "/uploads/products/home&garden/plant-pot-20250928-13228.jpg",
+      "tags": ["pot", "plant", "ceramic", "decoration"],
+      "specifications": {
+        "brand": "GardenStyle",
+        "material": "Ceramic",
+        "drainage": "Yes",
+        "size": "Medium"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 3004,
       "name": "Throw Pillow",
-      "categoryid": 3,
+      "description": "Soft decorative throw pillow with removable cover. Perfect for adding comfort and style to any room.",
+      "shortDescription": "Soft decorative throw pillow",
       "price": 19.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/3004/1.jpg",
-          "download_link": "/static/images/products/product_3004.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 29.99,
+      "categoryid": 3,
+      "stock": 67,
+      "status": "active",
+      "images": ["/uploads/products/home&garden/throw-pillow-20250928-41574.jpg"],
+      "featuredImage": "/uploads/products/home&garden/throw-pillow-20250928-41574.jpg",
+      "tags": ["pillow", "decorative", "soft", "home"],
+      "specifications": {
+        "brand": "ComfortHome",
+        "material": "Cotton blend",
+        "size": "18x18 inches",
+        "removable": "Yes"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 3006,
       "name": "Wall Art",
-      "categoryid": 3,
+      "description": "Beautiful wall art print on high-quality canvas. Perfect for home decoration and adding personality to any space.",
+      "shortDescription": "Beautiful canvas wall art print",
       "price": 89.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/3006/1.jpg",
-          "download_link": "/static/images/products/product_3006.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 129.99,
+      "categoryid": 3,
+      "stock": 23,
+      "status": "active",
+      "images": ["/uploads/products/home&garden/wall-art-20250928-47103.jpg"],
+      "featuredImage": "/uploads/products/home&garden/wall-art-20250928-47103.jpg",
+      "tags": ["art", "wall", "canvas", "decoration"],
+      "specifications": {
+        "brand": "ArtGallery",
+        "material": "Canvas",
+        "size": "24x36 inches",
+        "frame": "Included"
+      },
+      "shipping": "Express shipping"
     },
     {
       "id": 3007,
       "name": "Garden Tools",
-      "categoryid": 3,
+      "description": "Professional garden tool set with ergonomic handles. Perfect for gardening and outdoor maintenance.",
+      "shortDescription": "Professional garden tool set",
       "price": 79.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/3007/1.jpg",
-          "download_link": "/static/images/products/product_3007.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 119.99,
+      "categoryid": 3,
+      "stock": 34,
+      "status": "active",
+      "images": ["/uploads/products/home&garden/garden-tools-20250928-45252.jpg"],
+      "featuredImage": "/uploads/products/home&garden/garden-tools-20250928-45252.jpg",
+      "tags": ["tools", "garden", "outdoor", "maintenance"],
+      "specifications": {
+        "brand": "GardenPro",
+        "material": "Stainless steel",
+        "handles": "Ergonomic",
+        "pieces": "5-piece set"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 4009,
       "name": "Mechanical Keyboard",
-      "categoryid": 4,
+      "description": "Premium mechanical gaming keyboard with RGB backlighting, programmable keys, and tactile switches.",
+      "shortDescription": "Premium mechanical keyboard with RGB lighting",
       "price": 129.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/4009/1.jpg",
-          "download_link": "/static/images/products/product_4009.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 179.99,
+      "categoryid": 4,
+      "stock": 56,
+      "status": "active",
+      "images": ["/uploads/products/gaming/mechanical-keyboard-20250928-63987.jpg"],
+      "featuredImage": "/uploads/products/gaming/mechanical-keyboard-20250928-63987.jpg",
+      "tags": ["keyboard", "gaming", "mechanical", "rgb"],
+      "isFeatured": true,
+      "specifications": {
+        "brand": "GamerKeys",
+        "switches": "Cherry MX Red",
+        "layout": "Full-size",
+        "color": "Black"
+      },
+      "shipping": "Express shipping"
     },
     {
       "id": 4000,
       "name": "Gaming Mouse",
-      "categoryid": 4,
+      "description": "High-precision gaming mouse with customizable buttons, adjustable DPI, and ergonomic design.",
+      "shortDescription": "High-precision gaming mouse with customizable buttons",
       "price": 79.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/4000/1.jpg",
-          "download_link": "/static/images/products/product_4000.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 99.99,
+      "categoryid": 4,
+      "stock": 0,
+      "status": "inactive",
+      "images": ["/uploads/products/gaming/gaming-mouse-20250928-15197.jpg"],
+      "featuredImage": "/uploads/products/gaming/gaming-mouse-20250928-15197.jpg",
+      "tags": ["mouse", "gaming", "precision", "ergonomic"],
+      "specifications": {
+        "brand": "PrecisionPro",
+        "dpi": "2000",
+        "buttons": "12",
+        "color": "Black"
+      },
+      "shipping": "Express shipping"
     },
     {
       "id": 4002,
       "name": "Controller",
-      "categoryid": 4,
+      "description": "Wireless gaming controller with precision analog sticks, responsive buttons, and long battery life.",
+      "shortDescription": "Wireless gaming controller with precision controls",
       "price": 59.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/4002/1.jpg",
-          "download_link": "/static/images/products/product_4002.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 79.99,
+      "categoryid": 4,
+      "stock": 42,
+      "status": "active",
+      "images": ["/uploads/products/gaming/controller-20250928-11463.jpg"],
+      "featuredImage": "/uploads/products/gaming/controller-20250928-11463.jpg",
+      "tags": ["controller", "gaming", "wireless", "precision"],
+      "specifications": {
+        "brand": "GameControl",
+        "connection": "Wireless",
+        "battery": "20 hours",
+        "compatibility": "Multi-platform"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 4004,
       "name": "Gaming Monitor",
-      "categoryid": 4,
+      "description": "High-refresh rate gaming monitor with 144Hz display, low input lag, and adaptive sync technology.",
+      "shortDescription": "High-refresh rate gaming monitor",
       "price": 399.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/4004/1.jpg",
-          "download_link": "/static/images/products/product_4004.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 499.99,
+      "categoryid": 4,
+      "stock": 18,
+      "status": "active",
+      "images": ["/uploads/products/gaming/gaming-monitor-20250928-32345.jpg"],
+      "featuredImage": "/uploads/products/gaming/gaming-monitor-20250928-32345.jpg",
+      "tags": ["monitor", "gaming", "144hz", "display"],
+      "isFeatured": true,
+      "specifications": {
+        "brand": "GameDisplay",
+        "size": "27 inches",
+        "refresh": "144Hz",
+        "resolution": "2560x1440"
+      },
+      "shipping": "Express shipping"
     },
     {
       "id": 4005,
       "name": "Gaming Desk",
-      "categoryid": 4,
+      "description": "Ergonomic gaming desk with cable management, RGB lighting, and spacious surface for all gaming equipment.",
+      "shortDescription": "Ergonomic gaming desk with RGB lighting",
       "price": 249.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/4005/1.jpg",
-          "download_link": "/static/images/products/product_4005.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 349.99,
+      "categoryid": 4,
+      "stock": 12,
+      "status": "active",
+      "images": ["/uploads/products/gaming/gaming-desk-20250928-78551.jpg"],
+      "featuredImage": "/uploads/products/gaming/gaming-desk-20250928-78551.jpg",
+      "tags": ["desk", "gaming", "ergonomic", "rgb"],
+      "specifications": {
+        "brand": "GameDesk",
+        "material": "Steel frame",
+        "surface": "Carbon fiber",
+        "cable": "Management system"
+      },
+      "shipping": "Express shipping"
     },
     {
       "id": 5007,
       "name": "Running Shoes",
-      "categoryid": 5,
+      "description": "Lightweight running shoes with advanced cushioning and breathable mesh upper. Perfect for daily runs and workouts.",
+      "shortDescription": "Lightweight running shoes with advanced cushioning",
       "price": 89.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/5007/1.jpg",
-          "download_link": "/static/images/products/product_5007.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 129.99,
+      "categoryid": 5,
+      "stock": 45,
+      "status": "active",
+      "images": ["/uploads/products/sports/running-shoes-20250928-44809.jpg"],
+      "featuredImage": "/uploads/products/sports/running-shoes-20250928-44809.jpg",
+      "tags": ["shoes", "running", "athletic", "lightweight"],
+      "specifications": {
+        "brand": "RunActive",
+        "type": "Cushioned",
+        "material": "Mesh upper",
+        "weight": "Lightweight"
+      },
+      "shipping": "Express shipping"
     },
     {
       "id": 5008,
       "name": "Yoga Mat",
-      "categoryid": 5,
+      "description": "Non-slip yoga mat with excellent grip and cushioning. Perfect for yoga, pilates, and fitness routines.",
+      "shortDescription": "Non-slip yoga mat with excellent grip",
       "price": 29.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/5008/1.jpg",
-          "download_link": "/static/images/products/product_5008.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 49.99,
+      "categoryid": 5,
+      "stock": 78,
+      "status": "active",
+      "images": ["/uploads/products/sports/yoga-mat-20250928-50075.jpg"],
+      "featuredImage": "/uploads/products/sports/yoga-mat-20250928-50075.jpg",
+      "tags": ["yoga", "mat", "fitness", "non-slip"],
+      "specifications": {
+        "brand": "YogaPro",
+        "material": "PVC",
+        "thickness": "6mm",
+        "size": "72x24 inches"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 5009,
       "name": "Dumbbells Set",
-      "categoryid": 5,
+      "description": "Adjustable dumbbells set with multiple weight options. Perfect for home gym and strength training.",
+      "shortDescription": "Adjustable dumbbells set for strength training",
       "price": 79.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/5009/1.jpg",
-          "download_link": "/static/images/products/product_5009.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 119.99,
+      "categoryid": 5,
+      "stock": 23,
+      "status": "active",
+      "images": ["/uploads/products/sports/dumbbells-set-20250928-59458.jpg"],
+      "featuredImage": "/uploads/products/sports/dumbbells-set-20250928-59458.jpg",
+      "tags": ["dumbbells", "weights", "strength", "fitness"],
+      "specifications": {
+        "brand": "StrengthPro",
+        "weight": "Adjustable",
+        "material": "Cast iron",
+        "grip": "Ergonomic"
+      },
+      "shipping": "Express shipping"
     },
     {
       "id": 5000,
       "name": "Sports Water Bottle",
-      "categoryid": 5,
+      "description": "Insulated sports water bottle that keeps drinks cold for 24 hours. Perfect for workouts and outdoor activities.",
+      "shortDescription": "Insulated sports water bottle",
       "price": 19.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/5000/1.jpg",
-          "download_link": "/static/images/products/product_5000.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 29.99,
+      "categoryid": 5,
+      "stock": 89,
+      "status": "active",
+      "images": ["/uploads/products/sports/sports-water-bottle-20250928-54693.jpg"],
+      "featuredImage": "/uploads/products/sports/sports-water-bottle-20250928-54693.jpg",
+      "tags": ["bottle", "water", "insulated", "sports"],
+      "specifications": {
+        "brand": "HydratePro",
+        "capacity": "32oz",
+        "insulation": "24 hours cold",
+        "material": "Stainless steel"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 5001,
       "name": "Fitness Tracker",
-      "categoryid": 5,
+      "description": "Advanced fitness tracker with heart rate monitoring, sleep tracking, and 7-day battery life.",
+      "shortDescription": "Advanced fitness tracker with health monitoring",
       "price": 149.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/5001/1.jpg",
-          "download_link": "/static/images/products/product_5001.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 199.99,
+      "categoryid": 5,
+      "stock": 34,
+      "status": "active",
+      "images": ["/uploads/products/sports/fitness-tracker-20250928-59758.jpg"],
+      "featuredImage": "/uploads/products/sports/fitness-tracker-20250928-59758.jpg",
+      "tags": ["tracker", "fitness", "health", "monitoring"],
+      "specifications": {
+        "brand": "FitTrack",
+        "display": "OLED",
+        "battery": "7 days",
+        "waterproof": "Yes"
+      },
+      "shipping": "Standard shipping"
     },
     {
       "id": 5002,
       "name": "Tennis Racket",
-      "categoryid": 5,
+      "description": "Professional tennis racket with advanced string technology and lightweight frame. Perfect for all skill levels.",
+      "shortDescription": "Professional tennis racket",
       "price": 99.99,
-      "stock": 99,
-      "images": [
-        {
-          "image": "/uploads/products/5002/1.jpg",
-          "download_link": "/static/images/products/product_5002.jpg"
-        }
-      ],
-      "description": "",
-      "specifications": [
-        {
-          "key": "",
-          "value": ""
-        }
-      ],
-      "shipping": ""
+      "originalPrice": 149.99,
+      "categoryid": 5,
+      "stock": 18,
+      "status": "active",
+      "images": ["/uploads/products/sports/tennis-racket-20250928-96052.jpg"],
+      "featuredImage": "/uploads/products/sports/tennis-racket-20250928-96052.jpg",
+      "tags": ["tennis", "racket", "sports", "professional"],
+      "specifications": {
+        "brand": "TennisPro",
+        "weight": "300g",
+        "head": "100 sq in",
+        "strings": "Pre-strung"
+      },
+      "shipping": "Express shipping"
     }
   ]
 }

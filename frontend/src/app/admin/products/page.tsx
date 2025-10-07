@@ -30,7 +30,7 @@ import {
   Package,
   DollarSign
 } from "lucide-react";
-import { getImagePath, resolveProductImage, normalizeImageUrl } from "@/lib/imageUtils";
+import { resolveProductImage, normalizeImageUrl } from "@/lib/utils";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';

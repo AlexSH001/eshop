@@ -12,7 +12,7 @@ import UserDropdown from "@/components/UserDropdown";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
-import { sportsProducts } from "@/data/products";
+import { fetchGroupedProducts } from "@/lib/utils";
 import { useCategoryProducts } from "@/hooks/useCategoryProducts";
 
 export default function SportsPage() {
@@ -20,8 +20,8 @@ export default function SportsPage() {
   const { isAuthenticated } = useAuth();
   const { state: wishlistState, toggleWishlist, isInWishlist } = useWishlist();
   
-  const fallbackProducts = sportsProducts.map(p => ({ ...p, category: 'Sports' }));
-  const { products, isLoading, error } = useCategoryProducts('Sports', fallbackProducts);
+  const groupedProducts = fetchGroupedProducts()
+  const { products, isLoading, error } = useCategoryProducts('Sports', groupedProducts.Sports);
 
   return (
     <div className="min-h-screen bg-white">

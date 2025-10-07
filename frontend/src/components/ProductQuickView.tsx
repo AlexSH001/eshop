@@ -22,7 +22,7 @@ import {
   Loader2
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import { getImagePath, resolveProductImage, normalizeImageUrl } from "@/lib/imageUtils";
+import { resolveProductImage, normalizeImageUrl } from "@/lib/utils";
 
 interface ProductQuickViewProps {
   product: {

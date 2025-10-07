@@ -60,6 +60,7 @@ backend/data/store.db
 backend/database.sqlite
 
 # uploads and user content
+frontend/uploads/
 backend/uploads/
 backend/uploads/avatars/
 backend/uploads/products/

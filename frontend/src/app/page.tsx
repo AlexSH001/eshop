@@ -19,17 +19,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useEffect, useState } from "react";
 import { allCategories, bannerSlides } from "@/data/categories";
-import { electronicsProducts, fashionProducts, homeGardenProducts, gamingProducts, sportsProducts } from "@/data/products";
-import { getImagePath, resolveProductImage } from "@/lib/imageUtils";
+// import { electronicsProducts, fashionProducts, homeGardenProducts, gamingProducts, sportsProducts } from "@/data/products";
+import { fetchProducts, fetchGroupedProducts, Product } from "@/lib/utils";
 
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  category: string;
-}
+// interface Product {
+//   id: number;
+//   name: string;
+//   price: number;
+//   originalPrice?: number;
+//   image: string;
+//   category: string;
+// }
 
 export default function Home() {
   const { addItem } = useCart();
@@ -44,92 +44,49 @@ export default function Home() {
 
   // Fetch products from API
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        console.log('Starting to fetch products...');
-        
-        // Fetch all products with timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-        
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/products?limit=50`, {
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`);
-        }
-        
-        const data: { products: Record<string, unknown>[] } = await response.json();
-        
-        console.log('API Response:', data);
-        console.log('Products count:', data.products.length);
-        
-        if (!data.products || data.products.length === 0) {
-          throw new Error('No products found in API response');
-        }
-        
-        // Group products by category
-        const groupedProducts: Record<string, Product[]> = {};
-        data.products.forEach((product: Record<string, unknown>) => {
-          const categoryName = product.category_name as string;
-          if (!groupedProducts[categoryName]) {
-            groupedProducts[categoryName] = [];
-          }
-          
-          // Transform product data to match frontend expectations
-          const dbImages = (product.images as unknown) as unknown[] | undefined;
-          const featuredImage = (product as any).featured_image as string | null | undefined;
-          const resolvedImage = resolveProductImage(featuredImage, dbImages, product.id as number);
+    try {
+      setIsLoading(true);
+      setError(null);
+      fetchProducts();
+      setCategoryProducts(fetchGroupedProducts());
+      // const groupedProducts: Record<string, Product[]> = {};
+      // fetchProducts().then(products => {
+      //   // Group products by category
+      //   products.forEach((product: Record<string, unknown>) => {
+      //     const categoryName = product.category_name as string;
+      //     if (!groupedProducts[categoryName]) {
+      //       groupedProducts[categoryName] = [];
+      //     }
+      //     // Transform product data to match frontend expectations
+      //     const dbImages = (product.images as unknown) as unknown[] | undefined;
+      //     const featuredImage = (product as any).featured_image as string | null | undefined;
+      //     const resolvedImage = resolveProductImage(featuredImage, dbImages, product.id as number);
 
-          const transformedProduct: Product = {
-            id: product.id as number,
-            name: product.name as string,
-            price: product.price as number,
-            originalPrice: product.original_price as number | undefined,
-            image: resolvedImage,
-            category: categoryName
-          };
+      //     const transformedProduct: Product = {
+      //       id: product.id as number,
+      //       name: product.name as string,
+      //       price: product.price as number,
+      //       originalPrice: product.original_price as number | undefined,
+      //       image: resolvedImage,
+      //       category: categoryName
+      //     };
           
-          console.log(`Product ${transformedProduct.id}: ${transformedProduct.name} - Image: ${transformedProduct.image}`);
+      //     console.log(`Product ${transformedProduct.id}: ${transformedProduct.name} - Image: ${transformedProduct.image}`);
           
-          groupedProducts[categoryName].push(transformedProduct);
-        });
+      //     groupedProducts[categoryName].push(transformedProduct);
+      //   });
         
-        console.log('Grouped products:', groupedProducts);
+      //   console.log('Grouped products:', groupedProducts);
         
-        setCategoryProducts(groupedProducts);
-      } catch (err) {
-        console.error('Error fetching products:', err);
-        
-        // Fallback to static data if API fails
-        console.log('Falling back to static product data...');
-        const fallbackProducts: Record<string, Product[]> = {
-          'Electronics': electronicsProducts.slice(0, 4).map(p => ({ ...p, category: 'Electronics' })),
-          'Fashion': fashionProducts.slice(0, 4).map(p => ({ ...p, category: 'Fashion' })),
-          'Home & Garden': homeGardenProducts.slice(0, 4).map(p => ({ ...p, category: 'Home & Garden' })),
-          'Gaming': gamingProducts.slice(0, 4).map(p => ({ ...p, category: 'Gaming' })),
-          'Sports': sportsProducts.slice(0, 4).map(p => ({ ...p, category: 'Sports' }))
-        };
-        
-        setCategoryProducts(fallbackProducts);
-        
-        if (err instanceof Error) {
-          console.warn(`API failed, using fallback data: ${err.message}`);
-        } else {
-          console.warn('API failed, using fallback data');
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      //   setCategoryProducts(groupedProducts);
 
-    fetchProducts();
+      // });
+      
+    } catch (err) {
+      setError((err as Error).message || 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   // Auto-scroll functionality

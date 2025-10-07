@@ -12,16 +12,16 @@ import UserDropdown from "@/components/UserDropdown";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
-import { fashionProducts } from "@/data/products";
 import { useCategoryProducts } from "@/hooks/useCategoryProducts";
+import { fetchGroupedProducts } from "@/lib/utils";
 
 export default function FashionPage() {
   const { addItem } = useCart();
   const { isAuthenticated } = useAuth();
   const { state: wishlistState, toggleWishlist, isInWishlist } = useWishlist();
   
-  const fallbackProducts = fashionProducts.map(p => ({ ...p, category: 'Fashion' }));
-  const { products, isLoading, error } = useCategoryProducts('Fashion', fallbackProducts);
+  const groupedProducts = fetchGroupedProducts()
+  const { products, isLoading, error } = useCategoryProducts('Fashion', groupedProducts.Fashion);
 
   return (
     <div className="min-h-screen bg-white">

@@ -165,8 +165,8 @@ router.post('/product-images', authenticateAdmin, (req, res) => {
         return res.status(404).json({ error: 'Category not found' });
       }
 
-      // Create category folder name (replace spaces with minus, lowercase)
-      const categoryFolderName = category.name.toLowerCase().replace(/\s+/g, '-');
+      // Create category folder name (remove the spaces from the category name)
+      const categoryFolderName = category.name.replace(/\s+/g, '');
       const categoryDir = path.join(productImagesDir, categoryFolderName);
       
       // Create category directory if it doesn't exist
@@ -178,7 +178,7 @@ router.post('/product-images', authenticateAdmin, (req, res) => {
       const uploadedFiles = [];
       
       for (const file of req.files) {
-        // Generate filename: product-name-yyyymmdd-xxxxx.ext
+        // Generate filename: product_name-yyyymmdd-xxxxx.ext
         const productNameSlug = (productName || 'product').toLowerCase().replace(/\s+/g, '-');
         const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
         const randomNum = Math.floor(Math.random() * 90000) + 10000; // 5-digit random number
