@@ -21,7 +21,7 @@ export default function GamingPage() {
   const { state: wishlistState, toggleWishlist, isInWishlist } = useWishlist();
   
   const groupedProducts = fetchGroupedProducts()
-  const { products, isLoading, error } = useCategoryProducts('Gaming', groupedProducts.Gaming);
+  const { products = [], isLoading, error } = useCategoryProducts('Gaming', groupedProducts.Gaming);
 
   return (
     <div className="min-h-screen bg-white">

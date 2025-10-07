@@ -21,7 +21,7 @@ export default function FashionPage() {
   const { state: wishlistState, toggleWishlist, isInWishlist } = useWishlist();
   
   const groupedProducts = fetchGroupedProducts()
-  const { products, isLoading, error } = useCategoryProducts('Fashion', groupedProducts.Fashion);
+  const { products = [], isLoading, error } = useCategoryProducts('Fashion', groupedProducts.Fashion);
 
   return (
     <div className="min-h-screen bg-white">

@@ -21,7 +21,7 @@ export default function HomeGardenPage() {
   const { state: wishlistState, toggleWishlist, isInWishlist } = useWishlist();
   
   const groupedProducts = fetchGroupedProducts()
-  const { products, isLoading, error } = useCategoryProducts('Home & Garden', groupedProducts["Home & Garden"]);
+  const { products = [], isLoading, error } = useCategoryProducts('Home & Garden', groupedProducts["Home & Garden"]);
 
   return (
     <div className="min-h-screen bg-white">

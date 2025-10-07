@@ -21,7 +21,7 @@ export default function SportsPage() {
   const { state: wishlistState, toggleWishlist, isInWishlist } = useWishlist();
   
   const groupedProducts = fetchGroupedProducts()
-  const { products, isLoading, error } = useCategoryProducts('Sports', groupedProducts.Sports);
+  const { products = [], isLoading, error } = useCategoryProducts('Sports', groupedProducts.Sports);
 
   return (
     <div className="min-h-screen bg-white">

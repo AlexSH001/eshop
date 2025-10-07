@@ -21,7 +21,7 @@ export default function ElectronicsPage() {
   const { state: wishlistState, toggleWishlist, isInWishlist } = useWishlist();
   
   const groupedProducts = fetchGroupedProducts()
-  const { products, isLoading, error } = useCategoryProducts('Electronics', groupedProducts.Electronics);
+  const { products = [], isLoading, error } = useCategoryProducts('Electronics', groupedProducts.Electronics);
 
   return (
     <div className="min-h-screen bg-white">
