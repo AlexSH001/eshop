@@ -34,17 +34,22 @@ export default function Home() {
 
   // Fetch products from API
   useEffect(() => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      fetchProducts();
-      setCategoryProducts(fetchGroupedProducts());
-      
-    } catch (err) {
-      setError((err as Error).message || 'Unknown error');
-    } finally {
-      setIsLoading(false);
-    }
+    const loadProducts = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        await fetchProducts();
+        const groupedProducts = await fetchGroupedProducts();
+        setCategoryProducts(groupedProducts);
+        
+      } catch (err) {
+        setError((err as Error).message || 'Unknown error');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadProducts();
   }, []);
 
   // Auto-scroll functionality

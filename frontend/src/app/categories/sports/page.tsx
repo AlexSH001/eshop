@@ -12,16 +12,32 @@ import UserDropdown from "@/components/UserDropdown";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
-import { fetchGroupedProducts } from "@/lib/utils";
+import { fetchGroupedProducts, Product } from "@/lib/utils";
 import { useCategoryProducts } from "@/hooks/useCategoryProducts";
+import { useState, useEffect } from "react";
 
 export default function SportsPage() {
   const { addItem } = useCart();
   const { isAuthenticated } = useAuth();
   const { state: wishlistState, toggleWishlist, isInWishlist } = useWishlist();
   
-  const groupedProducts = fetchGroupedProducts()
-  const { products = [], isLoading, error } = useCategoryProducts('Sports', groupedProducts.Sports);
+  const [fallbackProducts, setFallbackProducts] = useState<Product[]>([]);
+  
+  useEffect(() => {
+    const loadFallbackProducts = async () => {
+      try {
+        const groupedProducts = await fetchGroupedProducts();
+        setFallbackProducts(groupedProducts.Sports || []);
+      } catch (error) {
+        console.error('Error loading fallback products:', error);
+        setFallbackProducts([]);
+      }
+    };
+    
+    loadFallbackProducts();
+  }, []);
+  
+  const { products = [], isLoading, error } = useCategoryProducts('Sports', fallbackProducts);
 
   return (
     <div className="min-h-screen bg-white">
@@ -87,7 +103,7 @@ export default function SportsPage() {
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900">Sports Products</h2>
-          <p className="text-gray-600 mt-1">{products.length} products available</p>
+          <p className="text-gray-600 mt-1">{(products || []).length} products available</p>
         </div>
 
         {/* Loading State */}
@@ -103,7 +119,7 @@ export default function SportsPage() {
         {/* Products Grid */}
         {!isLoading && (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {products.map((product) => (
+            {(products || []).map((product) => (
               <Card key={product.id} className="cursor-pointer transition-all duration-200 hover:shadow-lg group">
                 <div className="aspect-square overflow-hidden rounded-t-lg relative">
                   <img 

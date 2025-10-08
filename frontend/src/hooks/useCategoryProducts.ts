@@ -48,7 +48,7 @@ export function useCategoryProducts(categoryName: string, fallbackProducts: Prod
         const cachedProducts = productsCache.get(categoryName);
         if (cachedProducts && Date.now() - cachedProducts.timestamp < PRODUCTS_CACHE_DURATION) {
           console.log(`Using cached products for ${categoryName}`);
-          setProducts(cachedProducts.products);
+          setProducts(cachedProducts.products || []);
           setIsLoading(false);
           return;
         }
@@ -59,7 +59,7 @@ export function useCategoryProducts(categoryName: string, fallbackProducts: Prod
         if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
           console.log(`Rate limiting: waiting ${MIN_REQUEST_INTERVAL - timeSinceLastRequest}ms before next request`);
           // Use fallback data if rate limited
-          setProducts(fallbackProducts);
+          setProducts(fallbackProducts || []);
           setIsLoading(false);
           return;
         }
@@ -109,7 +109,7 @@ export function useCategoryProducts(categoryName: string, fallbackProducts: Prod
         
         if (!products || products.length === 0) {
           console.log('No products found in API response, using fallback data');
-          setProducts(fallbackProducts);
+          setProducts(fallbackProducts || []);
           setIsLoading(false);
           return;
         }
@@ -180,7 +180,7 @@ export function useCategoryProducts(categoryName: string, fallbackProducts: Prod
         
         // Fallback to static data if API fails
         console.log('Falling back to static product data...');
-        setProducts(fallbackProducts);
+        setProducts(fallbackProducts || []);
         
         if (err instanceof Error) {
           console.warn(`API failed, using fallback data: ${err.message}`);
@@ -195,5 +195,5 @@ export function useCategoryProducts(categoryName: string, fallbackProducts: Prod
     fetchProducts();
   }, [categoryName, fallbackProducts, getCategoryId, categoriesLoading]);
 
-  return { products, isLoading, error };
+  return { products: products || [], isLoading, error };
 }

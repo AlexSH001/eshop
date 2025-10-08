@@ -123,9 +123,12 @@ export const fetchProducts = async () => {
   }
 };
 
-export function fetchGroupedProducts() {
+export async function fetchGroupedProducts(): Promise<Record<string, Product[]>> {
   const groupedProducts: Record<string, Product[]> = {};
-  fetchProducts().then(products => {
+  
+  try {
+    const products = await fetchProducts();
+    
     // Group products by category
     products.forEach((product: Record<string, unknown>) => {
       const categoryName = product.category_name as string;
@@ -153,7 +156,10 @@ export function fetchGroupedProducts() {
     
     console.log('Grouped products:', groupedProducts);
     
-  });
+  } catch (error) {
+    console.error('Error in fetchGroupedProducts:', error);
+  }
+  
   return groupedProducts;
 };
 
