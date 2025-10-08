@@ -19,17 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useEffect, useState } from "react";
 import { allCategories, bannerSlides } from "@/data/categories";
-// import { electronicsProducts, fashionProducts, homeGardenProducts, gamingProducts, sportsProducts } from "@/data/products";
 import { fetchProducts, fetchGroupedProducts, Product } from "@/lib/utils";
-
-// interface Product {
-//   id: number;
-//   name: string;
-//   price: number;
-//   originalPrice?: number;
-//   image: string;
-//   category: string;
-// }
 
 export default function Home() {
   const { addItem } = useCart();
@@ -49,38 +39,6 @@ export default function Home() {
       setError(null);
       fetchProducts();
       setCategoryProducts(fetchGroupedProducts());
-      // const groupedProducts: Record<string, Product[]> = {};
-      // fetchProducts().then(products => {
-      //   // Group products by category
-      //   products.forEach((product: Record<string, unknown>) => {
-      //     const categoryName = product.category_name as string;
-      //     if (!groupedProducts[categoryName]) {
-      //       groupedProducts[categoryName] = [];
-      //     }
-      //     // Transform product data to match frontend expectations
-      //     const dbImages = (product.images as unknown) as unknown[] | undefined;
-      //     const featuredImage = (product as any).featured_image as string | null | undefined;
-      //     const resolvedImage = resolveProductImage(featuredImage, dbImages, product.id as number);
-
-      //     const transformedProduct: Product = {
-      //       id: product.id as number,
-      //       name: product.name as string,
-      //       price: product.price as number,
-      //       originalPrice: product.original_price as number | undefined,
-      //       image: resolvedImage,
-      //       category: categoryName
-      //     };
-          
-      //     console.log(`Product ${transformedProduct.id}: ${transformedProduct.name} - Image: ${transformedProduct.image}`);
-          
-      //     groupedProducts[categoryName].push(transformedProduct);
-      //   });
-        
-      //   console.log('Grouped products:', groupedProducts);
-        
-      //   setCategoryProducts(groupedProducts);
-
-      // });
       
     } catch (err) {
       setError((err as Error).message || 'Unknown error');
