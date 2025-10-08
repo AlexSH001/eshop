@@ -79,8 +79,6 @@ export const fetchProducts1 = async () => {
       } else {
         console.warn('API failed, using fallback data');
       }
-    // } finally {
-    //   setIsLoading(false);
     }
   };
 
