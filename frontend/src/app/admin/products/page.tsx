@@ -83,7 +83,7 @@ function parseSpecifications(spec: any) {
 }
 
 export default function AdminProductsPage() {
-  const { isAuthenticated, isLoading } = useAdmin();
+  const { isAuthenticated, isLoading, refreshToken } = useAdmin();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -130,6 +130,48 @@ export default function AdminProductsPage() {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
+  // Helper function to make authenticated API calls with automatic token refresh
+  const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
+    const adminToken = localStorage.getItem('admin_token');
+    console.log('Making authenticated request to:', url);
+    console.log('Current token exists:', !!adminToken);
+    
+    if (!adminToken) {
+      throw new Error('Admin authentication required. Please login again.');
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        'Authorization': `Bearer ${adminToken}`,
+      },
+    });
+
+    console.log('Response status:', response.status);
+
+    // If token expired, try to refresh and retry
+    if (response.status === 401) {
+      console.log('Token expired, attempting refresh...');
+      const refreshed = await refreshToken();
+      if (refreshed) {
+        const newToken = localStorage.getItem('admin_token');
+        console.log('Token refreshed, retrying request...');
+        return fetch(url, {
+          ...options,
+          headers: {
+            ...options.headers,
+            'Authorization': `Bearer ${newToken}`,
+          },
+        });
+      } else {
+        throw new Error('Session expired. Please login again.');
+      }
+    }
+
+    return response;
+  };
+
   // Helper function to get category ID by name
   const getCategoryIdByName = (categoryName: string) => {
     const category = categories.find(cat => cat.name === categoryName);
@@ -167,19 +209,10 @@ export default function AdminProductsPage() {
 
       console.log('Uploading images...', Array.from(files).map(f => f.name));
 
-      // Get admin token from localStorage
-      const adminToken = localStorage.getItem('admin_token');
-      if (!adminToken) {
-        throw new Error('Admin authentication required. Please login again.');
-      }
-
-      const res = await fetch('http://localhost:3001/api/upload/product-images', {
+      const res = await makeAuthenticatedRequest('http://localhost:3001/api/upload/product-images', {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          // Don't set Content-Type, let browser set it with boundary for FormData
-        },
+        // Don't set Content-Type, let browser set it with boundary for FormData
         body: uploadFormData
       });
 
@@ -213,16 +246,10 @@ export default function AdminProductsPage() {
   const removeImage = async (imageUrl: string) => {
     try {
       // Call backend to delete the image file
-      const adminToken = localStorage.getItem('admin_token');
-      if (!adminToken) {
-        throw new Error('Admin authentication required. Please login again.');
-      }
-
-      const res = await fetch('http://localhost:3001/api/upload/product-image', {
+      const res = await makeAuthenticatedRequest('http://localhost:3001/api/upload/product-image', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
         },
         credentials: 'include',
         body: JSON.stringify({ imageUrl })
