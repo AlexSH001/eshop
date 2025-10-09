@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS categories (
   description TEXT,
   icon VARCHAR(50),
   image TEXT,
+  href TEXT,
   parent_id INTEGER,
   sort_order INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT TRUE,

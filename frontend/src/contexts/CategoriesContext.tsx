@@ -8,6 +8,7 @@ interface Category {
   slug: string;
   description: string;
   icon: string;
+  image: string;
 }
 
 interface CategoriesContextType {

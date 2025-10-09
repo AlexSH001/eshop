@@ -40,8 +40,8 @@ async function seedCompleteDatabase() {
     console.log('📁 Seeding categories...');
     for (const category of categoriesData.categories) {
       await database.execute(
-        'INSERT INTO categories (id, name, slug, description, icon, image, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [category.id, category.name, category.slug, category.description, category.icon, category.image, category.sort_order, category.is_active]
+        'INSERT INTO categories (id, name, slug, description, icon, image, href, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [category.id, category.name, category.slug, category.description, category.icon, category.image, category.href, category.sort_order, category.is_active]
       );
     }
     console.log(`✅ Seeded ${categoriesData.categories.length} categories`);

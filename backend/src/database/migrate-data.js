@@ -84,12 +84,12 @@ async function migrateDataFromSQLite() {
       
       for (const category of categories) {
         await pgClient.query(`
-          INSERT INTO categories (id, name, slug, description, icon, image, parent_id, sort_order, is_active, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          INSERT INTO categories (id, name, slug, description, icon, image, href, parent_id, sort_order, is_active, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
           ON CONFLICT (id) DO NOTHING
         `, [
           category.id, category.name, category.slug, category.description,
-          category.icon, category.image, category.parent_id, category.sort_order,
+          category.icon, category.image, category.href, category.parent_id, category.sort_order,
           category.is_active, category.created_at, category.updated_at
         ]);
       }

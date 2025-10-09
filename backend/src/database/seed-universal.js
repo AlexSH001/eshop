@@ -111,13 +111,13 @@ async function seedData(client = null) {
   for (const category of categoriesData.categories) {
     if (isPostgres) {
       await client.query(
-        'INSERT INTO categories (id, name, slug, description, icon, image, sort_order, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-        [category.id, category.name, category.slug, category.description, category.icon, category.image, category.sort_order, category.is_active]
+        'INSERT INTO categories (id, name, slug, description, icon, image, href, sort_order, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [category.id, category.name, category.slug, category.description, category.icon, category.image, category.href, category.sort_order, category.is_active]
       );
     } else {
       await database.execute(
-        'INSERT INTO categories (id, name, slug, description, icon, image, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [category.id, category.name, category.slug, category.description, category.icon, category.image, category.sort_order, category.is_active]
+        'INSERT INTO categories (id, name, slug, description, icon, image, href, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [category.id, category.name, category.slug, category.description, category.icon, category.image, category.href, category.sort_order, category.is_active]
       );
     }
   }

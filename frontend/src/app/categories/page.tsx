@@ -10,11 +10,30 @@ import AuthModal from "@/components/AuthModal";
 import UserDropdown from "@/components/UserDropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
-import { allCategories } from "@/data/categories";
+// import { allCategories } from "@/data/categories";
+import { fetchCategories, fetchGroupedProducts, Category } from "@/lib/utils";
+import { useEffect, useState } from "react";
+
+async function fetchCategoriesAndGroupedProducts() {
+  const categories = await fetchCategories();
+  const groupedProducts = await fetchGroupedProducts();
+  for (const category of categories) {
+    const productCount = groupedProducts[category.name]?.length || 0;
+    category.productCount = productCount;
+  }
+  return categories;
+}
 
 export default function CategoriesPage() {
   const { isAuthenticated } = useAuth();
   const { state: wishlistState } = useWishlist();
+
+  const [categories, setCategories] = useState<Category[]>([]);
+  useEffect(() => {
+    fetchCategoriesAndGroupedProducts().then(categories => {
+      setCategories(categories);
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -87,10 +106,11 @@ export default function CategoriesPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {allCategories.map((category) => {
+          {categories.map((category) => {
             const IconComponent = category.icon;
+            const href = category.href || `/categories/${category.slug || category.name.toLowerCase().replace(/\s+/g, '-')}`;
             return (
-              <Link key={category.name} href={category.href}>
+              <Link key={category.name} href={href}>
                 <Card className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 group">
                   <div className="aspect-video overflow-hidden rounded-t-lg relative">
                     <img
@@ -137,8 +157,10 @@ export default function CategoriesPage() {
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {allCategories.slice(0, 4).map((category) => (
-              <Link key={category.name} href={category.href}>
+            {categories.slice(0, 4).map((category) => {
+              const href = category.href || `/categories/${category.slug || category.name.toLowerCase().replace(/\s+/g, '-')}`;
+              return (
+              <Link key={category.name} href={href}>
                 <div className="group relative overflow-hidden rounded-lg bg-gray-100 aspect-square hover:shadow-lg transition-all duration-200">
                   <img
                     src={category.image}
@@ -152,7 +174,8 @@ export default function CategoriesPage() {
                   </div>
                 </div>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

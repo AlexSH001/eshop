@@ -42,6 +42,7 @@ async function seedWithImages() {
         description: 'Electronic devices and gadgets',
         icon: 'smartphone',
         image: '/static/images/categories/category_electronics.jpg',
+        href: '/categories/electronics',
         sort_order: 0,
         is_active: true
       },
@@ -52,6 +53,7 @@ async function seedWithImages() {
         description: 'Clothing, shoes, and accessories',
         icon: 'shopping-bag',
         image: '/static/images/categories/category_fashion.jpg',
+        href: '/categories/fashion',
         sort_order: 1,
         is_active: true
       },
@@ -62,6 +64,7 @@ async function seedWithImages() {
         description: 'Home improvement and garden supplies',
         icon: 'home',
         image: '/static/images/categories/category_home_garden.jpg',
+        href: '/categories/home-garden',
         sort_order: 2,
         is_active: true
       },
@@ -72,6 +75,7 @@ async function seedWithImages() {
         description: 'Gaming consoles, games, and accessories',
         icon: 'gamepad-2',
         image: '/static/images/categories/category_gaming.jpg',
+        href: '/categories/gaming',
         sort_order: 3,
         is_active: true
       },
@@ -82,6 +86,7 @@ async function seedWithImages() {
         description: 'Sports equipment and fitness gear',
         icon: 'dumbbell',
         image: '/static/images/categories/category_sports.jpg',
+        href: '/categories/sports',
         sort_order: 4,
         is_active: true
       },
@@ -92,6 +97,7 @@ async function seedWithImages() {
         description: 'Cameras and photography equipment',
         icon: 'camera',
         image: '/static/images/categories/category_photography.jpg',
+        href: '/categories/photography',
         sort_order: 5,
         is_active: true
       },
@@ -102,6 +108,7 @@ async function seedWithImages() {
         description: 'Books, movies, and entertainment',
         icon: 'book',
         image: '/static/images/categories/category_books.jpg',
+        href: '/categories/books',
         sort_order: 6,
         is_active: true
       },
@@ -112,6 +119,7 @@ async function seedWithImages() {
         description: 'Car parts and automotive accessories',
         icon: 'car',
         image: '/static/images/categories/category_automotive.jpg',
+        href: '/categories/automotive',
         sort_order: 7,
         is_active: true
       },
@@ -122,6 +130,7 @@ async function seedWithImages() {
         description: 'Musical instruments and audio equipment',
         icon: 'music',
         image: '/static/images/categories/category_music.jpg',
+        href: '/categories/music',
         sort_order: 8,
         is_active: true
       },
@@ -132,6 +141,7 @@ async function seedWithImages() {
         description: 'Baby products and children\'s items',
         icon: 'baby',
         image: '/static/images/categories/category_baby_&_kids.jpg',
+        href: '/categories/baby-kids',
         sort_order: 9,
         is_active: true
       }
