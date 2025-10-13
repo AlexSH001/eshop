@@ -1,0 +1,98 @@
+# ========================================
+# E-Shop Frontend Docker Compose
+# ========================================
+# Local development and production setup
+
+version: '3.8'
+
+services:
+  # ========================================
+  # Frontend Service
+  # ========================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: eshop-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # Application Configuration
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      
+      # Frontend Configuration
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api
+      NEXT_PUBLIC_APP_NAME: E-Shop
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      
+      # Next.js Configuration
+      NEXT_TELEMETRY_DISABLED: 1
+      
+    volumes:
+      # Optional: Mount for development (uncomment for hot reload)
+      # - .:/app
+      # - /app/node_modules
+      # - /app/.next
+      
+    networks:
+      - eshop-network
+      
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ========================================
+  # Development Frontend Service
+  # ========================================
+  frontend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dependencies
+    container_name: eshop-frontend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      # Development Configuration
+      NODE_ENV: development
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      
+      # Frontend Configuration
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api
+      NEXT_PUBLIC_APP_NAME: E-Shop (Dev)
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      
+      # Next.js Configuration
+      NEXT_TELEMETRY_DISABLED: 1
+      
+    volumes:
+      # Mount source code for hot reload
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+      
+    networks:
+      - eshop-network
+      
+    restart: unless-stopped
+    profiles:
+      - development
+    
+    command: npm run dev
+
+# ========================================
+# Networks
+# ========================================
+networks:
+  eshop-network:
+    driver: bridge
+    external: true

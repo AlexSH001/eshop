@@ -1,0 +1,175 @@
+# ========================================
+# E-Shop Backend Docker Compose
+# ========================================
+# Local development and testing setup
+
+version: '3.8'
+
+services:
+  # ========================================
+  # Backend API Service
+  # ========================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: eshop-backend
+    ports:
+      - "3001:3001"
+    environment:
+      # Application Configuration
+      NODE_ENV: development
+      PORT: 3001
+      FRONTEND_URL: http://localhost:3000
+      
+      # Database Configuration (SQLite for development)
+      DB_CLIENT: sqlite3
+      DB_NAME: ./data/store.db
+      
+      # JWT Configuration
+      JWT_SECRET: dev_secret_123456
+      JWT_REFRESH_SECRET: dev_refresh_secret_654321
+      
+      # Redis Configuration (optional for development)
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      
+      # File Upload Configuration
+      UPLOAD_DIR: /app/uploads
+      MAX_FILE_SIZE: 5242880
+      
+      # Logging Configuration
+      LOG_LEVEL: debug
+      LOG_FILE_PATH: /app/logs
+      
+    volumes:
+      # Persist database and uploads
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      
+    depends_on:
+      - redis
+      
+    networks:
+      - eshop-network
+      
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/monitoring/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ========================================
+  # Redis Service (for caching and sessions)
+  # ========================================
+  redis:
+    image: redis:7-alpine
+    container_name: eshop-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - eshop-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # ========================================
+  # PostgreSQL Service (for production testing)
+  # ========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: eshop-postgres
+    environment:
+      POSTGRES_DB: eshop
+      POSTGRES_USER: eshop_user
+      POSTGRES_PASSWORD: eshop_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - eshop-network
+    restart: unless-stopped
+    profiles:
+      - postgres
+
+  # ========================================
+  # Backend with PostgreSQL (alternative configuration)
+  # ========================================
+  backend-postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: eshop-backend-postgres
+    ports:
+      - "3002:3001"
+    environment:
+      # Application Configuration
+      NODE_ENV: development
+      PORT: 3001
+      FRONTEND_URL: http://localhost:3000
+      
+      # Database Configuration (PostgreSQL)
+      DB_CLIENT: postgres
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: eshop
+      DB_USER: eshop_user
+      DB_PASSWORD: eshop_password
+      
+      # JWT Configuration
+      JWT_SECRET: dev_secret_123456
+      JWT_REFRESH_SECRET: dev_refresh_secret_654321
+      
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      
+      # File Upload Configuration
+      UPLOAD_DIR: /app/uploads
+      MAX_FILE_SIZE: 5242880
+      
+      # Logging Configuration
+      LOG_LEVEL: debug
+      LOG_FILE_PATH: /app/logs
+      
+    volumes:
+      # Persist uploads and logs
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      
+    depends_on:
+      - redis
+      - postgres
+      
+    networks:
+      - eshop-network
+      
+    restart: unless-stopped
+    profiles:
+      - postgres
+
+# ========================================
+# Networks
+# ========================================
+networks:
+  eshop-network:
+    driver: bridge
+
+# ========================================
+# Volumes
+# ========================================
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
