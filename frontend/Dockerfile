@@ -60,12 +60,32 @@ WORKDIR /app
 # Copy built application from build stage
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=build --chown=nextjs:nodejs /app/public ./public
+#COPY --from=build --chown=nextjs:nodejs /app/public ./public
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/.next/cache && \
     chown -R nextjs:nodejs /app
 
+
+# ========================================
+# Startup Script
+# ========================================
+# Create startup script for application initialization
+RUN echo '#!/bin/sh\n\
+echo "🚀 Starting E-Shop Frontend..."\n\
+echo "📊 Environment: $NODE_ENV"\n\
+echo "🌐 Port: $PORT"\n\
+echo "🏠 Hostname: $HOSTNAME"\n\
+echo "🔗 API URL: $NEXT_PUBLIC_API_URL"\n\
+echo "🏪 App URL: $NEXT_PUBLIC_APP_URL"\n\
+\n\
+# Start the application\n\
+echo "🚀 Starting Next.js application..."\n\
+exec node server.js' > /app/start.sh && \
+    chmod +x /app/start.sh && \
+    chown nextjs:nodejs /app/start.sh
+
+#========================================
 # Switch to non-root user
 USER nextjs
 
@@ -88,24 +108,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Expose Port
 # ========================================
 EXPOSE 3000
-
-# ========================================
-# Startup Script
-# ========================================
-# Create startup script for application initialization
-RUN echo '#!/bin/sh\n\
-echo "🚀 Starting E-Shop Frontend..."\n\
-echo "📊 Environment: $NODE_ENV"\n\
-echo "🌐 Port: $PORT"\n\
-echo "🏠 Hostname: $HOSTNAME"\n\
-echo "🔗 API URL: $NEXT_PUBLIC_API_URL"\n\
-echo "🏪 App URL: $NEXT_PUBLIC_APP_URL"\n\
-\n\
-# Start the application\n\
-echo "🚀 Starting Next.js application..."\n\
-exec node server.js' > /app/start.sh && \
-    chmod +x /app/start.sh && \
-    chown nextjs:nodejs /app/start.sh
 
 # ========================================
 # Start Application

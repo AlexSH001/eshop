@@ -98,10 +98,10 @@ nano .env
 ### 2. Production Deployment
 ```bash
 # Deploy with production configuration
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.yml up -d
 
 # With Nginx reverse proxy
-docker-compose -f docker-compose.prod.yml --profile nginx up -d
+docker-compose -f docker-compose.yml --profile nginx up -d
 ```
 
 ### 3. Database Initialization
@@ -361,7 +361,7 @@ docker run -p 3001:3001 eshop-backend
 docker-compose up --build
 
 # Production
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.yml up -d
 ```
 
 ### 3. Kubernetes Deployment
@@ -393,7 +393,7 @@ chmod 600 .env
 echo "your_secret" | docker secret create jwt_secret -
 
 # Enable SSL
-docker-compose -f docker-compose.prod.yml --profile nginx up -d
+docker-compose -f docker-compose.yml --profile nginx up -d
 ```
 
 ---

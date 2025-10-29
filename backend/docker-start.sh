@@ -107,9 +107,9 @@ start_prod() {
     fi
     
     if [ "$DETACH" = true ]; then
-        docker-compose -f docker-compose.prod.yml up -d
+        docker-compose -f docker-compose.yml up -d
     else
-        docker-compose -f docker-compose.prod.yml up
+        docker-compose -f docker-compose.yml up
     fi
 }
 
@@ -129,14 +129,14 @@ build_images() {
 stop_containers() {
     print_header "Stopping Containers"
     docker-compose down
-    docker-compose -f docker-compose.prod.yml down
+    docker-compose -f docker-compose.yml down
 }
 
 # Function to clean up
 clean_up() {
     print_header "Cleaning Up Containers and Volumes"
     docker-compose down -v
-    docker-compose -f docker-compose.prod.yml down -v
+    docker-compose -f docker-compose.yml down -v
     docker system prune -f
 }
 
