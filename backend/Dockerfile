@@ -122,4 +122,4 @@ exec npm start' > /app/start.sh && \
 # ========================================
 # Start Application
 # ========================================
-CMD ["/app/start.sh"]
+CMD ["sh", "/app/start.sh"]
