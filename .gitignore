@@ -33,12 +33,6 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-!.env.example
-env.production
-env.development
-
 # vercel
 .vercel
 
@@ -147,12 +141,18 @@ jspm_packages/
 .yarn-integrity
 
 # dotenv environment variables file
+cicd/environments
+env.example
+env.production
+env.development
+env.production.cleaned
 .env
-.env.test
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+
+
+# Docs
+Docs/docs/
+Docs/*
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
