@@ -14,7 +14,7 @@ metadata:
   namespace: eshop
 data:
   POSTGRES_DB: eshop
-  POSTGRES_USER: eshop_user
+  POSTGRES_USER: postgres
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -71,7 +71,7 @@ spec:
             command:
             - pg_isready
             - -U
-            - eshop_user
+            - postgres
             - -d
             - eshop
           initialDelaySeconds: 30
@@ -81,7 +81,7 @@ spec:
             command:
             - pg_isready
             - -U
-            - eshop_user
+            - postgres
             - -d
             - eshop
           initialDelaySeconds: 5

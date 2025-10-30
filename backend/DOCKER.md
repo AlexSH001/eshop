@@ -162,7 +162,7 @@ environment:
   DB_HOST: postgres
   DB_PORT: 5432
   DB_NAME: eshop
-  DB_USER: eshop_user
+  DB_USER: postgres
   DB_PASSWORD: your_password
 ```
 

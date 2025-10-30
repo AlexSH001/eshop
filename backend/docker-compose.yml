@@ -26,7 +26,7 @@ services:
       DB_HOST: ${DB_HOST:-postgres}
       DB_PORT: ${DB_PORT:-5432}
       DB_NAME: ${DB_NAME:-eshop}
-      DB_USER: ${DB_USER:-eshop_user}
+      DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD}
       
       # Redis Configuration
@@ -103,7 +103,7 @@ services:
     container_name: eshop-postgres-prod
     environment:
       POSTGRES_DB: ${DB_NAME:-eshop}
-      POSTGRES_USER: ${DB_USER:-eshop_user}
+      POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-defaultpassword}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -112,7 +112,7 @@ services:
       - eshop-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-eshop_user} -d ${DB_NAME:-eshop}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-eshop}"]
       interval: 30s
       timeout: 10s
       retries: 3

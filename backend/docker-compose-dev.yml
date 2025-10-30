@@ -86,7 +86,7 @@ services:
     container_name: eshop-postgres
     environment:
       POSTGRES_DB: eshop
-      POSTGRES_USER: eshop_user
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: eshop_password
     ports:
       - "5432:5432"
@@ -120,7 +120,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: eshop
-      DB_USER: eshop_user
+      DB_USER: postgres
       DB_PASSWORD: eshop_password
       
       # JWT Configuration
