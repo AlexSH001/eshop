@@ -56,7 +56,9 @@ services:
       
       # Payments (Stripe)
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      
+    
+    command: ["node", "src/index.js"]
+    
     volumes:
       # Persist uploads and logs
       - uploads_data:/app/uploads
