@@ -60,9 +60,10 @@ services:
       - logs_data:/app/logs
       
     depends_on:
-      - redis
-      - postgres
-      
+      - redis:
+          condition: service_healthy
+      - postgres:
+          condition: service_healthy
     networks:
       - eshop-network
       
@@ -104,7 +105,8 @@ services:
     environment:
       POSTGRES_DB: ${DB_NAME:-eshop}
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-defaultpassword}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_HOST_AUTH_METHOD: trust  # Add this for initial setup
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
@@ -112,7 +114,7 @@ services:
       - eshop-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-eshop}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 30s
       timeout: 10s
       retries: 3
