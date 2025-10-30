@@ -54,6 +54,9 @@ services:
       # Monitoring Configuration
       SENTRY_DSN: ${SENTRY_DSN}
       
+      # Payments (Stripe)
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      
     volumes:
       # Persist uploads and logs
       - uploads_data:/app/uploads
