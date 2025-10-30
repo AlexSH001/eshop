@@ -41,6 +41,9 @@ const { initializeDatabase } = require('./database');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy for correct protocol/header handling behind reverse proxies
+app.set('trust proxy', 1);
+
 // Initialize Sentry for error tracking
 initSentry(app);
 
@@ -126,14 +129,15 @@ app.use(helmet({
   xssFilter: true
 }));
 
-// HTTPS redirect for production
-if (process.env.NODE_ENV === 'production') {
+// HTTPS redirect for production (skip internal health/metrics and allow proxy header)
+if (process.env.NODE_ENV === 'production' && String(process.env.HTTPS_ONLY).toLowerCase() === 'true') {
   app.use((req, res, next) => {
-    if (req.header('x-forwarded-proto') !== 'https') {
-      res.redirect(`https://${req.header('host')}${req.url}`);
-    } else {
-      next();
+    const isHealth = req.path.startsWith('/api/monitoring/');
+    const isHttps = req.secure || req.header('x-forwarded-proto') === 'https';
+    if (!isHealth && !isHttps) {
+      return res.redirect(`https://${req.header('host')}${req.url}`);
     }
+    next();
   });
 }
 

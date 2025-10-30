@@ -4,9 +4,13 @@ require('dotenv').config();
 // Redis配置依赖以下环境变量：
 // REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_DB, REDIS_TLS
 // 请在.env文件中正确配置上述参数。
+const isProduction = (process.env.NODE_ENV || '').toLowerCase() === 'production';
+const resolvedRedisHost = process.env.REDIS_HOST || (isProduction ? 'redis' : 'localhost');
+const resolvedRedisPort = process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379;
+
 const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT || 6379,
+  host: resolvedRedisHost,
+  port: resolvedRedisPort,
   password: process.env.REDIS_PASSWORD,
   db: process.env.REDIS_DB || 0,
   retryDelayOnFailover: 100,
@@ -15,12 +19,10 @@ const redis = new Redis({
   keepAlive: 30000,
   connectTimeout: 10000,
   commandTimeout: 5000,
-  // Production settings
-  maxRetriesPerRequest: 3,
   enableReadyCheck: true,
   maxLoadingTimeout: 10000,
-  // Cluster settings (if using Redis Cluster)
-  enableOfflineQueue: false,
+  // Keep commands until connection is up so healthcheck doesn't throw
+  enableOfflineQueue: true,
   // SSL settings for production
   tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
 });
