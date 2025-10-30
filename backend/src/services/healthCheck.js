@@ -1,4 +1,4 @@
-const database = require('../database/init-postgres');
+const { query, healthCheck: dbHealthCheck } = require('../database');
 const redis = require('../config/redis');
 const logger = require('../config/logger');
 const fs = require('fs');
@@ -8,7 +8,8 @@ class HealthCheckService {
   async checkDatabase() {
     try {
       const start = Date.now();
-      await database.query('SELECT 1');
+      // Use unified database interface (auto-selects SQLite/Postgres)
+      await query('SELECT 1');
       const duration = Date.now() - start;
       
       return {
