@@ -58,7 +58,7 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
     
     command: ["node", "src/index.js"]
-    
+
     volumes:
       # Persist uploads and logs
       - uploads_data:/app/uploads
@@ -124,25 +124,26 @@ services:
       timeout: 10s
       retries: 3
 
-  # ========================================
-  # Nginx Reverse Proxy (Optional)
-  # ========================================
-  nginx:
-    image: nginx:alpine
-    container_name: eshop-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - backend
-    networks:
-      - eshop-network
-    restart: unless-stopped
-    profiles:
-      - nginx
+  # # ========================================
+  # # Nginx Reverse Proxy (Optional)
+  # # ========================================
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: eshop-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - eshop-network
+  #   restart: unless-stopped
+  #   profiles:
+  #     - nginx
+
 
 # ========================================
 # Networks
