@@ -144,6 +144,19 @@ services:
   #   profiles:
   #     - nginx
 
+# Run a dev SMTP server like Mailpit/MailHog in Docker
+# ========================================
+# Mailpit Service
+# ========================================
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: eshop-mailpit
+    ports:
+      - "8025:8025"   # Web UI
+      - "1025:1025"   # SMTP
+    networks:
+      - eshop-network
+    restart: unless-stopped
 
 # ========================================
 # Networks
