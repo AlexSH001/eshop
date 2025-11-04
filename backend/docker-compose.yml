@@ -62,8 +62,8 @@ services:
 
     volumes:
       # Persist uploads and logs
-      - eshop-uploads-data:/app/uploads
-      - eshop-logs-data:/app/logs
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
       
     depends_on:
       redis:
@@ -91,7 +91,7 @@ services:
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
-      - eshop-redis-data:/data
+      - redis_data:/data
     networks:
       - eshop-network
     restart: unless-stopped
@@ -114,7 +114,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_HOST_AUTH_METHOD: trust  # Add this for initial setup
     volumes:
-      - eshop-postgres-data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
     networks:
       - eshop-network

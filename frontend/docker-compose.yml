@@ -31,7 +31,7 @@ services:
       NEXT_TELEMETRY_DISABLED: 1
       
     volumes:
-      - uploads_data:/app/uploads
+      - eshop-uploads-data:/app/uploads
       # Optional: Mount for development (uncomment for hot reload)
       # - .:/app
       # - /app/node_modules
@@ -82,4 +82,4 @@ networks:
 # ========================================
 volumes:
   eshop-uploads-data:
-    driver: local
+    external: true
