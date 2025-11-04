@@ -66,12 +66,12 @@ COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 RUN mkdir -p /app/.next/cache && \
     chown -R nextjs:nodejs /app
 
-
 # ========================================
 # Startup Script
 # ========================================
 # Create startup script for application initialization
-RUN echo '#!/bin/sh\n\
+# (Must be created as root before switching to nextjs user)
+RUN printf '#!/bin/sh\n\
 echo "🚀 Starting E-Shop Frontend..."\n\
 echo "📊 Environment: $NODE_ENV"\n\
 echo "🌐 Port: $PORT"\n\
@@ -81,12 +81,13 @@ echo "🏪 App URL: $NEXT_PUBLIC_APP_URL"\n\
 \n\
 # Start the application\n\
 echo "🚀 Starting Next.js application..."\n\
-exec node server.js' > /app/start.sh && \
+exec node server.js\n' > /app/start.sh && \
     chmod +x /app/start.sh && \
     chown nextjs:nodejs /app/start.sh
 
-#========================================
+# ========================================
 # Switch to non-root user
+# ========================================
 USER nextjs
 
 # ========================================
@@ -112,4 +113,4 @@ EXPOSE 3000
 # ========================================
 # Start Application
 # ========================================
-CMD ["/app/start.sh"]
+CMD ["sh", "/app/start.sh"]
