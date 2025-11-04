@@ -13,7 +13,7 @@ services:
       dockerfile: Dockerfile
       target: production
     image: eshop-backend:0.0.1
-    container_name: eshop-backend-prod
+    container_name: eshop-backend
     ports:
       - "3001:3001"
     environment:
@@ -87,7 +87,7 @@ services:
   # ========================================
   redis:
     image: redis:8.2-alpine
-    container_name: eshop-redis-prod
+    container_name: eshop-redis
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
@@ -107,7 +107,7 @@ services:
   # ========================================
   postgres:
     image: postgres:18-alpine
-    container_name: eshop-postgres-prod
+    container_name: eshop-postgres
     environment:
       POSTGRES_DB: ${DB_NAME:-eshop}
       POSTGRES_USER: ${DB_USER:-postgres}
