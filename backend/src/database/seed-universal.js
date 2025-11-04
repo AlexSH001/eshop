@@ -130,8 +130,8 @@ async function seedData(client = null) {
     const sku = `SKU-${product.id.toString().padStart(4, '0')}`;
     
     if (isPostgres) {
-      // For PostgreSQL JSONB columns, pass JavaScript objects/arrays directly
-      // The pg library will automatically serialize them to JSONB
+      // For PostgreSQL JSONB columns, use JSON.stringify() to ensure proper serialization
+      // This matches the pattern used throughout the codebase
       await client.query(
         'INSERT INTO products (id, name, slug, sku, category_id, price, original_price, stock, description, images, featured_image, specifications, shipping) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)',
         [
@@ -144,9 +144,9 @@ async function seedData(client = null) {
           product.originalprice,
           product.stock,
           product.description,
-          product.images || null,
+          product.images ? JSON.stringify(product.images) : null,
           product.featuredImage || null,
-          product.specifications || null,
+          product.specifications ? JSON.stringify(product.specifications) : null,
           product.shipping || null
         ]
       );
