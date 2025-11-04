@@ -81,5 +81,5 @@ networks:
 # Volumes
 # ========================================
 volumes:
-  uploads_data:
+  eshop-uploads-data:
     driver: local
