@@ -9,10 +9,10 @@ services:
   # ========================================
   backend:
     build:
-      image: eshop-backend:0.0.1
       context: .
       dockerfile: Dockerfile
       target: production
+    image: eshop-backend:0.0.1
     container_name: eshop-backend-prod
     ports:
       - "3001:3001"

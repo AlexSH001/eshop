@@ -9,10 +9,10 @@ services:
   # ========================================
   frontend:
     build:
-      image: eshop-frontend:0.0.1
       context: .
       dockerfile: Dockerfile
       target: production
+    image: eshop-frontend:0.0.1
     container_name: eshop-frontend
     ports:
       - "3000:3000"
