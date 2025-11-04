@@ -64,13 +64,8 @@ COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/.next/cache && \
-    chown -R nextjs:nodejs /app
-
-# ========================================
-# Startup Script
-# ========================================
-RUN chmod +x /app/start.sh && \
-    chown nextjs:nodejs /app/start.sh
+    chown -R nextjs:nodejs /app && \
+    chmod +x /app/start.sh
 
 # ========================================
 # Switch to non-root user

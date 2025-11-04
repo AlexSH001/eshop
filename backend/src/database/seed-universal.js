@@ -184,7 +184,7 @@ async function seedData(client = null) {
     );
 
     // Seed Super Admin User
-    await database.execute(
+    await client.query(
       'INSERT INTO admins (username, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
       ['superadmin', 'superadmin@eshop.com', superAdminPassword, 'super_admin', true]
     );
