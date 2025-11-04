@@ -176,12 +176,19 @@ async function seedData(client = null) {
   // Seed Admin User
   console.log('👤 Seeding admin user...');
   const adminPassword = await hashPassword('admin123');
-  
+  const superAdminPassword = await hashPassword('superadmin123');
   if (isPostgres) {
     await client.query(
       'INSERT INTO admins (email, password, name, role) VALUES ($1, $2, $3, $4)',
       ['admin@eshop.com', adminPassword, 'Admin User', 'super_admin']
     );
+
+    // Seed Super Admin User
+    await database.execute(
+      'INSERT INTO admins (username, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
+      ['superadmin', 'superadmin@eshop.com', superAdminPassword, 'super_admin', true]
+    );
+    console.log('✅ Seeded admin user (username: superadmin, password: superadmin123)');
   } else {
     await database.execute(
       'INSERT INTO admins (email, password, name, role) VALUES (?, ?, ?, ?)',

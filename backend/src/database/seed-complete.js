@@ -79,9 +79,18 @@ async function seedCompleteDatabase() {
     const adminPassword = await hashPassword('admin123');
     await database.execute(
       'INSERT INTO admins (username, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
-      ['admin', 'admin@eshop.com', adminPassword, 'super_admin', true]
+      ['admin', 'admin@eshop.com', adminPassword, 'admin', true]
     );
     console.log('✅ Seeded admin user (username: admin, password: admin123)');
+
+    // Seed Super Admin User
+    console.log('👤 Seeding super admin user...');
+    const superAdminPassword = await hashPassword('superadmin123');
+    await database.execute(
+      'INSERT INTO admins (username, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
+      ['superadmin', 'superadmin@eshop.com', superAdminPassword, 'super_admin', true]
+    );
+    console.log('✅ Seeded admin user (username: superadmin, password: superadmin123)');
 
     // Seed Test User
     console.log('👤 Seeding test user...');

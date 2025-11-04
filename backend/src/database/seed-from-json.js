@@ -81,6 +81,15 @@ async function seedFromJsonFiles() {
     );
     console.log('✅ Seeded admin user (email: admin@eshop.com, password: admin123)');
 
+    // Seed Super Admin User
+    console.log('👤 Seeding super admin user...');
+    const superAdminPassword = await hashPassword('superadmin123');
+    await database.execute(
+      'INSERT INTO admins (username, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
+      ['superadmin', 'superadmin@eshop.com', superAdminPassword, 'super_admin', true]
+    );
+    console.log('✅ Seeded admin user (username: superadmin, password: superadmin123)');
+
     // Seed Test User
     console.log('👤 Seeding test user...');
     const userPassword = await hashPassword('user123');

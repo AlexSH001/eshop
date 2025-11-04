@@ -192,9 +192,18 @@ async function seedWithImages() {
     const adminPassword = await hashPassword('admin123');
     await database.execute(
       'INSERT INTO admins (email, password, name, role) VALUES (?, ?, ?, ?)',
-      ['admin@eshop.com', adminPassword, 'Admin User', 'super_admin']
+      ['admin@eshop.com', adminPassword, 'Admin User', 'admin']
     );
     console.log('✅ Seeded admin user (email: admin@eshop.com, password: admin123)');
+
+    // Seed Super Admin User
+    console.log('👤 Seeding super admin user...');
+    const superAdminPassword = await hashPassword('superadmin123');
+    await database.execute(
+      'INSERT INTO admins (email, password, name, role) VALUES (?, ?, ?, ?)',
+      ['superadmin@eshop.com', superAdminPassword, 'Super Admin', 'super_admin']
+    );
+    console.log('✅ Seeded admin user (username: superadmin, password: superadmin123)');
 
     // Seed Test User
     console.log('👤 Seeding test user...');

@@ -51,4 +51,4 @@ echo "The application will be available at:"
 echo "- Frontend: http://localhost:3000"
 echo ""
 # exec node server.js
-exec npm run
+exec npm start

@@ -132,7 +132,7 @@ Content-Type: application/json
 ### Test Credentials
 - **User**: `user@eshop.com` / `password123`
 - **Admin**: `admin@eshop.com` / `admin123`
-- **Super Admin**: `superadmin@eshop.com` / `super123`
+- **Super Admin**: `superadmin@eshop.com` / `superadmin123`
 
 ## 📝 API Endpoints
 

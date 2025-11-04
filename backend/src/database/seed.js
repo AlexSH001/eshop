@@ -493,7 +493,7 @@ async function seedDatabase() {
       },
       {
         email: 'superadmin@eshop.com',
-        password: 'super123',
+        password: 'superadmin123',
         name: 'Super Admin',
         role: 'super_admin'
       }
@@ -568,7 +568,7 @@ async function seedDatabase() {
     console.log('\n🔑 Test Credentials:');
     console.log('   User: user@eshop.com / password123');
     console.log('   Admin: admin@eshop.com / admin123');
-    console.log('   Super Admin: superadmin@eshop.com / super123');
+    console.log('   Super Admin: superadmin@eshop.com / superadmin123');
 
   } catch (error) {
     await database.rollback();
