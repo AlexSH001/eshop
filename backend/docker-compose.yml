@@ -9,6 +9,7 @@ services:
   # ========================================
   backend:
     build:
+      image: eshop-backend:0.0.1
       context: .
       dockerfile: Dockerfile
       target: production
@@ -163,6 +164,7 @@ services:
 # ========================================
 networks:
   eshop-network:
+    name: eshop-network
     driver: bridge
 
 # ========================================

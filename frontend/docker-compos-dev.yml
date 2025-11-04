@@ -9,6 +9,7 @@ services:
   # ========================================
   frontend-dev:
     build:
+      image: eshop-frontend:0.0.1-dev
       context: .
       dockerfile: Dockerfile
       target: dependencies
@@ -36,7 +37,7 @@ services:
       - /app/.next
       
     networks:
-      - eshop-network
+      - eshop-network-dev
       
     restart: unless-stopped
     profiles:
@@ -49,5 +50,6 @@ services:
 # ========================================
 networks:
   eshop-network:
+    name: eshop-network-dev
     driver: bridge
     external: true

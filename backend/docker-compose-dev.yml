@@ -9,6 +9,7 @@ services:
   # ========================================
   backend:
     build:
+      image: eshop-backend:0.0.1-dev
       context: .
       dockerfile: Dockerfile
       target: production
@@ -52,7 +53,7 @@ services:
       - redis
       
     networks:
-      - eshop-network
+      - eshop-network-dev
       
     restart: unless-stopped
     
@@ -74,7 +75,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - eshop-network
+      - eshop-network-dev
     restart: unless-stopped
     command: redis-server --appendonly yes
 
@@ -93,7 +94,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - eshop-network
+      - eshop-network-dev
     restart: unless-stopped
     profiles:
       - postgres
@@ -150,7 +151,7 @@ services:
       - postgres
       
     networks:
-      - eshop-network
+      - eshop-network-dev
       
     restart: unless-stopped
     profiles:
@@ -161,6 +162,7 @@ services:
 # ========================================
 networks:
   eshop-network:
+    name: eshop-network-dev
     driver: bridge
 
 # ========================================

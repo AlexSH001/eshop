@@ -9,6 +9,7 @@ services:
   # ========================================
   frontend:
     build:
+      image: eshop-frontend:0.0.1
       context: .
       dockerfile: Dockerfile
       target: production
