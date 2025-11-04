@@ -1,6 +1,11 @@
-#!/bin/bash
+#!/bin/sh
 
-echo "🚀 Starting eshop Application..."
+echo "🚀 Starting E-Shop Frontend..."
+echo "📊 Environment: $NODE_ENV"
+echo "🌐 Port: $PORT"
+echo "🏠 Hostname: $HOSTNAME"
+echo "🔗 API URL: $NEXT_PUBLIC_API_URL"
+echo "🏪 App URL: $NEXT_PUBLIC_APP_URL"
 
 # Check if Node.js is installed
 if ! command -v node &> /dev/null; then
@@ -45,3 +50,5 @@ echo ""
 echo "The application will be available at:"
 echo "- Frontend: http://localhost:3000"
 echo ""
+# exec node server.js
+exec npm run

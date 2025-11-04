@@ -69,20 +69,7 @@ RUN mkdir -p /app/.next/cache && \
 # ========================================
 # Startup Script
 # ========================================
-# Create startup script for application initialization
-# (Must be created as root before switching to nextjs user)
-RUN printf '#!/bin/sh\n\
-echo "🚀 Starting E-Shop Frontend..."\n\
-echo "📊 Environment: $NODE_ENV"\n\
-echo "🌐 Port: $PORT"\n\
-echo "🏠 Hostname: $HOSTNAME"\n\
-echo "🔗 API URL: $NEXT_PUBLIC_API_URL"\n\
-echo "🏪 App URL: $NEXT_PUBLIC_APP_URL"\n\
-\n\
-# Start the application\n\
-echo "🚀 Starting Next.js application..."\n\
-exec node server.js\n' > /app/start.sh && \
-    chmod +x /app/start.sh && \
+RUN chmod +x /app/start.sh && \
     chown nextjs:nodejs /app/start.sh
 
 # ========================================

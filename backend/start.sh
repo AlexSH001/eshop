@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # eshop Backend Startup Script
 
