@@ -1,4 +1,4 @@
-# Setup Guide for Commodity Store
+# Setup Guide for eshop
 
 ## 🚨 Critical Issues to Fix
 
@@ -10,7 +10,7 @@ Create these environment files:
 ```bash
 # Create file: frontend/.env.local
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
-NEXT_PUBLIC_APP_NAME=Commodity Store
+NEXT_PUBLIC_APP_NAME=eshop
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 

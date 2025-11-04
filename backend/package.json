@@ -1,7 +1,7 @@
 {
   "name": "eshop-backend",
   "version": "1.0.0",
-  "description": "Backend API for Commodity Store",
+  "description": "Backend API for eshop",
   "main": "index.js",
   "scripts": {
     "start": "node src/index.js",

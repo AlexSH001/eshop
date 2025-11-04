@@ -1,8 +1,14 @@
 #!/bin/bash
 
-# Commodity Store Backend Startup Script
+# eshop Backend Startup Script
 
-echo "🚀 Commodity Store Backend Initialization"
+echo "🚀 eshop Backend Initialization"
+echo "========================================"
+echo "📊 Environment: $NODE_ENV"
+echo "🗄️ Database: $DB_CLIENT"
+echo "📁 Data directory: /app/data"
+echo "📁 Uploads directory: /app/uploads"
+echo "📁 Logs directory: /app/logs"
 echo "========================================"
 
 # Check if Node.js is installed
@@ -28,15 +34,6 @@ npm install
 if [ $? -ne 0 ]; then
     echo "❌ Failed to install dependencies"
     exit 1
-fi
-
-# Create .env file if it doesn't exist
-if [ ! -f .env ]; then
-    echo ""
-    echo "⚙️  Creating environment file..."
-    cp .env.example .env
-    echo "✅ Created .env file from .env.example"
-    echo "📝 Please review and update the .env file with your configuration"
 fi
 
 # Create data directory

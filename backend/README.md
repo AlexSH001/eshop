@@ -1,4 +1,4 @@
-# Commodity Store Backend API
+# eshop Backend API
 
 ## 🧪 Inserting Mock Data (Seeding the Database)
 

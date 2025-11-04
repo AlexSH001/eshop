@@ -78,8 +78,7 @@ USER nodejs
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3001
-ENV DB_CLIENT=sqlite3
-ENV DB_NAME=./data/store.db
+ENV DB_CLIENT=postgres
 ENV UPLOAD_DIR=/app/uploads
 ENV LOG_FILE_PATH=/app/logs
 
@@ -98,25 +97,7 @@ EXPOSE 3001
 # Startup Script
 # ========================================
 # Create startup script for database initialization
-RUN echo '#!/bin/sh\n\
-echo "🚀 Starting E-Shop Backend..."\n\
-echo "📊 Environment: $NODE_ENV"\n\
-echo "🗄️  Database: $DB_CLIENT"\n\
-echo "📁 Data directory: /app/data"\n\
-echo "📁 Uploads directory: /app/uploads"\n\
-echo "📁 Logs directory: /app/logs"\n\
-\n\
-# Initialize database if it doesn'\''t exist\n\
-if [ "$DB_CLIENT" = "sqlite3" ] && [ ! -f "/app/data/store.db" ]; then\n\
-    echo "🔧 Initializing SQLite database..."\n\
-    npm run migrate\n\
-    npm run seed\n\
-fi\n\
-\n\
-# Start the application\n\
-echo "🚀 Starting application..."\n\
-exec npm start' > /app/start.sh && \
-    chmod +x /app/start.sh && \
+RUN chmod +x /app/start.sh && \
     chown nodejs:nodejs /app/start.sh
 
 # ========================================
