@@ -46,6 +46,26 @@ services:
     command: npm run dev
 
 # ========================================
+  # Nginx Reverse Proxy (Optional)
+  # ========================================
+  nginx:
+    image: nginx:1.28-alpine
+    container_name: eshop-nginx-dev
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+    networks:
+      - eshop-network
+    restart: unless-stopped
+    profiles:
+      - nginx
+
+# ========================================
 # Networks
 # ========================================
 networks:

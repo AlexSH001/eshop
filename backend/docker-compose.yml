@@ -86,7 +86,7 @@ services:
   # Redis Service (Production)
   # ========================================
   redis:
-    image: redis:7-alpine
+    image: redis:8.2-alpine
     container_name: eshop-redis-prod
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -106,7 +106,7 @@ services:
   # PostgreSQL Service (Production)
   # ========================================
   postgres:
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     container_name: eshop-postgres-prod
     environment:
       POSTGRES_DB: ${DB_NAME:-eshop}
@@ -129,7 +129,7 @@ services:
   # # Nginx Reverse Proxy (Optional)
   # # ========================================
   # nginx:
-  #   image: nginx:alpine
+  #   image: nginx:1.28-alpine
   #   container_name: eshop-nginx
   #   ports:
   #     - "80:80"

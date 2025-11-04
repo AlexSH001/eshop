@@ -13,7 +13,7 @@ services:
       dockerfile: Dockerfile
       target: production
     image: eshop-backend:0.0.1-dev
-    container_name: eshop-backend
+    container_name: eshop-backend-dev
     ports:
       - "3001:3001"
     environment:
@@ -68,8 +68,8 @@ services:
   # Redis Service (for caching and sessions)
   # ========================================
   redis:
-    image: redis:7-alpine
-    container_name: eshop-redis
+    image: redis:8.2-alpine
+    container_name: eshop-redis-dev
     ports:
       - "6379:6379"
     volumes:
@@ -83,8 +83,8 @@ services:
   # PostgreSQL Service (for production testing)
   # ========================================
   postgres:
-    image: postgres:15-alpine
-    container_name: eshop-postgres
+    image: postgres:18-alpine
+    container_name: eshop-postgres-dev
     environment:
       POSTGRES_DB: eshop
       POSTGRES_USER: postgres
@@ -95,64 +95,6 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - eshop-network-dev
-    restart: unless-stopped
-    profiles:
-      - postgres
-
-  # ========================================
-  # Backend with PostgreSQL (alternative configuration)
-  # ========================================
-  backend-postgres:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
-    container_name: eshop-backend-postgres
-    ports:
-      - "3002:3001"
-    environment:
-      # Application Configuration
-      NODE_ENV: development
-      PORT: 3001
-      FRONTEND_URL: http://localhost:3000
-      
-      # Database Configuration (PostgreSQL)
-      DB_CLIENT: postgres
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: eshop
-      DB_USER: postgres
-      DB_PASSWORD: eshop_password
-      
-      # JWT Configuration
-      JWT_SECRET: dev_secret_123456
-      JWT_REFRESH_SECRET: dev_refresh_secret_654321
-      
-      # Redis Configuration
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
-      
-      # File Upload Configuration
-      UPLOAD_DIR: /app/uploads
-      MAX_FILE_SIZE: 5242880
-      
-      # Logging Configuration
-      LOG_LEVEL: debug
-      LOG_FILE_PATH: /app/logs
-      
-    volumes:
-      # Persist uploads and logs
-      - ./uploads:/app/uploads
-      - ./logs:/app/logs
-      
-    depends_on:
-      - redis
-      - postgres
-      
-    networks:
-      - eshop-network-dev
-      
     restart: unless-stopped
     profiles:
       - postgres
