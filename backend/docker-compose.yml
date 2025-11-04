@@ -172,10 +172,14 @@ networks:
 # ========================================
 volumes:
   redis_data:
+    name: redis_data
     driver: local
   postgres_data:
+    name: postgres_data
     driver: local
   uploads_data:
+    name: uploads_data
     driver: local
   logs_data:
     driver: local
+    name: logs_data
