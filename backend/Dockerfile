@@ -15,7 +15,6 @@ RUN apk add --no-cache \
     make \
     g++ \
     curl \
-    sqlite \
     postgresql-client \
     && rm -rf /var/cache/apk/*
 
