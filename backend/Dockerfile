@@ -85,7 +85,7 @@ ENV LOG_FILE_PATH=/app/logs
 # Health Check
 # ========================================
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:3001/api/monitoring/health || exit 1
+    CMD curl -f http://10.170.0.4:3001/api/monitoring/health || exit 1
 
 # ========================================
 # Expose Port

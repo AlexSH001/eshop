@@ -61,7 +61,7 @@ sleep 5
 
 # 测试健康检查
 echo "🏥 Testing health check..."
-HEALTH_RESPONSE=$(curl -s http://localhost:3001/api/monitoring/health || echo "FAILED")
+HEALTH_RESPONSE=$(curl -s http://10.170.0.4:3001/api/monitoring/health || echo "FAILED")
 
 if [[ "$HEALTH_RESPONSE" == *"FAILED"* ]]; then
   echo "❌ Health check failed. Server may not be running."
@@ -73,7 +73,7 @@ echo "✅ Health check passed"
 
 # 测试数据库连接
 echo "🗄️  Testing database connection..."
-DB_RESPONSE=$(curl -s http://localhost:3001/api/monitoring/metrics || echo "FAILED")
+DB_RESPONSE=$(curl -s http://10.170.0.4:3001/api/monitoring/metrics || echo "FAILED")
 
 if [[ "$DB_RESPONSE" == *"FAILED"* ]]; then
   echo "❌ Database connection test failed."

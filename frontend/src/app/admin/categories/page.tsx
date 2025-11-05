@@ -68,7 +68,7 @@ export default function AdminCategoriesPage() {
         throw new Error('No admin token found');
       }
 
-      const res = await fetch('http://localhost:3001/api/categories/admin/list', {
+      const res = await fetch('http://10.170.0.4:3001/api/categories/admin/list', {
         headers: {
           'Authorization': `Bearer ${adminToken}`,
           'Content-Type': 'application/json'
@@ -98,7 +98,7 @@ export default function AdminCategoriesPage() {
         throw new Error('No admin token found');
       }
 
-      const res = await fetch('http://localhost:3001/api/categories', {
+      const res = await fetch('http://10.170.0.4:3001/api/categories', {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${adminToken}`,
@@ -130,7 +130,7 @@ export default function AdminCategoriesPage() {
         throw new Error('No admin token found');
       }
 
-      const res = await fetch(`http://localhost:3001/api/categories/${editingCategory.id}`, {
+      const res = await fetch(`http://10.170.0.4:3001/api/categories/${editingCategory.id}`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${adminToken}`,
@@ -162,7 +162,7 @@ export default function AdminCategoriesPage() {
         throw new Error('No admin token found');
       }
 
-      const res = await fetch(`http://localhost:3001/api/categories/${deletingCategory.id}`, {
+      const res = await fetch(`http://10.170.0.4:3001/api/categories/${deletingCategory.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${adminToken}`

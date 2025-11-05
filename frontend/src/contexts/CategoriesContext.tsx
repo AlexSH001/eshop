@@ -46,7 +46,7 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
         }
         
         console.log('Fetching categories from API...');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/categories`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://10.170.0.4:3001/api'}/categories`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch categories');

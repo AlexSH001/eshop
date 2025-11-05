@@ -43,7 +43,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:3001/api/products?search=${encodeURIComponent(query)}&limit=6`);
+      const res = await fetch(`http://10.170.0.4:3001/api/products?search=${encodeURIComponent(query)}&limit=6`);
       if (!res.ok) throw new Error('Failed to fetch products');
       const data = await res.json();
       setState(prev => ({ ...prev, results: data.products, isSearching: false }));

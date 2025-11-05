@@ -83,7 +83,7 @@ services:
     container_name: eshop_frontend_dev
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://localhost:3001/api
+      NEXT_PUBLIC_API_URL: http://10.170.0.4:3001/api
       NEXT_PUBLIC_APP_NAME: E-Shop Dev
     volumes:
       - ../../frontend:/app

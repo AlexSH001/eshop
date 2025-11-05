@@ -1,6 +1,6 @@
 import { Product } from "@/lib/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://10.170.0.4:3001/api';
 
 interface Category {
   id: number;

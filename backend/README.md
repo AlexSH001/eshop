@@ -70,7 +70,7 @@ A comprehensive e-commerce backend built with Node.js, Express, and SQLite. This
 
 5. **API Base URL**
    ```
-   http://localhost:3001/api
+   http://10.170.0.4:3001/api
    ```
 
 ## 🗃 Database Schema
@@ -419,13 +419,13 @@ CMD ["npm", "start"]
 ### API Testing with curl
 ```bash
 # Health check
-curl http://localhost:3001/api/health
+curl http://10.170.0.4:3001/api/health
 
 # Get products
-curl http://localhost:3001/api/products
+curl http://10.170.0.4:3001/api/products
 
 # Login
-curl -X POST http://localhost:3001/api/auth/login \
+curl -X POST http://10.170.0.4:3001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@eshop.com","password":"password123"}'
 ```
