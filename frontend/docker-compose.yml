@@ -30,6 +30,7 @@ services:
       
     volumes:
       - eshop-uploads-data:/app/uploads:ro
+      - ./static:/app/static
       # Optional: Mount for development (uncomment for hot reload)
       # - .:/app
       # - /app/node_modules
