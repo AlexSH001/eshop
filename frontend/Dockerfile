@@ -61,7 +61,7 @@ WORKDIR /app
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 #COPY --from=build --chown=nextjs:nodejs /app/public ./public
-COPY --from=build --chown=nextjs:nodejs /app/start.sh ./start.sh
+COPY ./start.sh ./start.sh
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/.next/cache && \
