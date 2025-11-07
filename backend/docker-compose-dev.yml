@@ -58,7 +58,7 @@ services:
     restart: unless-stopped
     
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://10.170.0.4:3001/api/monitoring/health"]
+      test: ["CMD", "curl", "-f", "http://backend:3001/api/monitoring/health"]
       interval: 30s
       timeout: 10s
       retries: 3

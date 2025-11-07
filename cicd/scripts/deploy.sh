@@ -157,7 +157,7 @@ check_health() {
     sleep 10
     
     # Check backend health
-    if curl -f http://10.170.0.4:3001/api/health > /dev/null 2>&1; then
+    if curl -f http://backend:3001/api/health > /dev/null 2>&1; then
         log_success "Backend health check passed"
     else
         log_error "Backend health check failed"
@@ -187,8 +187,8 @@ show_status() {
     echo ""
     log_info "Service URLs:"
     echo "  Frontend: http://localhost:3000"
-    echo "  Backend API: http://10.170.0.4:3001/api"
-    echo "  Health Check: http://10.170.0.4:3001/api/health"
+    echo "  Backend API: http://backend:3001/api"
+    echo "  Health Check: http://backend:3001/api/health"
 }
 
 # Main deployment process

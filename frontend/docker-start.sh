@@ -52,7 +52,7 @@ print_success "Docker and Docker Compose are available"
 if [ ! -f ".env.local" ]; then
     print_status "Creating .env.local file..."
     cat > .env.local << EOF
-NEXT_PUBLIC_API_URL=http://10.170.0.4:3001/api
+NEXT_PUBLIC_API_URL=http://backend:3001/api
 NEXT_PUBLIC_APP_NAME=E-Shop
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 EOF
@@ -74,7 +74,7 @@ run_container() {
         --network eshop-network \
         -p 3000:3000 \
         -e NODE_ENV=production \
-        -e NEXT_PUBLIC_API_URL=http://10.170.0.4:3001/api \
+        -e NEXT_PUBLIC_API_URL=http://backend:3001/api \
         -e NEXT_PUBLIC_APP_NAME="E-Shop" \
         -e NEXT_PUBLIC_APP_URL=http://localhost:3000 \
         eshop-frontend
@@ -189,7 +189,7 @@ echo ""
 print_success "Frontend setup completed!"
 echo ""
 echo "🌐 Frontend will be available at: http://localhost:3000"
-echo "🔗 Make sure the backend is running on: http://10.170.0.4:3001"
+echo "🔗 Make sure the backend is running on: http://backend:3001"
 echo ""
 echo "📋 Useful commands:"
 echo "  $0 logs     # View logs"

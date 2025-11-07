@@ -42,7 +42,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch('http://10.170.0.4:3001/api/auth/refresh', {
+      const response = await fetch('http://backend:3001/api/auth/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,7 +138,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const res = await fetch('http://10.170.0.4:3001/api/auth/admin/login', {
+      const res = await fetch('http://backend:3001/api/auth/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

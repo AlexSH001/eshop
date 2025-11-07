@@ -173,9 +173,9 @@ check_health() {
         print_status "Containers are running"
         
         # Check application health
-        if curl -f http://10.170.0.4:3001/api/monitoring/health > /dev/null 2>&1; then
+        if curl -f http://backend:3001/api/monitoring/health > /dev/null 2>&1; then
             print_status "Application is healthy"
-            curl -s http://10.170.0.4:3001/api/monitoring/health | jq .
+            curl -s http://backend:3001/api/monitoring/health | jq .
         else
             print_error "Application health check failed"
         fi

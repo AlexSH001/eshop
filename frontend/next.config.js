@@ -64,9 +64,9 @@ const nextConfig = {
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://10.170.0.4:3000',
-    'http://10.170.0.4:3001',
+    'http://backend:3001',
     'http://127.0.0.1:3001',
-    'http://10.170.0.4:3001'
+    'http://backend:3001'
   ],
   
   // Optimize for development performance

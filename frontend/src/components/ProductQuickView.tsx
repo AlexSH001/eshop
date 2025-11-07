@@ -74,7 +74,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
       const fetchDetails = async () => {
         setIsLoading(true);
         try {
-          const res = await fetch(`http://10.170.0.4:3001/api/products/${product.id}`);
+          const res = await fetch(`http://backend:3001/api/products/${product.id}`);
           if (!res.ok) throw new Error('Failed to fetch product details');
           const data = await res.json();
           setDetails(data.product);
