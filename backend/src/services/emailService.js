@@ -18,7 +18,7 @@ class EmailService {
     } = process.env;
 
     // Check if email is configured
-    if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASSWORD) {
+    if (!SMTP_HOST || !SMTP_PORT ) {
       logger.warn('Email service not configured. SMTP settings missing.');
       return;
     }
