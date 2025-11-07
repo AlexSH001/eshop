@@ -100,7 +100,7 @@ export default function AdminProductsPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('http://backend:3001/api/categories');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/categories`);
         if (!res.ok) throw new Error('Failed to fetch categories');
         const data = await res.json();
         setCategories(data.categories.map((c: { id: number; name: string }) => ({ id: c.id, name: c.name })));
@@ -209,7 +209,7 @@ export default function AdminProductsPage() {
 
       console.log('Uploading images...', Array.from(files).map(f => f.name));
 
-      const res = await makeAuthenticatedRequest('http://backend:3001/api/upload/product-images', {
+      const res = await makeAuthenticatedRequest(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/upload/product-images`, {
         method: 'POST',
         credentials: 'include',
         // Don't set Content-Type, let browser set it with boundary for FormData
@@ -246,7 +246,7 @@ export default function AdminProductsPage() {
   const removeImage = async (imageUrl: string) => {
     try {
       // Call backend to delete the image file
-      const res = await makeAuthenticatedRequest('http://backend:3001/api/upload/product-image', {
+      const res = await makeAuthenticatedRequest(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/upload/product-image`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -294,7 +294,7 @@ export default function AdminProductsPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('http://backend:3001/api/products');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/products`);
         if (!res.ok) throw new Error('Failed to fetch products');
         const data = await res.json();
         const mappedProducts: Product[] = data.products.map((p: Record<string, unknown>) => {
@@ -341,7 +341,7 @@ export default function AdminProductsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('http://backend:3001/api/products', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -408,7 +408,7 @@ export default function AdminProductsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://backend:3001/api/products/${editingProduct.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/products/${editingProduct.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -485,7 +485,7 @@ export default function AdminProductsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://backend:3001/api/products/${deletingProduct.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/products/${deletingProduct.id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -586,7 +586,7 @@ export default function AdminProductsPage() {
                       
                       // Fetch full product details including images
                       try {
-                        const res = await fetch(`http://backend:3001/api/products/${product.id}`, {
+                        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/products/${product.id}`, {
                           credentials: 'include'
                         });
                         if (res.ok) {

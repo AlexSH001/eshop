@@ -126,7 +126,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           localStorage.setItem('session_id', newSessionId);
         }
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api'}/cart`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/cart`, {
           headers: {
             ...(token && { Authorization: `Bearer ${token}` }),
             ...(sessionId && { 'X-Session-ID': sessionId }),
@@ -199,7 +199,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api'}/cart/items`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/cart/items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -247,7 +247,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const token = localStorage.getItem('auth_token');
       const item = state.items.find(item => item.id === id);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api'}/cart/items/${id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/cart/items/${id}`, {
         method: 'DELETE',
         headers: {
           ...(token && { Authorization: `Bearer ${token}` }),
@@ -275,7 +275,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const sessionId = localStorage.getItem('session_id');
       const token = localStorage.getItem('auth_token');
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api'}/cart/items/${id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/cart/items/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -302,7 +302,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const sessionId = localStorage.getItem('session_id');
       const token = localStorage.getItem('auth_token');
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api'}/cart`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/cart`, {
         method: 'DELETE',
         headers: {
           ...(token && { Authorization: `Bearer ${token}` }),

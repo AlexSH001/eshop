@@ -90,10 +90,10 @@ export default function AdminAnalyticsPage() {
       };
 
       const [statsRes, salesRes, productsRes, categoriesRes] = await Promise.all([
-        fetch(`http://backend:3001/api/users/analytics/stats?period=${period}`, { headers }),
-        fetch(`http://backend:3001/api/users/analytics/sales-data?days=${period}`, { headers }),
-        fetch(`http://backend:3001/api/users/analytics/top-products?period=${period}&limit=10`, { headers }),
-        fetch(`http://backend:3001/api/users/analytics/category-performance?period=${period}`, { headers })
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/users/analytics/stats?period=${period}`, { headers }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/users/analytics/sales-data?days=${period}`, { headers }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/users/analytics/top-products?period=${period}&limit=10`, { headers }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/users/analytics/category-performance?period=${period}`, { headers })
       ]);
 
       if (!statsRes.ok || !salesRes.ok || !productsRes.ok || !categoriesRes.ok) {
