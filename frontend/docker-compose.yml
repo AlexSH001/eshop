@@ -22,7 +22,9 @@ services:
       PORT: 3000
       HOSTNAME: 0.0.0.0
       # Frontend Configuration
-      NEXT_PUBLIC_API_URL: http://backend:3001/api
+      # Use relative URL '/api' when behind nginx proxy (production) to avoid mixed-content issues
+      # Use 'http://backend:3001/api' only when accessing backend directly (without nginx)
+      NEXT_PUBLIC_API_URL: /api
       NEXT_PUBLIC_APP_NAME: E-Shop
       NEXT_PUBLIC_APP_URL: https://10.170.0.4
       # Next.js Configuration
