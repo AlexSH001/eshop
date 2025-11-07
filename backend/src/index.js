@@ -152,10 +152,6 @@ app.use(performanceMiddleware);
 // Middleware
 app.use(compression());
 app.use(morgan('combined'));
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -197,10 +193,10 @@ app.use('*', (req, res) => {
 app.use(errorLogger);
 app.use(errorHandler);
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   logger.info(`🚀 Server running on port ${PORT}`);
-  logger.info(`📝 API docs available at http://localhost:${PORT}/api/monitoring/health`);
-  logger.info(`📊 Metrics available at http://localhost:${PORT}/api/monitoring/metrics`);
+  logger.info(`📝 API docs available at http://0.0.0.0:${PORT}/api/monitoring/health`);
+  logger.info(`📊 Metrics available at http://0.0.0.0:${PORT}/api/monitoring/metrics`);
   logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
