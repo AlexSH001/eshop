@@ -77,7 +77,7 @@ export function useCategoryProducts(categoryName: string, fallbackProducts: Prod
         
         // Fetch products for the category
         const productsResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api'}/products/category/${categoryId}`
+          `${process.env.NEXT_PUBLIC_API_URL || 'https://fortunewhisper.com/backend/api'}/products/category/${categoryId}`
         );
         
         if (!productsResponse.ok) {

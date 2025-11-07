@@ -14,7 +14,7 @@ pnpm dev
 bun dev
 ```
 
-Open [http://frontend:3000](http://frontend:3000) with your browser to see the result.
+Open [https://fortunewhisper.com](https://fortunewhisper.com) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
@@ -25,7 +25,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 前端通过 `NEXT_PUBLIC_API_URL` 环境变量配置后端API地址。例如在`.env.local`中添加：
 
 ```
-NEXT_PUBLIC_API_URL=http://backend:3001
+NEXT_PUBLIC_API_URL=https://fortunewhisper.com/backend
 ```
 
 避免在代码中硬编码API地址，方便不同环境部署。

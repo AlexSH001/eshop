@@ -52,9 +52,9 @@ print_success "Docker and Docker Compose are available"
 if [ ! -f ".env.local" ]; then
     print_status "Creating .env.local file..."
     cat > .env.local << EOF
-NEXT_PUBLIC_API_URL=http://backend:3001/api
+NEXT_PUBLIC_API_URL=https://fortunewhisper.com/backend/api
 NEXT_PUBLIC_APP_NAME=E-Shop
-NEXT_PUBLIC_APP_URL=http://frontend:3000
+NEXT_PUBLIC_APP_URL=https://fortunewhisper.com
 EOF
     print_success "Created .env.local"
 fi
@@ -74,9 +74,9 @@ run_container() {
         --network eshop-network \
         -p 3000:3000 \
         -e NODE_ENV=production \
-        -e NEXT_PUBLIC_API_URL=http://backend:3001/api \
+        -e NEXT_PUBLIC_API_URL=https://fortunewhisper.com/backend/api \
         -e NEXT_PUBLIC_APP_NAME="E-Shop" \
-        -e NEXT_PUBLIC_APP_URL=http://frontend:3000 \
+        -e NEXT_PUBLIC_APP_URL=https://fortunewhisper.com \
         eshop-frontend
     print_success "Frontend container started successfully"
 }
@@ -188,8 +188,8 @@ esac
 echo ""
 print_success "Frontend setup completed!"
 echo ""
-echo "🌐 Frontend will be available at: http://frontend:3000"
-echo "🔗 Make sure the backend is running on: http://backend:3001"
+echo "🌐 Frontend will be available at: https://fortunewhisper.com"
+echo "🔗 Make sure the backend is running on: https://fortunewhisper.com/backend"
 echo ""
 echo "📋 Useful commands:"
 echo "  $0 logs     # View logs"

@@ -22,9 +22,9 @@ services:
       PORT: 3000
       HOSTNAME: 0.0.0.0
       # Frontend Configuration
-      NEXT_PUBLIC_API_URL: http://backend:3001/api
+      NEXT_PUBLIC_API_URL: https://fortunewhisper.com/backend/api
       NEXT_PUBLIC_APP_NAME: E-Shop
-      NEXT_PUBLIC_APP_URL: http://frontend:3000
+      NEXT_PUBLIC_APP_URL: https://fortunewhisper.com
       # Next.js Configuration
       NEXT_TELEMETRY_DISABLED: 1
       
@@ -42,7 +42,7 @@ services:
     restart: unless-stopped
     
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://frontend:3000"]
+      test: ["CMD", "curl", "-f", "https://fortunewhisper.com"]
       interval: 30s
       timeout: 10s
       retries: 3

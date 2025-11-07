@@ -215,7 +215,7 @@ export default function CheckoutPage() {
         'Authorization': `Bearer ${authToken}`
       };
 
-      const response = await fetch('http://backend:3001/api/orders', {
+      const response = await fetch('https://fortunewhisper.com/backend/api/orders', {
         method: 'POST',
         headers,
         body: JSON.stringify(orderData)
@@ -245,7 +245,7 @@ export default function CheckoutPage() {
       // After creating the order, redirect to Stripe payment link
       toast.info("Redirecting to secure payment page...");
       
-      const payResponse = await fetch(`http://backend:3001/api/orders/${orderId}/pay/stripe`, {
+      const payResponse = await fetch(`https://fortunewhisper.com/backend/api/orders/${orderId}/pay/stripe`, {
         method: 'POST',
         headers,
       });

@@ -66,7 +66,7 @@ services:
     restart: unless-stopped
     
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsSL -H 'x-forwarded-proto: https' http://backend:3001/api/monitoring/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsSL -H 'x-forwarded-proto: https' https://fortunewhisper.com/backend/api/monitoring/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
