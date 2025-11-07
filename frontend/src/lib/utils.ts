@@ -49,7 +49,7 @@ const getCategoryIcon = (categoryName: string): LucideIcon => {
 
 export const fetchCategories = async () => {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://fortunewhisper.com/backend/api'}/categories`);
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://backend.fortunewhisper.com/api'}/categories`);
     const data = await response.json();
     
     // Process categories to ensure they have required properties
@@ -87,7 +87,7 @@ export const fetchProducts = async () => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
     
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://fortunewhisper.com/backend/api'}/products?limit=50`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://backend.fortunewhisper.com/api'}/products?limit=50`, {
       signal: controller.signal
     });
     
@@ -194,7 +194,7 @@ export const normalizeImageUrl = (url: string): string => {
     
     // If it's a backend upload URL, convert it to frontend accessible URL
     if (url.startsWith('/uploads/')) {
-        return `https://fortunewhisper.com/backend${url}`;
+        return `https://backend.fortunewhisper.com${url}`;
     }
     
     return url;

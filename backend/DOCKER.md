@@ -38,9 +38,9 @@ docker-compose up -d --build
 ```
 
 ### 3. Access the Application
-- **API**: https://fortunewhisper.com/backend/api
-- **Health Check**: https://fortunewhisper.com/backend/api/monitoring/health
-- **Metrics**: https://fortunewhisper.com/backend/api/monitoring/metrics
+- **API**: https://backend.fortunewhisper.com/api
+- **Health Check**: https://backend.fortunewhisper.com/api/monitoring/health
+- **Metrics**: https://backend.fortunewhisper.com/api/monitoring/metrics
 
 ## 🧪 Development Setup
 
@@ -176,7 +176,7 @@ environment:
 ### Docker Health Checks
 ```yaml
 healthcheck:
-  test: ["CMD", "curl", "-f", "https://fortunewhisper.com/backend/api/monitoring/health"]
+  test: ["CMD", "curl", "-f", "https://backend.fortunewhisper.com/api/monitoring/health"]
   interval: 30s
   timeout: 10s
   retries: 3

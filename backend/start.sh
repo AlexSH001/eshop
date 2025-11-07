@@ -72,8 +72,8 @@ echo "   Admin: admin@eshop.com / admin123"
 echo "   Super Admin: superadmin@eshop.com / superadmin123"
 echo ""
 echo "📚 API Documentation:"
-echo "   Base URL: https://fortunewhisper.com/backend/api"
-echo "   Health Check: https://fortunewhisper.com/backend/api/health"
+echo "   Base URL: https://backend.fortunewhisper.com/api"
+echo "   Health Check: https://backend.fortunewhisper.com/api/health"
 echo ""
 
 exec npm start

@@ -73,7 +73,7 @@ export default function AdminUsersPage() {
         throw new Error('No admin token found');
       }
 
-      const res = await fetch('https://fortunewhisper.com/backend/api/admin/users/authenticated', {
+      const res = await fetch('https://backend.fortunewhisper.com/api/admin/users/authenticated', {
         headers: {
           'Authorization': `Bearer ${adminToken}`,
           'Content-Type': 'application/json'
@@ -103,7 +103,7 @@ export default function AdminUsersPage() {
         throw new Error('No admin token found');
       }
 
-      const res = await fetch('https://fortunewhisper.com/backend/api/users', {
+      const res = await fetch('https://backend.fortunewhisper.com/api/users', {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${adminToken}`,
@@ -135,7 +135,7 @@ export default function AdminUsersPage() {
         throw new Error('No admin token found');
       }
 
-      const res = await fetch(`https://fortunewhisper.com/backend/api/users/${editingUser.id}`, {
+      const res = await fetch(`https://backend.fortunewhisper.com/api/users/${editingUser.id}`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${adminToken}`,
@@ -167,7 +167,7 @@ export default function AdminUsersPage() {
         throw new Error('No admin token found');
       }
 
-      const res = await fetch(`https://fortunewhisper.com/backend/api/users/${deletingUser.id}`, {
+      const res = await fetch(`https://backend.fortunewhisper.com/api/users/${deletingUser.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${adminToken}`

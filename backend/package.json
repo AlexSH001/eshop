@@ -19,8 +19,8 @@
     "sync-data": "npm run seed",
     "logs:view": "tail -f logs/combined-$(date +%Y-%m-%d).log",
     "logs:error": "tail -f logs/error-$(date +%Y-%m-%d).log",
-    "health:check": "curl -s https://fortunewhisper.com/backend/api/monitoring/health | jq",
-    "metrics:view": "curl -s https://fortunewhisper.com/backend/api/monitoring/metrics"
+    "health:check": "curl -s https://backend.fortunewhisper.com/api/monitoring/health | jq",
+    "metrics:view": "curl -s https://backend.fortunewhisper.com/api/monitoring/metrics"
   },
   "dependencies": {
     "@sentry/node": "^9.38.0",

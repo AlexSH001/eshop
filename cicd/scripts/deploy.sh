@@ -157,7 +157,7 @@ check_health() {
     sleep 10
     
     # Check backend health
-    if curl -f https://fortunewhisper.com/backend/api/health > /dev/null 2>&1; then
+    if curl -f https://backend.fortunewhisper.com/api/health > /dev/null 2>&1; then
         log_success "Backend health check passed"
     else
         log_error "Backend health check failed"
@@ -165,7 +165,7 @@ check_health() {
     fi
     
     # Check frontend health
-    if curl -f https://fortunewhisper.com > /dev/null 2>&1; then
+    if curl -f https://www.fortunewhisper.com > /dev/null 2>&1; then
         log_success "Frontend health check passed"
     else
         log_error "Frontend health check failed"
@@ -186,9 +186,9 @@ show_status() {
     
     echo ""
     log_info "Service URLs:"
-    echo "  Frontend: https://fortunewhisper.com"
-    echo "  Backend API: https://fortunewhisper.com/backend/api"
-    echo "  Health Check: https://fortunewhisper.com/backend/api/health"
+    echo "  Frontend: https://www.fortunewhisper.com"
+    echo "  Backend API: https://backend.fortunewhisper.com/api"
+    echo "  Health Check: https://backend.fortunewhisper.com/api/health"
 }
 
 # Main deployment process

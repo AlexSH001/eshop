@@ -85,7 +85,7 @@ ENV LOG_FILE_PATH=/app/logs
 # Health Check
 # ========================================
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f https://fortunewhisper.com/backend/api/monitoring/health || exit 1
+    CMD curl -f https://backend.fortunewhisper.com/api/monitoring/health || exit 1
 
 # ========================================
 # Expose Port

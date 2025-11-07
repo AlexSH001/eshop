@@ -23,9 +23,9 @@ services:
       HOSTNAME: 0.0.0.0
       
       # Frontend Configuration
-      NEXT_PUBLIC_API_URL: https://fortunewhisper.com/backend/api
+      NEXT_PUBLIC_API_URL: https://backend.fortunewhisper.com/api
       NEXT_PUBLIC_APP_NAME: E-Shop (Dev)
-      NEXT_PUBLIC_APP_URL: https://fortunewhisper.com
+      NEXT_PUBLIC_APP_URL: https://www.fortunewhisper.com
       
       # Next.js Configuration
       NEXT_TELEMETRY_DISABLED: 1

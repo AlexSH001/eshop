@@ -38,7 +38,7 @@ function ResetPasswordContent() {
 
   const verifyToken = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://fortunewhisper.com/backend/api'}/auth/verify-reset-token`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://backend.fortunewhisper.com/api'}/auth/verify-reset-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ function ResetPasswordContent() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://fortunewhisper.com/backend/api'}/auth/reset-password`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://backend.fortunewhisper.com/api'}/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

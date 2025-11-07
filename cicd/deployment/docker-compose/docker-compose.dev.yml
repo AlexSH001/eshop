@@ -57,7 +57,7 @@ services:
       REDIS_PORT: 6379
       JWT_SECRET: dev_jwt_secret_change_in_production
       JWT_REFRESH_SECRET: dev_refresh_secret_change_in_production
-      FRONTEND_URL: https://fortunewhisper.com
+      FRONTEND_URL: https://www.fortunewhisper.com
     volumes:
       - ../../backend:/app
       - /app/node_modules
@@ -83,7 +83,7 @@ services:
     container_name: eshop_frontend_dev
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: https://fortunewhisper.com/backend/api
+      NEXT_PUBLIC_API_URL: https://backend.fortunewhisper.com/api
       NEXT_PUBLIC_APP_NAME: E-Shop Dev
     volumes:
       - ../../frontend:/app

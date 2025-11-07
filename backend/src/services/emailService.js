@@ -90,7 +90,7 @@ class EmailService {
   }
 
   getPasswordResetEmailTemplate(token, resetUrl) {
-    const fullResetUrl = resetUrl ? `${resetUrl}?token=${token}` : `https://fortunewhisper.com/reset-password?token=${token}`;
+    const fullResetUrl = resetUrl ? `${resetUrl}?token=${token}` : `https://www.fortunewhisper.com/reset-password?token=${token}`;
     
     return `
       <!DOCTYPE html>
@@ -144,7 +144,7 @@ class EmailService {
   }
 
   getPasswordResetEmailText(token, resetUrl) {
-    const fullResetUrl = resetUrl ? `${resetUrl}?token=${token}` : `https://fortunewhisper.com/reset-password?token=${token}`;
+    const fullResetUrl = resetUrl ? `${resetUrl}?token=${token}` : `https://www.fortunewhisper.com/reset-password?token=${token}`;
     
     return `
 Password Reset Request - E-Shop
@@ -204,7 +204,7 @@ If you didn't request this, please ignore this email and your password will rema
             </ul>
             
             <div style="text-align: center;">
-              <a href="${process.env.FRONTEND_URL || 'https://fortunewhisper.com'}" class="button">Start Shopping</a>
+              <a href="${process.env.FRONTEND_URL || 'https://www.fortunewhisper.com'}" class="button">Start Shopping</a>
             </div>
             
             <p>If you have any questions or need assistance, don't hesitate to contact our support team.</p>
@@ -234,7 +234,7 @@ With your new account, you can:
 - Track your orders
 - Manage your profile and preferences
 
-Start shopping now: ${process.env.FRONTEND_URL || 'https://fortunewhisper.com'}
+Start shopping now: ${process.env.FRONTEND_URL || 'https://www.fortunewhisper.com'}
 
 If you have any questions or need assistance, don't hesitate to contact our support team.
 

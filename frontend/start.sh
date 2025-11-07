@@ -25,9 +25,9 @@ echo "✅ Node.js and npm are installed"
 if [ ! -f ".env.local" ]; then
     echo "📝 Creating .env.local file..."
     cat > .env.local << EOF
-NEXT_PUBLIC_API_URL=https://fortunewhisper.com/backend/api
+NEXT_PUBLIC_API_URL=https://backend.fortunewhisper.com/api
 NEXT_PUBLIC_APP_NAME=eshop
-NEXT_PUBLIC_APP_URL=https://fortunewhisper.com
+NEXT_PUBLIC_APP_URL=https://www.fortunewhisper.com
 EOF
     echo "✅ Created .env.local"
 fi
@@ -48,7 +48,7 @@ echo "To start the application:"
 echo "Frontend: npm run"
 echo ""
 echo "The application will be available at:"
-echo "- Frontend: https://fortunewhisper.com"
+echo "- Frontend: https://www.fortunewhisper.com"
 echo ""
 # exec node server.js
 exec npm start

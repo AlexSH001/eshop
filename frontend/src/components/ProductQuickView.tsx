@@ -74,7 +74,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
       const fetchDetails = async () => {
         setIsLoading(true);
         try {
-          const res = await fetch(`https://fortunewhisper.com/backend/api/products/${product.id}`);
+          const res = await fetch(`https://backend.fortunewhisper.com/api/products/${product.id}`);
           if (!res.ok) throw new Error('Failed to fetch product details');
           const data = await res.json();
           setDetails(data.product);

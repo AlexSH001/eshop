@@ -61,12 +61,11 @@ const nextConfig = {
   allowedDevOrigins: [
     'local-origin.dev', 
     '*.local-origin.dev',
-    'https://fortunewhisper.com',
     'http://127.0.0.1:3000',
-    'https://fortunewhisper.com',
-    'https://fortunewhisper.com/backend',
+    'https://www.fortunewhisper.com',
+    'https://backend.fortunewhisper.com',
     'http://127.0.0.1:3001',
-    'https://fortunewhisper.com/backend'
+    'https://backend.fortunewhisper.com'
   ],
   
   // Optimize for development performance
