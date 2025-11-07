@@ -1,12 +1,46 @@
-const { initializeDatabase, database } = require('./init');
+// Database detection and initialization
+let database;
+let isPostgres = false;
+
+async function initializeDatabase() {
+  // Check if PostgreSQL is configured
+  const dbClient = process.env.DB_CLIENT || 'sqlite';
+  
+  if (dbClient === 'postgres' || process.env.DB_HOST) {
+    try {
+      const { postgresDatabase } = require('./init-postgres');
+      database = postgresDatabase;
+      isPostgres = true;
+      console.log('🔄 Using PostgreSQL database for migration');
+    } catch (error) {
+      console.log('⚠️ PostgreSQL not available, falling back to SQLite');
+      const { database: sqliteDatabase } = require('./init');
+      database = sqliteDatabase;
+      isPostgres = false;
+    }
+  } else {
+    const { database: sqliteDatabase } = require('./init');
+    database = sqliteDatabase;
+    isPostgres = false;
+    console.log('🔄 Using SQLite database for migration');
+  }
+
+  await database.connect();
+  await database.initializeSchema();
+}
 
 async function migrate() {
   try {
     console.log('🗄️  Starting database migration...');
     await initializeDatabase();
     
-    // Run additional migrations for existing databases
-    await addProductSpecsAndShippingColumns(database);
+    // Run additional migrations for existing databases (only for SQLite)
+    // PostgreSQL schema already includes all columns
+    if (!isPostgres) {
+      await addProductSpecsAndShippingColumns(database);
+    } else {
+      console.log('ℹ️  PostgreSQL schema already includes all required columns');
+    }
     
     console.log('✅ Database migration completed successfully!');
     process.exit(0);
@@ -16,7 +50,7 @@ async function migrate() {
   }
 }
 
-// Add migration for specifications and shipping columns
+// Add migration for specifications and shipping columns (SQLite only)
 async function addProductSpecsAndShippingColumns(db) {
   try {
     // Add specifications column if not exists
