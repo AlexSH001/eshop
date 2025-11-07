@@ -65,7 +65,7 @@ const corsOptions = {
       'http://localhost:3000',
       'http://127.0.0.1:3000',
       'http://0.0.0.0:3000',
-      'http://10.170.0.4:3000'
+      'http://frontend:3000'
     ];
     
     // Allow requests with no origin (mobile apps, etc.)
