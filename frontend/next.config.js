@@ -61,7 +61,7 @@ const nextConfig = {
   allowedDevOrigins: [
     'local-origin.dev', 
     '*.local-origin.dev',
-    'http://localhost:3000',
+    'http://frontend:3000',
     'http://127.0.0.1:3000',
     'http://frontend:3000',
     'http://backend:3001',

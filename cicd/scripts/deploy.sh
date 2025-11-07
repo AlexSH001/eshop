@@ -165,7 +165,7 @@ check_health() {
     fi
     
     # Check frontend health
-    if curl -f http://localhost:3000 > /dev/null 2>&1; then
+    if curl -f http://frontend:3000 > /dev/null 2>&1; then
         log_success "Frontend health check passed"
     else
         log_error "Frontend health check failed"
@@ -186,7 +186,7 @@ show_status() {
     
     echo ""
     log_info "Service URLs:"
-    echo "  Frontend: http://localhost:3000"
+    echo "  Frontend: http://frontend:3000"
     echo "  Backend API: http://backend:3001/api"
     echo "  Health Check: http://backend:3001/api/health"
 }

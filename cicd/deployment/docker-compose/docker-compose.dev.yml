@@ -57,7 +57,7 @@ services:
       REDIS_PORT: 6379
       JWT_SECRET: dev_jwt_secret_change_in_production
       JWT_REFRESH_SECRET: dev_refresh_secret_change_in_production
-      FRONTEND_URL: http://localhost:3000
+      FRONTEND_URL: http://frontend:3000
     volumes:
       - ../../backend:/app
       - /app/node_modules
