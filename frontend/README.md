@@ -25,7 +25,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 前端通过 `NEXT_PUBLIC_API_URL` 环境变量配置后端API地址。例如在`.env.local`中添加：
 
 ```
-NEXT_PUBLIC_API_URL=http://backend:3001
+NEXT_PUBLIC_API_URL=https://10.170.0.4
 ```
 
 避免在代码中硬编码API地址，方便不同环境部署。

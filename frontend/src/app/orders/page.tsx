@@ -54,7 +54,7 @@ export default function OrdersPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('http://backend:3001/api/orders', { credentials: 'include' });
+        const res = await fetch('https://10.170.0.4/api/orders', { credentials: 'include' });
         if (!res.ok) throw new Error('Failed to fetch orders');
         const data = await res.json();
         setOrders(data.orders);

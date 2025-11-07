@@ -63,7 +63,6 @@ const nextConfig = {
     '*.local-origin.dev',
     'http://127.0.0.1:3000',
     'https://10.170.0.4',
-    'http://backend:3001',
     'http://127.0.0.1:3001',
   ],
   

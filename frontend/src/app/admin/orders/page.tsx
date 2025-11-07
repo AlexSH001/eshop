@@ -62,7 +62,7 @@ export default function AdminOrdersPage() {
         throw new Error('No admin token found');
       }
 
-      const res = await fetch('http://backend:3001/api/orders/authenticated', {
+      const res = await fetch('https://10.170.0.4/api/orders/authenticated', {
         headers: {
           'Authorization': `Bearer ${adminToken}`,
           'Content-Type': 'application/json'
@@ -105,7 +105,7 @@ export default function AdminOrdersPage() {
         throw new Error('No admin token found');
       }
 
-      const res = await fetch(`http://backend:3001/api/orders/${editingOrder.id}/status`, {
+      const res = await fetch(`https://10.170.0.4/api/orders/${editingOrder.id}/status`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${adminToken}`,
@@ -137,7 +137,7 @@ export default function AdminOrdersPage() {
         throw new Error('No admin token found');
       }
 
-      const res = await fetch(`http://backend:3001/api/orders/${deletingOrder.id}`, {
+      const res = await fetch(`https://10.170.0.4/api/orders/${deletingOrder.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${adminToken}`

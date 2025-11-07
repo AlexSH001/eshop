@@ -72,8 +72,8 @@ echo "   Admin: admin@eshop.com / admin123"
 echo "   Super Admin: superadmin@eshop.com / superadmin123"
 echo ""
 echo "📚 API Documentation:"
-echo "   Base URL: http://backend:3001/api"
-echo "   Health Check: http://backend:3001/api/health"
+echo "   Base URL: https://10.170.0.4/api"
+echo "   Health Check: https://10.170.0.4/api/health"
 echo ""
 
 exec npm start

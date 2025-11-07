@@ -9,7 +9,7 @@ Create these environment files:
 **Frontend (.env.local):**
 ```bash
 # Create file: frontend/.env.local
-NEXT_PUBLIC_API_URL=http://backend:3001/api
+NEXT_PUBLIC_API_URL=https://10.170.0.4/api
 NEXT_PUBLIC_APP_NAME=eshop
 NEXT_PUBLIC_APP_URL=https://10.170.0.4
 ```

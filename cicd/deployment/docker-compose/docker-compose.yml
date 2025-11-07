@@ -36,7 +36,7 @@ services:
       - eshop_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://backend:3001/api/health"]
+      test: ["CMD", "curl", "-f", "https://10.170.0.4/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
