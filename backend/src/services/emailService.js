@@ -90,7 +90,7 @@ class EmailService {
   }
 
   getPasswordResetEmailTemplate(token, resetUrl) {
-    const fullResetUrl = resetUrl ? `${resetUrl}?token=${token}` : `http://frontend:3000/reset-password?token=${token}`;
+    const fullResetUrl = resetUrl ? `${resetUrl}?token=${token}` : `https://10.170.0.4/reset-password?token=${token}`;
     
     return `
       <!DOCTYPE html>
@@ -144,7 +144,7 @@ class EmailService {
   }
 
   getPasswordResetEmailText(token, resetUrl) {
-    const fullResetUrl = resetUrl ? `${resetUrl}?token=${token}` : `http://frontend:3000/reset-password?token=${token}`;
+    const fullResetUrl = resetUrl ? `${resetUrl}?token=${token}` : `https://10.170.0.4/reset-password?token=${token}`;
     
     return `
 Password Reset Request - E-Shop
@@ -204,7 +204,7 @@ If you didn't request this, please ignore this email and your password will rema
             </ul>
             
             <div style="text-align: center;">
-              <a href="${process.env.FRONTEND_URL || 'http://frontend:3000'}" class="button">Start Shopping</a>
+              <a href="${process.env.FRONTEND_URL || 'https://10.170.0.4'}" class="button">Start Shopping</a>
             </div>
             
             <p>If you have any questions or need assistance, don't hesitate to contact our support team.</p>
@@ -234,7 +234,7 @@ With your new account, you can:
 - Track your orders
 - Manage your profile and preferences
 
-Start shopping now: ${process.env.FRONTEND_URL || 'http://frontend:3000'}
+Start shopping now: ${process.env.FRONTEND_URL || 'https://10.170.0.4'}
 
 If you have any questions or need assistance, don't hesitate to contact our support team.
 

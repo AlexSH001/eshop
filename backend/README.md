@@ -320,7 +320,7 @@ Create a `.env` file based on `.env.example`:
 ```env
 NODE_ENV=development
 PORT=3001
-FRONTEND_URL=http://frontend:3000
+FRONTEND_URL=https://10.170.0.4
 DB_PATH=./data/store.db
 JWT_SECRET=your-jwt-secret
 JWT_REFRESH_SECRET=your-refresh-secret

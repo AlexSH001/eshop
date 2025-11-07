@@ -25,7 +25,7 @@ services:
       # Frontend Configuration
       NEXT_PUBLIC_API_URL: http://backend:3001/api
       NEXT_PUBLIC_APP_NAME: E-Shop (Dev)
-      NEXT_PUBLIC_APP_URL: http://frontend:3000
+      NEXT_PUBLIC_APP_URL: https://10.170.0.4
       
       # Next.js Configuration
       NEXT_TELEMETRY_DISABLED: 1

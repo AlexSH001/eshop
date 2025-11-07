@@ -14,7 +14,7 @@ pnpm dev
 bun dev
 ```
 
-Open [http://frontend:3000](http://frontend:3000) with your browser to see the result.
+Open [https://10.170.0.4](https://10.170.0.4) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

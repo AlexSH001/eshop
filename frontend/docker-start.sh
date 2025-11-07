@@ -54,7 +54,7 @@ if [ ! -f ".env.local" ]; then
     cat > .env.local << EOF
 NEXT_PUBLIC_API_URL=http://backend:3001/api
 NEXT_PUBLIC_APP_NAME=E-Shop
-NEXT_PUBLIC_APP_URL=http://frontend:3000
+NEXT_PUBLIC_APP_URL=https://10.170.0.4
 EOF
     print_success "Created .env.local"
 fi
@@ -76,7 +76,7 @@ run_container() {
         -e NODE_ENV=production \
         -e NEXT_PUBLIC_API_URL=http://backend:3001/api \
         -e NEXT_PUBLIC_APP_NAME="E-Shop" \
-        -e NEXT_PUBLIC_APP_URL=http://frontend:3000 \
+        -e NEXT_PUBLIC_APP_URL=https://10.170.0.4 \
         eshop-frontend
     print_success "Frontend container started successfully"
 }
@@ -188,7 +188,7 @@ esac
 echo ""
 print_success "Frontend setup completed!"
 echo ""
-echo "🌐 Frontend will be available at: http://frontend:3000"
+echo "🌐 Frontend will be available at: https://10.170.0.4"
 echo "🔗 Make sure the backend is running on: http://backend:3001"
 echo ""
 echo "📋 Useful commands:"
