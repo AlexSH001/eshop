@@ -453,10 +453,10 @@ export default function Home() {
             <div>
               <h3 className="font-semibold text-gray-900">Shop</h3>
               <ul className="mt-4 space-y-2 text-sm text-gray-600">
-                <li><Link href="/electronics" className="hover:text-gray-900">Electronics</Link></li>
-                <li><Link href="/fashion" className="hover:text-gray-900">Fashion</Link></li>
-                <li><Link href="/home-garden" className="hover:text-gray-900">Home & Garden</Link></li>
-                <li><Link href="/sports" className="hover:text-gray-900">Sports</Link></li>
+                <li><Link href="/categories/electronics" className="hover:text-gray-900">Electronics</Link></li>
+                <li><Link href="/categories/fashion" className="hover:text-gray-900">Fashion</Link></li>
+                <li><Link href="/categories/home-garden" className="hover:text-gray-900">Home & Garden</Link></li>
+                <li><Link href="/categories/sports" className="hover:text-gray-900">Sports</Link></li>
               </ul>
             </div>
 
