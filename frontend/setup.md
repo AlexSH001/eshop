@@ -9,9 +9,9 @@ Create these environment files:
 **Frontend (.env.local):**
 ```bash
 # Create file: frontend/.env.local
-NEXT_PUBLIC_API_URL=https://backend.fortunewhisper.com/api
+NEXT_PUBLIC_API_URL=http://backend:3001/api
 NEXT_PUBLIC_APP_NAME=eshop
-NEXT_PUBLIC_APP_URL=https://www.fortunewhisper.com
+NEXT_PUBLIC_APP_URL=http://frontend:3000
 ```
 
 **Backend (.env):**
@@ -19,7 +19,7 @@ NEXT_PUBLIC_APP_URL=https://www.fortunewhisper.com
 # Create file: backend/.env
 NODE_ENV=development
 PORT=3001
-FRONTEND_URL=https://www.fortunewhisper.com
+FRONTEND_URL=http://frontend:3000
 
 # Database
 DB_PATH=./data/store.db

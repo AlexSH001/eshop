@@ -70,7 +70,7 @@ A comprehensive e-commerce backend built with Node.js, Express, and SQLite. This
 
 5. **API Base URL**
    ```
-   https://backend.fortunewhisper.com/api
+   http://backend:3001/api
    ```
 
 ## 🗃 Database Schema
@@ -320,7 +320,7 @@ Create a `.env` file based on `.env.example`:
 ```env
 NODE_ENV=development
 PORT=3001
-FRONTEND_URL=https://www.fortunewhisper.com
+FRONTEND_URL=http://frontend:3000
 DB_PATH=./data/store.db
 JWT_SECRET=your-jwt-secret
 JWT_REFRESH_SECRET=your-refresh-secret
@@ -419,13 +419,13 @@ CMD ["npm", "start"]
 ### API Testing with curl
 ```bash
 # Health check
-curl https://backend.fortunewhisper.com/api/health
+curl http://backend:3001/api/health
 
 # Get products
-curl https://backend.fortunewhisper.com/api/products
+curl http://backend:3001/api/products
 
 # Login
-curl -X POST https://backend.fortunewhisper.com/api/auth/login \
+curl -X POST http://backend:3001/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@eshop.com","password":"password123"}'
 ```

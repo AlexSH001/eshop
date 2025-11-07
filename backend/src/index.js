@@ -64,9 +64,10 @@ const corsOptions = {
       'https://10.170.0.4', // HTTPS nginx server
       'http://10.170.0.4',  // HTTP nginx server (for development)
       // Development origins
+      'http://frontend:3000',
       'http://127.0.0.1:3000',
       'http://0.0.0.0:3000',
-      'https://www.fortunewhisper.com'
+      'http://frontend:3000'
     ];
     
     // Allow requests with no origin (mobile apps, etc.)

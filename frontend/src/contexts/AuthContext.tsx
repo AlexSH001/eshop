@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (token && storedUser) {
         try {
           // Validate token with backend
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://backend.fortunewhisper.com/api'}/auth/me`, {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api'}/auth/me`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const refreshTokenValue = localStorage.getItem('refresh_token');
             if (refreshTokenValue) {
               try {
-                const refreshResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://backend.fortunewhisper.com/api'}/auth/refresh`, {
+                const refreshResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api'}/auth/refresh`, {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://backend.fortunewhisper.com/api'}/auth/login`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api'}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -190,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const sessionId = localStorage.getItem('session_id');
       if (sessionId) {
         try {
-          const mergeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://backend.fortunewhisper.com/api'}/cart/merge`, {
+          const mergeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api'}/cart/merge`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -225,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (email: string, password: string, firstName: string, lastName: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://backend.fortunewhisper.com/api'}/auth/register`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api'}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -265,7 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const sessionId = localStorage.getItem('session_id');
       if (sessionId) {
         try {
-          const mergeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://backend.fortunewhisper.com/api'}/cart/merge`, {
+          const mergeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api'}/cart/merge`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -329,7 +329,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://backend.fortunewhisper.com/api'}/auth/refresh`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api'}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
