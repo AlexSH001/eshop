@@ -1,6 +1,8 @@
 import { Product } from "@/lib/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api';
+// Use relative URL when behind nginx proxy (production), or use env var for direct backend access (development)
+// When NEXT_PUBLIC_API_URL is not set, use relative URL which will work with nginx proxy
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 interface Category {
   id: number;

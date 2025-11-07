@@ -61,6 +61,8 @@ const corsOptions = {
       process.env.FRONTEND_URL,
       'https://yourdomain.com',
       'https://www.yourdomain.com',
+      'https://10.170.0.4', // HTTPS nginx server
+      'http://10.170.0.4',  // HTTP nginx server (for development)
       // Development origins
       'http://frontend:3000',
       'http://127.0.0.1:3000',
