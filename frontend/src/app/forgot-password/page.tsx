@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://10.170.0.4/api'}/auth/forgot-password`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001/api'}/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

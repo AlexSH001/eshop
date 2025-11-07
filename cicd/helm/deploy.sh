@@ -248,8 +248,8 @@ show_access_info() {
     echo ""
     echo -e "${BLUE}📊 Monitoring Endpoints${NC}"
     echo "======================="
-    echo -e "🏥 Health Check: ${GREEN}kubectl port-forward -n ${NAMESPACE:-$RELEASE_NAME} svc/$RELEASE_NAME-backend 3001:3001 && curl https://10.170.0.4/api/monitoring/health${NC}"
-    echo -e "📈 Metrics: ${GREEN}kubectl port-forward -n ${NAMESPACE:-$RELEASE_NAME} svc/$RELEASE_NAME-backend 3001:3001 && curl https://10.170.0.4/api/monitoring/metrics${NC}"
+    echo -e "🏥 Health Check: ${GREEN}kubectl port-forward -n ${NAMESPACE:-$RELEASE_NAME} svc/$RELEASE_NAME-backend 3001:3001 && curl http://backend:3001/api/monitoring/health${NC}"
+    echo -e "📈 Metrics: ${GREEN}kubectl port-forward -n ${NAMESPACE:-$RELEASE_NAME} svc/$RELEASE_NAME-backend 3001:3001 && curl http://backend:3001/api/monitoring/metrics${NC}"
 }
 
 # Parse command line arguments

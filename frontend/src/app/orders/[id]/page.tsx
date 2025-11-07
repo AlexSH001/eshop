@@ -36,7 +36,7 @@ export default function OrderDetailPage() {
     if (!id) return;
     setLoading(true);
     setError(null);
-    fetch(`https://10.170.0.4/api/orders/${id}`, { credentials: "include" })
+    fetch(`http://backend:3001/api/orders/${id}`, { credentials: "include" })
       .then(res => {
         if (!res.ok) throw new Error("Failed to fetch order");
         return res.json();
