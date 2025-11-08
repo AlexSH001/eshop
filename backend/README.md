@@ -434,7 +434,7 @@ curl -X POST http://backend:3001/api/auth/login \
 
 Import the API endpoints into Postman:
 1. Create a new collection
-2. Add environment variables for `base_url` and `auth_token`
+2. Add environment variables for `BACKEND_API_URL` and `auth_token`
 3. Set up requests with proper headers and authentication
 
 ## 🐛 Troubleshooting
