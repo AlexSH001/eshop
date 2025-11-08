@@ -267,7 +267,7 @@ export default function AdminSettingsPage() {
                       id="storeName"
                       value={settings.store.name}
                       onChange={(e) => updateSettings('store', 'name', e.target.value)}
-                      placeholder="My Store"
+                      placeholder="eshop"
                     />
                   </div>
                   <div>
@@ -277,7 +277,7 @@ export default function AdminSettingsPage() {
                       type="email"
                       value={settings.store.email}
                       onChange={(e) => updateSettings('store', 'email', e.target.value)}
-                      placeholder="contact@mystore.com"
+                      placeholder="contact@eshop.com"
                     />
                   </div>
                   <div>
@@ -347,7 +347,7 @@ export default function AdminSettingsPage() {
                       id="smtpHost"
                       value={settings.email.smtpHost}
                       onChange={(e) => updateSettings('email', 'smtpHost', e.target.value)}
-                      placeholder="smtp.gmail.com"
+                      placeholder="smtp.eshop.com"
                     />
                   </div>
                   <div>
@@ -365,7 +365,7 @@ export default function AdminSettingsPage() {
                       id="smtpUser"
                       value={settings.email.smtpUser}
                       onChange={(e) => updateSettings('email', 'smtpUser', e.target.value)}
-                      placeholder="your-email@gmail.com"
+                      placeholder="your-email@eshop.com"
                     />
                   </div>
                   <div>
@@ -385,7 +385,7 @@ export default function AdminSettingsPage() {
                       type="email"
                       value={settings.email.fromEmail}
                       onChange={(e) => updateSettings('email', 'fromEmail', e.target.value)}
-                      placeholder="noreply@mystore.com"
+                      placeholder="noreply@eshop.com"
                     />
                   </div>
                   <div>
@@ -394,7 +394,7 @@ export default function AdminSettingsPage() {
                       id="fromName"
                       value={settings.email.fromName}
                       onChange={(e) => updateSettings('email', 'fromName', e.target.value)}
-                      placeholder="My Store"
+                      placeholder="eshop"
                     />
                   </div>
                 </div>

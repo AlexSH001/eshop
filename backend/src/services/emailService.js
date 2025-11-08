@@ -9,28 +9,20 @@ class EmailService {
   }
 
   init() {
-    const {
-      SMTP_HOST,
-      SMTP_PORT,
-      SMTP_USER,
-      SMTP_PASSWORD,
-      SMTP_FROM
-    } = process.env;
-
     // Check if email is configured
-    if (!SMTP_HOST || !SMTP_PORT ) {
+    if (!process.env.SMTP_HOST || !process.env.SMTP_PORT ) {
       logger.warn('Email service not configured. SMTP settings missing.');
       return;
     }
 
     try {
       this.transporter = nodemailer.createTransport({
-        host: SMTP_HOST,
-        port: parseInt(SMTP_PORT),
-        secure: SMTP_PORT === '465', // true for 465, false for other ports
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT),
+        secure: process.env.SMTP_PORT === '465', // true for 465, false for other ports
         auth: {
-          user: SMTP_USER,
-          pass: SMTP_PASSWORD,
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASSWORD,
         },
       });
 
