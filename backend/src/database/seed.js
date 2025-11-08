@@ -453,21 +453,21 @@ async function seedDatabase() {
     const users = [
       {
         email: 'john.doe@example.com',
-        password: 'password123',
+        password: 'user123',
         firstName: 'John',
         lastName: 'Doe',
         phone: '+1234567890'
       },
       {
         email: 'jane.smith@example.com',
-        password: 'password123',
+        password: 'user123',
         firstName: 'Jane',
         lastName: 'Smith',
         phone: '+1234567891'
       },
       {
         email: 'user@eshop.com',
-        password: 'password123',
+        password: 'user123',
         firstName: 'Test',
         lastName: 'User',
         phone: '+1234567892'
@@ -566,7 +566,7 @@ async function seedDatabase() {
     console.log(`   Sample Orders: ${sampleOrders.length}`);
 
     console.log('\n🔑 Test Credentials:');
-    console.log('   User: user@eshop.com / password123');
+    console.log('   User: user@eshop.com / user123');
     console.log('   Admin: admin@eshop.com / admin123');
     console.log('   Super Admin: superadmin@eshop.com / superadmin123');
 

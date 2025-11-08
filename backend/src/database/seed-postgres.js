@@ -35,7 +35,7 @@ async function seed() {
     console.log('Seeded categories.');
 
     // Seed users
-    const password = await bcrypt.hash('password123', 10);
+    const password = await bcrypt.hash('user123', 10);
     const users = [
       { email: 'user1@example.com', first_name: 'John', last_name: 'Doe', password },
       { email: 'user2@example.com', first_name: 'Jane', last_name: 'Smith', password }
