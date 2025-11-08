@@ -63,29 +63,29 @@ export default function PermissionsPage() {
         throw new Error('No authentication token');
       }
 
-      // Fetch all permissions grouped by category
-      const allRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/admin/permissions/all`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!allRes.ok) throw new Error('Failed to fetch permissions');
-
-      const allData = await allRes.json();
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
 
       // Fetch admin role permissions
-      const roleRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/admin/permissions/role/admin`, {
+      const roleRes = await fetch(`${apiUrl}/admin/permissions/role/admin`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
-      if (!roleRes.ok) throw new Error('Failed to fetch role permissions');
+      if (!roleRes.ok) {
+        const errorData = await roleRes.json().catch(() => ({}));
+        console.error('API Error:', errorData);
+        throw new Error(errorData.error || `Failed to fetch role permissions: ${roleRes.status}`);
+      }
 
       const roleData = await roleRes.json();
+      console.log('Role permissions data:', roleData);
+
+      if (!roleData.permissions || !Array.isArray(roleData.permissions)) {
+        console.error('Invalid permissions data structure:', roleData);
+        throw new Error('Invalid permissions data received from server');
+      }
 
       // Group permissions by category
       const grouped: PermissionGroup = {};
@@ -95,13 +95,18 @@ export default function PermissionsPage() {
         const [category] = perm.key.split('.');
         if (!grouped[category]) {
           grouped[category] = [];
-          cats.push(category);
+          if (!cats.includes(category)) {
+            cats.push(category);
+          }
         }
         grouped[category].push(perm);
       });
 
       // Sort categories
       cats.sort();
+
+      console.log('Grouped permissions:', grouped);
+      console.log('Categories:', cats);
 
       setAdminPermissions(roleData.permissions);
       setGroupedPermissions(grouped);
@@ -114,9 +119,13 @@ export default function PermissionsPage() {
       });
       setOriginalPermissions(original);
       setHasChanges(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching permissions:', error);
-      toast.error('Failed to load permissions');
+      toast.error(error.message || 'Failed to load permissions');
+      // Set empty state so UI can still render
+      setAdminPermissions([]);
+      setGroupedPermissions({});
+      setCategories([]);
     } finally {
       setLoading(false);
     }
@@ -170,7 +179,8 @@ export default function PermissionsPage() {
         permissions[p.key] = p.allowed;
       });
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/admin/permissions/role/admin`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+      const res = await fetch(`${apiUrl}/admin/permissions/role/admin`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -211,7 +221,8 @@ export default function PermissionsPage() {
         throw new Error('No authentication token');
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/admin/permissions/role/admin/reset`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+      const res = await fetch(`${apiUrl}/admin/permissions/role/admin/reset`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -343,47 +354,63 @@ export default function PermissionsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue={categories[0]} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6">
-                {categories.map(category => (
-                  <TabsTrigger key={category} value={category}>
-                    {getCategoryLabel(category)}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+            {categories.length === 0 ? (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">Loading permissions...</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  If this persists, check the browser console for errors
+                </p>
+              </div>
+            ) : (
+              <Tabs defaultValue={categories[0] || ''} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+                  {categories.map(category => (
+                    <TabsTrigger key={category} value={category}>
+                      {getCategoryLabel(category)}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
 
-              {categories.map(category => (
-                <TabsContent key={category} value={category} className="space-y-4 mt-6">
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {groupedPermissions[category]?.map(permission => (
-                      <div
-                        key={permission.key}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex-1">
-                          <Label htmlFor={permission.key} className="text-sm font-medium">
-                            {getPermissionLabel(permission.key)}
-                          </Label>
-                          <p className="text-xs text-gray-500 mt-1">{permission.key}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {permission.allowed ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <XCircle className="h-4 w-4 text-gray-300" />
-                          )}
-                          <Switch
-                            id={permission.key}
-                            checked={permission.allowed}
-                            onCheckedChange={(checked) => handlePermissionToggle(permission.key, checked)}
-                          />
-                        </div>
+                {categories.map(category => (
+                  <TabsContent key={category} value={category} className="space-y-4 mt-6">
+                    {groupedPermissions[category] && groupedPermissions[category].length > 0 ? (
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {groupedPermissions[category].map(permission => (
+                          <div
+                            key={permission.key}
+                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            <div className="flex-1">
+                              <Label htmlFor={permission.key} className="text-sm font-medium">
+                                {getPermissionLabel(permission.key)}
+                              </Label>
+                              <p className="text-xs text-gray-500 mt-1">{permission.key}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {permission.allowed ? (
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <XCircle className="h-4 w-4 text-gray-300" />
+                              )}
+                              <Switch
+                                id={permission.key}
+                                checked={permission.allowed}
+                                onCheckedChange={(checked) => handlePermissionToggle(permission.key, checked)}
+                              />
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </TabsContent>
-              ))}
-            </Tabs>
+                    ) : (
+                      <div className="text-center py-4 text-gray-500">
+                        No permissions found for this category
+                      </div>
+                    )}
+                  </TabsContent>
+                ))}
+              </Tabs>
+            )}
           </CardContent>
         </Card>
 
