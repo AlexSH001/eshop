@@ -1,6 +1,6 @@
 const express = require('express');
 const { database } = require('../database');
-const { authenticateAdmin } = require('../middleware/auth');
+const { authenticateAdmin, requirePermission } = require('../middleware/auth');
 const { idValidation, paginationValidation } = require('../middleware/validation');
 const { NotFoundError } = require('../middleware/errorHandler');
 
@@ -63,7 +63,7 @@ router.get('/:id', idValidation, async (req, res) => {
 });
 
 // Admin: Get all categories with pagination
-router.get('/admin/list', authenticateAdmin, paginationValidation, async (req, res) => {
+router.get('/admin/list', authenticateAdmin, requirePermission('categories.view'), paginationValidation, async (req, res) => {
   const {
     page = 1,
     limit = 20,
@@ -127,7 +127,7 @@ router.get('/admin/list', authenticateAdmin, paginationValidation, async (req, r
 });
 
 // Admin: Create category
-router.post('/', authenticateAdmin, async (req, res) => {
+router.post('/', authenticateAdmin, requirePermission('categories.create'), async (req, res) => {
   const {
     name,
     description,
@@ -170,7 +170,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
 });
 
 // Admin: Update category
-router.put('/:id', authenticateAdmin, idValidation, async (req, res) => {
+router.put('/:id', authenticateAdmin, requirePermission('categories.update'), idValidation, async (req, res) => {
   const categoryId = req.params.id;
   const {
     name,
@@ -241,7 +241,7 @@ router.put('/:id', authenticateAdmin, idValidation, async (req, res) => {
 });
 
 // Admin: Delete category
-router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
+router.delete('/:id', authenticateAdmin, requirePermission('categories.delete'), idValidation, async (req, res) => {
   const categoryId = req.params.id;
 
   // Check if category exists
@@ -282,7 +282,7 @@ router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
 });
 
 // Admin: Get category statistics
-router.get('/admin/statistics', authenticateAdmin, async (req, res) => {
+router.get('/admin/statistics', authenticateAdmin, requirePermission('categories.view'), async (req, res) => {
   const stats = await database.query(`
     SELECT
       c.id,

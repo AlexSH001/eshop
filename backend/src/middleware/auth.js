@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { database } = require('../database');
+const { hasPermission } = require('../config/permissions');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -116,6 +117,32 @@ const requireSuperAdmin = (req, res, next) => {
   next();
 };
 
+/**
+ * Middleware to check if admin has a specific permission
+ * Must be used after authenticateAdmin middleware
+ * @param {string} permission - The permission key to check (e.g., 'products.create')
+ * @returns {Function} - Express middleware function
+ */
+const requirePermission = (permission) => {
+  return async (req, res, next) => {
+    if (!req.admin) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const role = req.admin.role;
+    const hasPerm = await hasPermission(role, permission);
+    if (!hasPerm) {
+      return res.status(403).json({ 
+        error: 'Insufficient permissions',
+        required: permission,
+        role: role
+      });
+    }
+
+    next();
+  };
+};
+
 // Optional authentication - sets user if token is provided
 const optionalAuth = async (req, res, next) => {
   try {
@@ -154,5 +181,6 @@ module.exports = {
   authenticateUser,
   authenticateAdmin,
   requireSuperAdmin,
+  requirePermission,
   optionalAuth
 };

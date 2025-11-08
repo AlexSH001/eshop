@@ -1,7 +1,7 @@
 const express = require('express');
 const { database } = require('../database');
 const { generateOrderNumber } = require('../utils/auth');
-const { authenticateUser, authenticateAdmin, optionalAuth } = require('../middleware/auth');
+const { authenticateUser, authenticateAdmin, requirePermission, optionalAuth } = require('../middleware/auth');
 const {
   createOrderValidation,
   updateOrderStatusValidation,
@@ -395,7 +395,7 @@ router.get('/', paginationValidation, async (req, res) => {
 });
 
 // Admin: Get all orders (authenticated)
-router.get('/authenticated', authenticateAdmin, paginationValidation, async (req, res) => {
+router.get('/authenticated', authenticateAdmin, requirePermission('orders.view'), paginationValidation, async (req, res) => {
   const {
     page = 1,
     limit = 20,
@@ -536,7 +536,7 @@ router.get('/:id', idValidation, async (req, res) => {
 });
 
 // Admin: Update order status
-router.put('/:id/status', authenticateAdmin, updateOrderStatusValidation, async (req, res) => {
+router.put('/:id/status', authenticateAdmin, requirePermission('orders.update'), updateOrderStatusValidation, async (req, res) => {
   const orderId = req.params.id;
   const { status, trackingNumber, notes } = req.body;
 
@@ -581,7 +581,7 @@ router.put('/:id/status', authenticateAdmin, updateOrderStatusValidation, async 
 });
 
 // Admin: Delete order
-router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
+router.delete('/:id', authenticateAdmin, requirePermission('orders.delete'), idValidation, async (req, res) => {
   const orderId = req.params.id;
 
   const order = await database.get('SELECT * FROM orders WHERE id = $1', [orderId]);
@@ -611,7 +611,7 @@ router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
 });
 
 // Admin: Get order statistics
-router.get('/admin/statistics', authenticateAdmin, async (req, res) => {
+router.get('/admin/statistics', authenticateAdmin, requirePermission('orders.view'), async (req, res) => {
   const { period = '30' } = req.query; // days
 
   const stats = await database.get(`

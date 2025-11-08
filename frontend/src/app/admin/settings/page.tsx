@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -222,7 +223,7 @@ export default function AdminSettingsPage() {
         </div>
 
         <Tabs defaultValue="store" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="store" className="flex items-center">
               <Store className="h-4 w-4 mr-2" />
               Store
@@ -250,6 +251,12 @@ export default function AdminSettingsPage() {
             <TabsTrigger value="security" className="flex items-center">
               <Shield className="h-4 w-4 mr-2" />
               Security
+            </TabsTrigger>
+            <TabsTrigger value="permissions" className="flex items-center" asChild>
+              <Link href="/admin/settings/permissions">
+                <Key className="h-4 w-4 mr-2" />
+                Permissions
+              </Link>
             </TabsTrigger>
           </TabsList>
 

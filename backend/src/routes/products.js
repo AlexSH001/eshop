@@ -1,7 +1,7 @@
 const express = require('express');
 const { db } = require('../database');
 const { generateSlug, generateSKU } = require('../utils/auth');
-const { authenticateAdmin, optionalAuth } = require('../middleware/auth');
+const { authenticateAdmin, requirePermission, optionalAuth } = require('../middleware/auth');
 const {
   createProductValidation,
   updateProductValidation,
@@ -337,8 +337,8 @@ router.get('/featured/list', async (req, res) => {
   });
 });
 
-// Create product (public for admin portal)
-router.post('/', createProductValidation, async (req, res) => {
+// Create product (admin only)
+router.post('/', authenticateAdmin, requirePermission('products.create'), createProductValidation, async (req, res) => {
   const {
     name,
     description,
@@ -427,7 +427,7 @@ router.post('/', createProductValidation, async (req, res) => {
 });
 
 // Admin: Create product (authenticated)
-router.post('/authenticated', authenticateAdmin, createProductValidation, async (req, res) => {
+router.post('/authenticated', authenticateAdmin, requirePermission('products.create'), createProductValidation, async (req, res) => {
   const {
     name,
     description,
@@ -511,8 +511,8 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
   });
 });
 
-// Update product (public for admin portal)
-router.put('/:id', updateProductValidation, async (req, res) => {
+// Update product (admin only)
+router.put('/:id', authenticateAdmin, requirePermission('products.update'), updateProductValidation, async (req, res) => {
   const productId = req.params.id;
 
   // Check if product exists
@@ -600,8 +600,8 @@ router.put('/:id', updateProductValidation, async (req, res) => {
   });
 });
 
-// Delete product (public for admin portal)
-router.delete('/:id', idValidation, async (req, res) => {
+// Delete product (admin only)
+router.delete('/:id', authenticateAdmin, requirePermission('products.delete'), idValidation, async (req, res) => {
   const productId = req.params.id;
 
   const product = await db.get('SELECT id, featured_image, images FROM products WHERE id = $1', [productId]);
