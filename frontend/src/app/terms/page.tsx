@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Terms of Service - CommodityStore",
-  description: "Terms of Service for CommodityStore",
+  title: "Terms of Service - eshop",
+  description: "Terms of Service for eshop",
 };
 
 export default function TermsPage() {
@@ -26,7 +26,7 @@ export default function TermsPage() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Use License</h2>
               <p className="text-gray-700 mb-4">
-                Permission is granted to temporarily download one copy of the materials on CommodityStore's website for personal, non-commercial transitory viewing only.
+                Permission is granted to temporarily download one copy of the materials on eshop's website for personal, non-commercial transitory viewing only.
               </p>
             </section>
 
@@ -68,14 +68,14 @@ export default function TermsPage() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">8. Limitation of Liability</h2>
               <p className="text-gray-700 mb-4">
-                In no event shall CommodityStore or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on CommodityStore's website.
+                In no event shall eshop or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on eshop's website.
               </p>
             </section>
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">9. Revisions</h2>
               <p className="text-gray-700 mb-4">
-                CommodityStore may revise these terms of service at any time without notice. By using this website you are agreeing to be bound by the then current version of these terms of service.
+                eshop may revise these terms of service at any time without notice. By using this website you are agreeing to be bound by the then current version of these terms of service.
               </p>
             </section>
 
