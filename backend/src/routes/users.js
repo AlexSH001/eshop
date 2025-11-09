@@ -462,34 +462,85 @@ router.post('/addresses', authenticateUser, async (req, res) => {
   }
 
   try {
-    await database.beginTransaction();
+    // Use transaction wrapper to handle both SQLite and PostgreSQL
+    const dbType = database.getType() || process.env.DB_CLIENT || 'sqlite3';
+    const isPostgres = dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql';
+    let result;
+    let newAddress;
 
-    // If this is set as default, unset other defaults of the same type
-    if (isDefault) {
-      await database.execute(`
-        UPDATE user_addresses 
-        SET is_default = FALSE 
-        WHERE user_id = $1 AND type = $2
-      `, [userId, type]);
+    if (isPostgres) {
+      // PostgreSQL: use client-based transaction
+      const client = await database.beginTransaction();
+      try {
+        // If this is set as default, unset other defaults of the same type
+        if (isDefault) {
+          await client.query(`
+            UPDATE user_addresses 
+            SET is_default = FALSE 
+            WHERE user_id = $1 AND type = $2
+          `, [userId, type]);
+        }
+
+        // Create the new address
+        const insertResult = await client.query(`
+          INSERT INTO user_addresses (
+            user_id, type, first_name, last_name, company, address_line_1, address_line_2,
+            city, state, postal_code, country, phone, is_default
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          RETURNING id
+        `, [
+          userId, type, firstName, lastName, company || null, addressLine1, addressLine2 || null,
+          city, state, postalCode, country, phone || null, isDefault
+        ]);
+
+        result = { id: insertResult.rows[0].id };
+
+        await database.commit(client);
+
+        // Get the created address
+        newAddress = await database.get(`
+          SELECT * FROM user_addresses WHERE id = $1
+        `, [result.id]);
+      } catch (error) {
+        await database.rollback(client);
+        throw error;
+      }
+    } else {
+      // SQLite: use simple transaction
+      await database.beginTransaction();
+
+      try {
+        // If this is set as default, unset other defaults of the same type
+        if (isDefault) {
+          await database.execute(`
+            UPDATE user_addresses 
+            SET is_default = FALSE 
+            WHERE user_id = $1 AND type = $2
+          `, [userId, type]);
+        }
+
+        // Create the new address
+        result = await database.execute(`
+          INSERT INTO user_addresses (
+            user_id, type, first_name, last_name, company, address_line_1, address_line_2,
+            city, state, postal_code, country, phone, is_default
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        `, [
+          userId, type, firstName, lastName, company || null, addressLine1, addressLine2 || null,
+          city, state, postalCode, country, phone || null, isDefault
+        ]);
+
+        await database.commit();
+
+        // Get the created address
+        newAddress = await database.get(`
+          SELECT * FROM user_addresses WHERE id = $1
+        `, [result.id]);
+      } catch (error) {
+        await database.rollback();
+        throw error;
+      }
     }
-
-    // Create the new address
-    const result = await database.execute(`
-      INSERT INTO user_addresses (
-        user_id, type, first_name, last_name, company, address_line_1, address_line_2,
-        city, state, postal_code, country, phone, is_default
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-    `, [
-      userId, type, firstName, lastName, company || null, addressLine1, addressLine2 || null,
-      city, state, postalCode, country, phone || null, isDefault
-    ]);
-
-    await database.commit();
-
-    // Get the created address
-    const newAddress = await database.get(`
-      SELECT * FROM user_addresses WHERE id = $1
-    `, [result.id]);
 
     res.status(201).json({
       message: 'Address created successfully',
@@ -512,8 +563,8 @@ router.post('/addresses', authenticateUser, async (req, res) => {
       }
     });
   } catch (error) {
-    await database.rollback();
-    res.status(500).json({ error: 'Failed to create address' });
+    console.error('Error creating address:', error);
+    res.status(500).json({ error: error.message || 'Failed to create address' });
   }
 });
 

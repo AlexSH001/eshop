@@ -93,9 +93,6 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Initialize database (automatically selects SQLite or PostgreSQL based on DB_CLIENT)
-initializeDatabase().catch(console.error);
-
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
@@ -194,12 +191,25 @@ app.use('*', (req, res) => {
 app.use(errorLogger);
 app.use(errorHandler);
 
-app.listen(PORT, '0.0.0.0', () => {
-  logger.info(`🚀 Server running on port ${PORT}`);
-  logger.info(`📝 API docs available at http://0.0.0.0:${PORT}/api/monitoring/health`);
-  logger.info(`📊 Metrics available at http://0.0.0.0:${PORT}/api/monitoring/metrics`);
-  logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Initialize database and start server
+async function startServer() {
+  try {
+    await initializeDatabase();
+    logger.info('✅ Database initialized successfully');
+    
+    app.listen(PORT, '0.0.0.0', () => {
+      logger.info(`🚀 Server running on port ${PORT}`);
+      logger.info(`📝 API docs available at http://0.0.0.0:${PORT}/api/monitoring/health`);
+      logger.info(`📊 Metrics available at http://0.0.0.0:${PORT}/api/monitoring/metrics`);
+      logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+  } catch (error) {
+    logger.error('❌ Failed to initialize database:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
 
 module.exports = app;
 
