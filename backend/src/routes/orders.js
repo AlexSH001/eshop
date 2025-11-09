@@ -769,16 +769,16 @@ router.post('/:id/pay/stripe', optionalAuth, async (req, res) => {
       cancelUrl,
     });
 
-    // Store payment link ID in order for reference
+    // Store checkout session ID in order for reference
     await database.execute(
       'UPDATE orders SET payment_id = $1 WHERE id = $2',
-      [paymentLink.paymentLinkId, order.id]
+      [paymentLink.sessionId || paymentLink.paymentLinkId, order.id]
     );
 
     res.json({
       paymentUrl: paymentLink.url,
       url: paymentLink.url, // Alternative key for compatibility
-      paymentLinkId: paymentLink.paymentLinkId,
+      paymentLinkId: paymentLink.sessionId || paymentLink.paymentLinkId,
     });
   } catch (error) {
     console.error('Stripe payment link creation failed:', error);
@@ -805,14 +805,24 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
     if (event.type === 'checkout.session.completed') {
       const paymentDetails = stripeService.handlePaymentSuccess(event);
       
-      if (paymentDetails.orderId) {
-        // Find order by order_number (stored in metadata)
-        const order = await database.get(
+      // Try to find order by ID from metadata first (more reliable)
+      let order = null;
+      if (paymentDetails.metadata?.orderId) {
+        order = await database.get(
+          'SELECT * FROM orders WHERE id = $1',
+          [paymentDetails.metadata.orderId]
+        );
+      }
+      
+      // If not found by ID, try by order_number (fallback)
+      if (!order && paymentDetails.orderId) {
+        order = await database.get(
           'SELECT * FROM orders WHERE order_number = $1',
           [paymentDetails.orderId]
         );
-
-        if (order && order.payment_status === 'pending') {
+      }
+      
+      if (order && order.payment_status === 'pending') {
           await database.execute(
             'UPDATE orders SET payment_status = $1, payment_id = $2 WHERE id = $3',
             ['paid', paymentDetails.sessionId, order.id]

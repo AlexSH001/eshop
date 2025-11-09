@@ -8,7 +8,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
 const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
 
 /**
- * Create a Stripe payment link for an order
+ * Create a Stripe Checkout Session for an order (supports pre-filling shipping address)
  * @param {Object} params - Payment parameters
  * @param {string} params.orderId - Order ID
  * @param {number} params.total - Total amount in cents
@@ -18,7 +18,7 @@ const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STR
  * @param {Object} params.metadata - Additional metadata
  * @param {string} params.successUrl - Success redirect URL
  * @param {string} params.cancelUrl - Cancel redirect URL
- * @returns {Promise<Object>} Payment link object
+ * @returns {Promise<Object>} Checkout session object
  */
 async function createPaymentLink({ 
   orderId, 
@@ -35,32 +35,27 @@ async function createPaymentLink({
   }
 
   try {
-    // Create a price for the order
-    const price = await stripe.prices.create({
-      unit_amount: Math.round(total * 100), // Convert to cents
-      currency: currency.toLowerCase(),
-      product_data: {
-        name: `Order #${orderId}`,
-      },
-    });
-
-    // Build payment link configuration
-    const paymentLinkConfig = {
+    // Build checkout session configuration
+    const sessionConfig = {
+      payment_method_types: ['card'],
       line_items: [
         {
-          price: price.id,
+          price_data: {
+            currency: currency.toLowerCase(),
+            product_data: {
+              name: `Order #${orderId}`,
+            },
+            unit_amount: Math.round(total * 100), // Convert to cents
+          },
           quantity: 1,
         },
       ],
+      mode: 'payment',
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: {
         orderId,
         ...metadata,
-      },
-      after_completion: {
-        type: 'redirect',
-        redirect: {
-          url: successUrl,
-        },
       },
       allow_promotion_codes: true,
       billing_address_collection: 'required',
@@ -68,54 +63,65 @@ async function createPaymentLink({
 
     // Pre-fill shipping address if provided
     if (shippingAddress) {
-      paymentLinkConfig.prefilled_data = {};
+      const firstName = shippingAddress.firstName || shippingAddress.first_name || '';
+      const lastName = shippingAddress.lastName || shippingAddress.last_name || '';
+      const fullName = `${firstName} ${lastName}`.trim();
       
-      // Pre-fill shipping address
-      paymentLinkConfig.prefilled_data.shipping_address = {
+      // Build shipping address object, filtering out undefined values
+      const shippingAddr = {
         line1: shippingAddress.addressLine1 || shippingAddress.address_line_1,
-        line2: shippingAddress.addressLine2 || shippingAddress.address_line_2 || '',
         city: shippingAddress.city,
         state: shippingAddress.state,
         postal_code: shippingAddress.postalCode || shippingAddress.postal_code,
         country: shippingAddress.country || 'US',
       };
-
-      // If we have customer name, add it to prefilled data
-      if (shippingAddress.firstName || shippingAddress.first_name) {
-        const firstName = shippingAddress.firstName || shippingAddress.first_name || '';
-        const lastName = shippingAddress.lastName || shippingAddress.last_name || '';
-        if (firstName || lastName) {
-          paymentLinkConfig.prefilled_data.customer_name = `${firstName} ${lastName}`.trim();
-        }
+      
+      // Only add line2 if it exists
+      const addressLine2 = shippingAddress.addressLine2 || shippingAddress.address_line_2;
+      if (addressLine2 && addressLine2.trim()) {
+        shippingAddr.line2 = addressLine2.trim();
       }
-
-      // Pre-fill customer email if provided
-      if (customerEmail) {
-        paymentLinkConfig.prefilled_data.customer_email = customerEmail;
+      
+      // Pre-fill customer details with shipping address
+      sessionConfig.customer_email = customerEmail;
+      sessionConfig.customer_details = {
+        email: customerEmail,
+        shipping: {
+          address: shippingAddr,
+        },
+      };
+      
+      // Only add name if we have it
+      if (fullName) {
+        sessionConfig.customer_details.shipping.name = fullName;
       }
 
       // Set shipping address collection - it will use the pre-filled data
       // but still allows editing if needed
-      paymentLinkConfig.shipping_address_collection = {
+      sessionConfig.shipping_address_collection = {
         allowed_countries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE'],
       };
     } else {
       // If no shipping address provided, require collection
-      paymentLinkConfig.shipping_address_collection = {
+      if (customerEmail) {
+        sessionConfig.customer_email = customerEmail;
+      }
+      sessionConfig.shipping_address_collection = {
         allowed_countries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE'],
       };
     }
 
-    // Create payment link
-    const paymentLink = await stripe.paymentLinks.create(paymentLinkConfig);
+    // Create checkout session
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     return {
-      paymentLinkId: paymentLink.id,
-      url: paymentLink.url,
-      priceId: price.id,
+      paymentLinkId: session.id, // Keep same property name for compatibility
+      url: session.url,
+      sessionId: session.id,
     };
   } catch (error) {
-    console.error('Error creating Stripe payment link:', error);
+    console.error('Error creating Stripe checkout session:', error);
+    console.error('Error details:', error.message, error.stack);
     throw new Error(`Failed to create payment link: ${error.message}`);
   }
 }
