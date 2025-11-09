@@ -294,48 +294,106 @@ router.post('/merge', authenticateUser, async (req, res) => {
   }
 
   try {
-    await database.beginTransaction();
+    const dbType = database.getType() || process.env.DB_CLIENT || 'sqlite3';
+    const isPostgres = dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql';
 
-    // Get guest cart items
-    const guestItems = await database.query(
-      'SELECT * FROM cart_items WHERE session_id = $1',
-      [sessionId]
-    );
-
-    for (const item of guestItems) {
-      // Check if user already has this product in cart
-      const existingUserItem = await database.get(
-        'SELECT * FROM cart_items WHERE user_id = $1 AND product_id = $2',
-        [userId, item.product_id]
-      );
-
-      if (existingUserItem) {
-        // Update quantity (take the maximum)
-        const maxQuantity = Math.max(existingUserItem.quantity, item.quantity);
-        await database.execute(
-          'UPDATE cart_items SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-          [maxQuantity, existingUserItem.id]
+    if (isPostgres) {
+      // PostgreSQL: use client-based transaction
+      const client = await database.beginTransaction();
+      try {
+        // Get guest cart items
+        const guestItemsResult = await client.query(
+          'SELECT * FROM cart_items WHERE session_id = $1',
+          [sessionId]
         );
-      } else {
-        // Move guest item to user cart
-        await database.execute(
-          'UPDATE cart_items SET user_id = $1, session_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-          [userId, item.id]
+        const guestItems = guestItemsResult.rows;
+
+        for (const item of guestItems) {
+          // Check if user already has this product in cart
+          const existingUserItemResult = await client.query(
+            'SELECT * FROM cart_items WHERE user_id = $1 AND product_id = $2',
+            [userId, item.product_id]
+          );
+          const existingUserItem = existingUserItemResult.rows[0];
+
+          if (existingUserItem) {
+            // Update quantity (take the maximum)
+            const maxQuantity = Math.max(existingUserItem.quantity, item.quantity);
+            await client.query(
+              'UPDATE cart_items SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+              [maxQuantity, existingUserItem.id]
+            );
+          } else {
+            // Move guest item to user cart
+            await client.query(
+              'UPDATE cart_items SET user_id = $1, session_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+              [userId, item.id]
+            );
+          }
+        }
+
+        // Clean up any remaining guest items
+        await client.query('DELETE FROM cart_items WHERE session_id = $1', [sessionId]);
+
+        await database.commit(client);
+
+        res.json({
+          message: 'Cart merged successfully'
+        });
+      } catch (error) {
+        await database.rollback(client);
+        throw error;
+      }
+    } else {
+      // SQLite: use simple transaction
+      await database.beginTransaction();
+
+      try {
+        // Get guest cart items
+        const guestItems = await database.query(
+          'SELECT * FROM cart_items WHERE session_id = $1',
+          [sessionId]
         );
+
+        for (const item of guestItems) {
+          // Check if user already has this product in cart
+          const existingUserItem = await database.get(
+            'SELECT * FROM cart_items WHERE user_id = $1 AND product_id = $2',
+            [userId, item.product_id]
+          );
+
+          if (existingUserItem) {
+            // Update quantity (take the maximum)
+            const maxQuantity = Math.max(existingUserItem.quantity, item.quantity);
+            await database.execute(
+              'UPDATE cart_items SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+              [maxQuantity, existingUserItem.id]
+            );
+          } else {
+            // Move guest item to user cart
+            await database.execute(
+              'UPDATE cart_items SET user_id = $1, session_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+              [userId, item.id]
+            );
+          }
+        }
+
+        // Clean up any remaining guest items
+        await database.execute('DELETE FROM cart_items WHERE session_id = $1', [sessionId]);
+
+        await database.commit();
+
+        res.json({
+          message: 'Cart merged successfully'
+        });
+      } catch (error) {
+        await database.rollback();
+        throw error;
       }
     }
-
-    // Clean up any remaining guest items
-    await database.execute('DELETE FROM cart_items WHERE session_id = $1', [sessionId]);
-
-    await database.commit();
-
-    res.json({
-      message: 'Cart merged successfully'
-    });
   } catch (error) {
-    await database.rollback();
-    throw error;
+    console.error('Error merging cart:', error);
+    res.status(500).json({ error: error.message || 'Failed to merge cart' });
   }
 });
 
