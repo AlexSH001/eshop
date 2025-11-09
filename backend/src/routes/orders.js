@@ -36,8 +36,51 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
     shippingAddress: shippingAddress ? 'present' : 'missing'
   });
 
+  // Get database type for transaction handling
+  const dbType = database.getType() || process.env.DB_CLIENT || 'sqlite3';
+  const isPostgres = dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql';
+  let transactionClient = null;
+
   try {
-    await database.beginTransaction();
+    // Begin transaction
+    if (isPostgres) {
+      transactionClient = await database.beginTransaction();
+    } else {
+      await database.beginTransaction();
+    }
+
+    // Helper function to execute queries within transaction
+    const executeQuery = async (sql, params) => {
+      if (isPostgres && transactionClient) {
+        const result = await transactionClient.query(sql, params);
+        return result.rows || result;
+      } else {
+        return await database.query(sql, params);
+      }
+    };
+
+    const executeGet = async (sql, params) => {
+      if (isPostgres && transactionClient) {
+        const result = await transactionClient.query(sql, params);
+        return result.rows && result.rows.length > 0 ? result.rows[0] : null;
+      } else {
+        return await database.get(sql, params);
+      }
+    };
+
+    const executeExecute = async (sql, params) => {
+      if (isPostgres && transactionClient) {
+        const result = await transactionClient.query(sql, params);
+        // For INSERT with RETURNING, PostgreSQL returns rows
+        if (result.rows && result.rows.length > 0) {
+          return { id: result.rows[0].id };
+        }
+        // For other operations, return result with rowCount
+        return { id: result.rows?.[0]?.id, rowCount: result.rowCount };
+      } else {
+        return await database.execute(sql, params);
+      }
+    };
 
     // Get cart items if not provided
     let orderItems = cartItems;
@@ -47,11 +90,15 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
         ? 'SELECT ci.*, p.name, p.price, p.stock FROM cart_items ci JOIN products p ON ci.product_id = p.id WHERE ci.user_id = $1'
         : 'SELECT ci.*, p.name, p.price, p.stock FROM cart_items ci JOIN products p ON ci.product_id = p.id WHERE ci.session_id = $1';
 
-      const cartData = await database.query(cartQuery, [userId || sessionId]);
+      const cartData = await executeQuery(cartQuery, [userId || sessionId]);
       console.log('Cart data from database:', cartData);
 
       if (cartData.length === 0) {
-        await database.rollback();
+        if (isPostgres) {
+          await database.rollback(transactionClient);
+        } else {
+          await database.rollback();
+        }
         return res.status(400).json({ error: 'Cart is empty' });
       }
 
@@ -67,20 +114,28 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
 
     // Validate stock availability
     for (const item of orderItems) {
-      const product = await database.get(
+      const product = await executeGet(
         'SELECT stock, status FROM products WHERE id = $1',
         [item.productId]
       );
 
       if (!product || product.status !== 'active') {
-        await database.rollback();
+        if (isPostgres) {
+          await database.rollback(transactionClient);
+        } else {
+          await database.rollback();
+        }
         return res.status(400).json({
           error: `Product ${item.name} is no longer available`
         });
       }
 
       if (product.stock < item.quantity) {
-        await database.rollback();
+        if (isPostgres) {
+          await database.rollback(transactionClient);
+        } else {
+          await database.rollback();
+        }
         return res.status(400).json({
           error: `Insufficient stock for ${item.name}. Available: ${product.stock}`
         });
@@ -97,17 +152,31 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
     // Generate order number
     const orderNumber = generateOrderNumber();
 
-    // Create order
-    const orderResult = await database.execute(`
-      INSERT INTO orders (
-        order_number, user_id, email, phone, status, payment_status, payment_method, payment_id,
-        billing_first_name, billing_last_name, billing_company, billing_address_line_1,
-        billing_address_line_2, billing_city, billing_state, billing_postal_code, billing_country,
-        shipping_first_name, shipping_last_name, shipping_company, shipping_address_line_1,
-        shipping_address_line_2, shipping_city, shipping_state, shipping_postal_code, shipping_country,
-        subtotal, tax_amount, shipping_amount, discount_amount, total, notes, tracking_number, shipped_at, delivered_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35)
-    `, [
+    // Create order - use RETURNING for PostgreSQL to get the ID
+    const orderInsertSql = isPostgres
+      ? `
+        INSERT INTO orders (
+          order_number, user_id, email, phone, status, payment_status, payment_method, payment_id,
+          billing_first_name, billing_last_name, billing_company, billing_address_line_1,
+          billing_address_line_2, billing_city, billing_state, billing_postal_code, billing_country,
+          shipping_first_name, shipping_last_name, shipping_company, shipping_address_line_1,
+          shipping_address_line_2, shipping_city, shipping_state, shipping_postal_code, shipping_country,
+          subtotal, tax_amount, shipping_amount, discount_amount, total, notes, tracking_number, shipped_at, delivered_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35)
+        RETURNING id
+      `
+      : `
+        INSERT INTO orders (
+          order_number, user_id, email, phone, status, payment_status, payment_method, payment_id,
+          billing_first_name, billing_last_name, billing_company, billing_address_line_1,
+          billing_address_line_2, billing_city, billing_state, billing_postal_code, billing_country,
+          shipping_first_name, shipping_last_name, shipping_company, shipping_address_line_1,
+          shipping_address_line_2, shipping_city, shipping_state, shipping_postal_code, shipping_country,
+          subtotal, tax_amount, shipping_amount, discount_amount, total, notes, tracking_number, shipped_at, delivered_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35)
+      `;
+
+    const orderResult = await executeExecute(orderInsertSql, [
       orderNumber,
       userId,
       email,
@@ -150,7 +219,7 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
     // Create order items and update product stock
     for (const item of orderItems) {
       // Add order item
-      await database.execute(`
+      await executeExecute(`
         INSERT INTO order_items (order_id, product_id, product_name, quantity, price, total)
         VALUES ($1, $2, $3, $4, $5, $6)
       `, [
@@ -163,7 +232,7 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
       ]);
 
       // Update product stock and sales count
-      await database.execute(`
+      await executeExecute(`
         UPDATE products
         SET stock = stock - $1, sales_count = sales_count + $2, updated_at = CURRENT_TIMESTAMP
         WHERE id = $3
@@ -173,7 +242,7 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
     // Save shipping address if requested and user is authenticated
     if (saveShippingAddress && userId) {
       // Check if this address already exists
-      const existingAddress = await database.get(`
+      const existingAddress = await executeGet(`
         SELECT id FROM user_addresses 
         WHERE user_id = $1 AND type = 'shipping' 
         AND first_name = $2 AND last_name = $3 
@@ -189,7 +258,7 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
       ]);
 
       if (!existingAddress) {
-        await database.execute(`
+        await executeExecute(`
           INSERT INTO user_addresses (
             user_id, type, first_name, last_name, company, address_line_1, address_line_2,
             city, state, postal_code, country, phone, is_default
@@ -205,14 +274,19 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
 
     // Clear cart
     if (userId) {
-      await database.execute('DELETE FROM cart_items WHERE user_id = $1', [userId]);
+      await executeExecute('DELETE FROM cart_items WHERE user_id = $1', [userId]);
     } else if (sessionId) {
-      await database.execute('DELETE FROM cart_items WHERE session_id = $1', [sessionId]);
+      await executeExecute('DELETE FROM cart_items WHERE session_id = $1', [sessionId]);
     }
 
-    await database.commit();
+    // Commit transaction
+    if (isPostgres) {
+      await database.commit(transactionClient);
+    } else {
+      await database.commit();
+    }
 
-    // Get created order with items
+    // Get created order with items (outside transaction)
     const order = await database.get('SELECT * FROM orders WHERE id = $1', [orderId]);
     const items = await database.query(`
       SELECT oi.*, p.featured_image
@@ -239,7 +313,13 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
 
   } catch (error) {
     console.error('Order creation error:', error);
-    await database.rollback();
+    
+    // Rollback transaction
+    if (isPostgres && transactionClient) {
+      await database.rollback(transactionClient);
+    } else {
+      await database.rollback();
+    }
     
     // Send proper error response
     res.status(500).json({
