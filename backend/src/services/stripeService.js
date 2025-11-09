@@ -14,6 +14,7 @@ const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STR
  * @param {number} params.total - Total amount in cents
  * @param {string} params.currency - Currency code (default: 'sgd')
  * @param {string} params.customerEmail - Customer email
+ * @param {Object} params.shippingAddress - Shipping address to pre-fill (optional)
  * @param {Object} params.metadata - Additional metadata
  * @param {string} params.successUrl - Success redirect URL
  * @param {string} params.cancelUrl - Cancel redirect URL
@@ -24,6 +25,7 @@ async function createPaymentLink({
   total, 
   currency = 'sgd', 
   customerEmail, 
+  shippingAddress,
   metadata = {}, 
   successUrl, 
   cancelUrl 
@@ -42,8 +44,8 @@ async function createPaymentLink({
       },
     });
 
-    // Create payment link
-    const paymentLink = await stripe.paymentLinks.create({
+    // Build payment link configuration
+    const paymentLinkConfig = {
       line_items: [
         {
           price: price.id,
@@ -62,10 +64,50 @@ async function createPaymentLink({
       },
       allow_promotion_codes: true,
       billing_address_collection: 'required',
-      shipping_address_collection: {
+    };
+
+    // Pre-fill shipping address if provided
+    if (shippingAddress) {
+      paymentLinkConfig.prefilled_data = {};
+      
+      // Pre-fill shipping address
+      paymentLinkConfig.prefilled_data.shipping_address = {
+        line1: shippingAddress.addressLine1 || shippingAddress.address_line_1,
+        line2: shippingAddress.addressLine2 || shippingAddress.address_line_2 || '',
+        city: shippingAddress.city,
+        state: shippingAddress.state,
+        postal_code: shippingAddress.postalCode || shippingAddress.postal_code,
+        country: shippingAddress.country || 'US',
+      };
+
+      // If we have customer name, add it to prefilled data
+      if (shippingAddress.firstName || shippingAddress.first_name) {
+        const firstName = shippingAddress.firstName || shippingAddress.first_name || '';
+        const lastName = shippingAddress.lastName || shippingAddress.last_name || '';
+        if (firstName || lastName) {
+          paymentLinkConfig.prefilled_data.customer_name = `${firstName} ${lastName}`.trim();
+        }
+      }
+
+      // Pre-fill customer email if provided
+      if (customerEmail) {
+        paymentLinkConfig.prefilled_data.customer_email = customerEmail;
+      }
+
+      // Set shipping address collection - it will use the pre-filled data
+      // but still allows editing if needed
+      paymentLinkConfig.shipping_address_collection = {
         allowed_countries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE'],
-      },
-    });
+      };
+    } else {
+      // If no shipping address provided, require collection
+      paymentLinkConfig.shipping_address_collection = {
+        allowed_countries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE'],
+      };
+    }
+
+    // Create payment link
+    const paymentLink = await stripe.paymentLinks.create(paymentLinkConfig);
 
     return {
       paymentLinkId: paymentLink.id,

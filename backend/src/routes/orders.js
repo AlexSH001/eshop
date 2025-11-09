@@ -743,11 +743,24 @@ router.post('/:id/pay/stripe', optionalAuth, async (req, res) => {
   const cancelUrl = `${process.env.FRONTEND_URL}/orders/${id}`;
   
   try {
+    // Extract shipping address from order to pre-fill in Stripe
+    const shippingAddress = order.shipping_address_line_1 ? {
+      firstName: order.shipping_first_name,
+      lastName: order.shipping_last_name,
+      addressLine1: order.shipping_address_line_1,
+      addressLine2: order.shipping_address_line_2,
+      city: order.shipping_city,
+      state: order.shipping_state,
+      postalCode: order.shipping_postal_code,
+      country: order.shipping_country || 'US',
+    } : null;
+
     const paymentLink = await stripeService.createPaymentLink({
       orderId: order.order_number,
       total: order.total,
       currency: 'sgd',
       customerEmail: order.email,
+      shippingAddress: shippingAddress,
       metadata: {
         orderId: order.id,
         userId: order.user_id,
