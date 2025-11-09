@@ -1,20 +1,14 @@
 const express = require('express');
 const { database } = require('../database');
-const { authenticateAdmin, requirePermission } = require('../middleware/auth');
+const { authenticateAdmin, requireSuperAdmin } = require('../middleware/auth');
 const { paginationValidation, idValidation } = require('../middleware/validation');
 const { hashPassword, formatAdminResponse } = require('../utils/auth');
 const { NotFoundError } = require('../middleware/errorHandler');
-const { 
-  getAllPermissions, 
-  getRolePermissions, 
-  invalidatePermissionsCache,
-  defaultPermissions 
-} = require('../config/permissions');
 
 const router = express.Router();
 
 // Dashboard statistics
-router.get('/dashboard/stats', authenticateAdmin, requirePermission('dashboard.view'), async (req, res) => {
+router.get('/dashboard/stats', authenticateAdmin, async (req, res) => {
   const { period = '30' } = req.query; // days
 
   // Get overview stats
@@ -59,7 +53,7 @@ router.get('/dashboard/stats', authenticateAdmin, requirePermission('dashboard.v
 });
 
 // Recent orders for dashboard
-router.get('/dashboard/recent-orders', authenticateAdmin, requirePermission('dashboard.view'), async (req, res) => {
+router.get('/dashboard/recent-orders', authenticateAdmin, async (req, res) => {
   const { limit = 10 } = req.query;
 
   const orders = await database.query(`
@@ -81,7 +75,7 @@ router.get('/dashboard/recent-orders', authenticateAdmin, requirePermission('das
 });
 
 // Top products for dashboard
-router.get('/dashboard/top-products', authenticateAdmin, requirePermission('dashboard.view'), async (req, res) => {
+router.get('/dashboard/top-products', authenticateAdmin, async (req, res) => {
   const { limit = 10, period = '30' } = req.query;
 
   const products = await database.query(`
@@ -112,7 +106,7 @@ router.get('/dashboard/top-products', authenticateAdmin, requirePermission('dash
 });
 
 // Daily sales data for charts
-router.get('/dashboard/sales-data', authenticateAdmin, requirePermission('dashboard.view'), async (req, res) => {
+router.get('/dashboard/sales-data', authenticateAdmin, async (req, res) => {
   const { days = '30' } = req.query;
 
   const salesData = await database.query(`
@@ -136,7 +130,7 @@ router.get('/dashboard/sales-data', authenticateAdmin, requirePermission('dashbo
 });
 
 // Category performance
-router.get('/dashboard/category-performance', authenticateAdmin, requirePermission('dashboard.view'), async (req, res) => {
+router.get('/dashboard/category-performance', authenticateAdmin, async (req, res) => {
   const { period = '30' } = req.query;
 
   const categoryStats = await database.query(`
@@ -231,7 +225,7 @@ router.get('/users', paginationValidation, async (req, res) => {
 });
 
 // User management (authenticated)
-router.get('/users/authenticated', authenticateAdmin, requirePermission('users.view'), paginationValidation, async (req, res) => {
+router.get('/users/authenticated', authenticateAdmin, paginationValidation, async (req, res) => {
   const {
     page = 1,
     limit = 20,
@@ -298,7 +292,7 @@ router.get('/users/authenticated', authenticateAdmin, requirePermission('users.v
 });
 
 // User details
-router.get('/users/:id', authenticateAdmin, requirePermission('users.view'), idValidation, async (req, res) => {
+router.get('/users/:id', authenticateAdmin, idValidation, async (req, res) => {
   const userId = req.params.id;
 
   const user = await database.get(`
@@ -344,7 +338,7 @@ router.get('/users/:id', authenticateAdmin, requirePermission('users.view'), idV
 });
 
 // Toggle user status
-router.put('/users/:id/toggle-status', authenticateAdmin, requirePermission('users.toggle_status'), idValidation, async (req, res) => {
+router.put('/users/:id/toggle-status', authenticateAdmin, idValidation, async (req, res) => {
   const userId = req.params.id;
 
   const user = await database.get('SELECT id, is_active FROM users WHERE id = ?', [userId]);
@@ -366,7 +360,7 @@ router.put('/users/:id/toggle-status', authenticateAdmin, requirePermission('use
 });
 
 // Admin management (Super Admin only)
-router.get('/admins', authenticateAdmin, requirePermission('admins.view'), paginationValidation, async (req, res) => {
+router.get('/admins', authenticateAdmin, requireSuperAdmin, paginationValidation, async (req, res) => {
   const { page = 1, limit = 20, search } = req.query;
   const offset = (page - 1) * limit;
 
@@ -403,7 +397,7 @@ router.get('/admins', authenticateAdmin, requirePermission('admins.view'), pagin
 });
 
 // Create admin (Super Admin only)
-router.post('/admins', authenticateAdmin, requirePermission('admins.create'), async (req, res) => {
+router.post('/admins', authenticateAdmin, requireSuperAdmin, async (req, res) => {
   const { email, password, name, role = 'admin' } = req.body;
 
   // Check if admin already exists
@@ -433,7 +427,7 @@ router.post('/admins', authenticateAdmin, requirePermission('admins.create'), as
 });
 
 // Update admin (Super Admin only)
-router.put('/admins/:id', authenticateAdmin, requirePermission('admins.update'), idValidation, async (req, res) => {
+router.put('/admins/:id', authenticateAdmin, requireSuperAdmin, idValidation, async (req, res) => {
   const adminId = req.params.id;
   const { name, role, isActive } = req.body;
 
@@ -484,7 +478,7 @@ router.put('/admins/:id', authenticateAdmin, requirePermission('admins.update'),
 });
 
 // Delete admin (Super Admin only)
-router.delete('/admins/:id', authenticateAdmin, requirePermission('admins.delete'), idValidation, async (req, res) => {
+router.delete('/admins/:id', authenticateAdmin, requireSuperAdmin, idValidation, async (req, res) => {
   const adminId = req.params.id;
 
   // Prevent deleting self
@@ -503,7 +497,7 @@ router.delete('/admins/:id', authenticateAdmin, requirePermission('admins.delete
 });
 
 // System health check
-router.get('/system/health', authenticateAdmin, requirePermission('system.health'), async (req, res) => {
+router.get('/system/health', authenticateAdmin, async (req, res) => {
   const dbStatus = await database.get('SELECT 1 as status');
 
   // Get database size
@@ -535,160 +529,6 @@ router.get('/system/health', authenticateAdmin, requirePermission('system.health
     memory: process.memoryUsage(),
     timestamp: new Date().toISOString()
   });
-});
-
-// Get all available permissions
-router.get('/permissions/all', authenticateAdmin, requirePermission('settings.view'), async (req, res) => {
-  try {
-    const allPermissions = getAllPermissions();
-    
-    // Group permissions by category
-    const grouped = {};
-    allPermissions.forEach(perm => {
-      const [category] = perm.split('.');
-      if (!grouped[category]) {
-        grouped[category] = [];
-      }
-      grouped[category].push(perm);
-    });
-
-    res.json({
-      permissions: allPermissions,
-      grouped,
-      categories: Object.keys(grouped)
-    });
-  } catch (error) {
-    console.error('Error fetching permissions:', error);
-    res.status(500).json({ error: 'Failed to fetch permissions' });
-  }
-});
-
-// Get permissions for a specific role
-router.get('/permissions/role/:role', authenticateAdmin, requirePermission('settings.view'), async (req, res) => {
-  try {
-    const { role } = req.params;
-    
-    if (!['admin', 'super_admin'].includes(role)) {
-      return res.status(400).json({ error: 'Invalid role' });
-    }
-
-    const permissions = await getRolePermissions(role);
-    const allPermissions = getAllPermissions();
-    
-    // Return permissions with all available keys (showing which are enabled/disabled)
-    const permissionsWithStatus = allPermissions.map(key => ({
-      key,
-      allowed: permissions[key] === true
-    }));
-
-    res.json({
-      role,
-      permissions: permissionsWithStatus
-    });
-  } catch (error) {
-    console.error('Error fetching role permissions:', error);
-    res.status(500).json({ error: 'Failed to fetch role permissions' });
-  }
-});
-
-// Update permissions for a role
-router.put('/permissions/role/:role', authenticateAdmin, requirePermission('settings.update'), async (req, res) => {
-  try {
-    const { role } = req.params;
-    const { permissions } = req.body;
-
-    if (!['admin', 'super_admin'].includes(role)) {
-      return res.status(400).json({ error: 'Invalid role' });
-    }
-
-    if (!permissions || typeof permissions !== 'object') {
-      return res.status(400).json({ error: 'Permissions must be an object' });
-    }
-
-    // Validate permission keys against available permissions
-    const allPermissions = getAllPermissions();
-    const invalidKeys = Object.keys(permissions).filter(key => !allPermissions.includes(key));
-    if (invalidKeys.length > 0) {
-      return res.status(400).json({ 
-        error: 'Invalid permission keys', 
-        invalidKeys 
-      });
-    }
-
-    // Update permissions in database
-    await database.beginTransaction();
-    
-    try {
-      for (const [permissionKey, isAllowed] of Object.entries(permissions)) {
-        const isAllowedBool = isAllowed === true || isAllowed === 'true' || isAllowed === 1;
-        
-        // Check if permission exists
-        const existing = await database.get(
-          'SELECT id FROM role_permissions WHERE role = ? AND permission_key = ?',
-          [role, permissionKey]
-        );
-
-        if (existing) {
-          // Update existing
-          await database.execute(
-            'UPDATE role_permissions SET is_allowed = ?, updated_at = CURRENT_TIMESTAMP WHERE role = ? AND permission_key = ?',
-            [isAllowedBool, role, permissionKey]
-          );
-        } else {
-          // Insert new
-          await database.execute(
-            'INSERT INTO role_permissions (role, permission_key, is_allowed) VALUES (?, ?, ?)',
-            [role, permissionKey, isAllowedBool]
-          );
-        }
-      }
-
-      await database.commit();
-      
-      // Invalidate cache
-      invalidatePermissionsCache();
-
-      res.json({
-        message: 'Permissions updated successfully',
-        role,
-        updated: Object.keys(permissions).length
-      });
-    } catch (error) {
-      await database.rollback();
-      throw error;
-    }
-  } catch (error) {
-    console.error('Error updating permissions:', error);
-    res.status(500).json({ error: 'Failed to update permissions' });
-  }
-});
-
-// Reset permissions to defaults for a role
-router.post('/permissions/role/:role/reset', authenticateAdmin, requirePermission('settings.update'), async (req, res) => {
-  try {
-    const { role } = req.params;
-    
-    if (!['admin', 'super_admin'].includes(role)) {
-      return res.status(400).json({ error: 'Invalid role' });
-    }
-
-    // Delete all permissions for this role
-    await database.execute(
-      'DELETE FROM role_permissions WHERE role = ?',
-      [role]
-    );
-
-    // Invalidate cache
-    invalidatePermissionsCache();
-
-    res.json({
-      message: 'Permissions reset to defaults successfully',
-      role
-    });
-  } catch (error) {
-    console.error('Error resetting permissions:', error);
-    res.status(500).json({ error: 'Failed to reset permissions' });
-  }
 });
 
 module.exports = router;

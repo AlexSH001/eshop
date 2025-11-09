@@ -238,17 +238,6 @@ CREATE TABLE IF NOT EXISTS email_tokens (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Role permissions table (for dynamic permission management)
-CREATE TABLE IF NOT EXISTS role_permissions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  role TEXT NOT NULL CHECK (role IN ('admin', 'super_admin')),
-  permission_key TEXT NOT NULL,
-  is_allowed BOOLEAN DEFAULT FALSE,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(role, permission_key)
-);
-
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
@@ -262,5 +251,3 @@ CREATE INDEX IF NOT EXISTS idx_wishlist_user ON wishlist_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_search_term ON search_history(search_term);
 CREATE INDEX IF NOT EXISTS idx_reviews_product ON product_reviews(product_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_user ON product_reviews(user_id);
-CREATE INDEX IF NOT EXISTS idx_role_permissions_role ON role_permissions(role);
-CREATE INDEX IF NOT EXISTS idx_role_permissions_key ON role_permissions(permission_key);
