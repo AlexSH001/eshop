@@ -86,18 +86,22 @@ async function createPaymentLink({
       sessionConfig.customer_email = customerEmail;
       sessionConfig.customer_details = {
         email: customerEmail,
-        shipping: {
-          address: shippingAddr,
-        },
+      };
+      
+      // Add shipping details
+      const shippingDetails = {
+        address: shippingAddr,
       };
       
       // Only add name if we have it
       if (fullName) {
-        sessionConfig.customer_details.shipping.name = fullName;
+        shippingDetails.name = fullName;
       }
+      
+      sessionConfig.customer_details.shipping = shippingDetails;
 
-      // Set shipping address collection - it will use the pre-filled data
-      // but still allows editing if needed
+      // Shipping address collection is still needed to enable shipping address collection
+      // The pre-filled address in customer_details.shipping will be used as default
       sessionConfig.shipping_address_collection = {
         allowed_countries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE'],
       };
@@ -121,7 +125,25 @@ async function createPaymentLink({
     };
   } catch (error) {
     console.error('Error creating Stripe checkout session:', error);
-    console.error('Error details:', error.message, error.stack);
+    console.error('Error type:', error.type);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    console.error('Error details:', error.details);
+    console.error('Error stack:', error.stack);
+    
+    // Log the session config for debugging (without sensitive data)
+    console.error('Session config (sanitized):', JSON.stringify({
+      ...sessionConfig,
+      line_items: sessionConfig.line_items.map(item => ({
+        ...item,
+        price_data: item.price_data ? {
+          currency: item.price_data.currency,
+          unit_amount: item.price_data.unit_amount,
+          product_data: item.price_data.product_data
+        } : item.price
+      }))
+    }, null, 2));
+    
     throw new Error(`Failed to create payment link: ${error.message}`);
   }
 }
