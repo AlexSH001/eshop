@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CommodityStore - Shop by Category with Secure Payments",
-  description: "Your one-stop shop for quality products across all commodity types. Secure payments with Alipay, WeChat Pay, PayPal, and credit cards.",
+  title: "eshop - Shop by Category with Secure Payments",
+  description: "Your one-stop shop for quality products across all commodity types. \nSecure payments with Alipay, WeChat Pay, PayPal, and credit cards.",
 };
 
 export default function RootLayout({

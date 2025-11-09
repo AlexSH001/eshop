@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy - CommodityStore",
-  description: "Privacy Policy for CommodityStore",
+  title: "Privacy Policy - eshop",
+  description: "Privacy Policy for eshop",
 };
 
 export default function PrivacyPage() {
