@@ -823,21 +823,20 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
       }
       
       if (order && order.payment_status === 'pending') {
+        await database.execute(
+          'UPDATE orders SET payment_status = $1, payment_id = $2 WHERE id = $3',
+          ['paid', paymentDetails.sessionId, order.id]
+        );
+
+        // Clear cart for authenticated users
+        if (order.user_id) {
           await database.execute(
-            'UPDATE orders SET payment_status = $1, payment_id = $2 WHERE id = $3',
-            ['paid', paymentDetails.sessionId, order.id]
+            'DELETE FROM cart_items WHERE user_id = $1',
+            [order.user_id]
           );
-
-          // Clear cart for authenticated users
-          if (order.user_id) {
-            await database.execute(
-              'DELETE FROM cart_items WHERE user_id = $1',
-              [order.user_id]
-            );
-          }
-
-          console.log(`Order ${order.id} marked as paid via Stripe`);
         }
+
+        console.log(`Order ${order.id} marked as paid via Stripe`);
       }
     }
 
