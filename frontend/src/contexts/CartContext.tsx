@@ -1,7 +1,7 @@
 "use client";
 
 import type React from 'react';
-import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useReducer, useEffect, useCallback, type ReactNode } from 'react'
 import { toast } from "sonner";
 
 export interface CartItem {
@@ -297,7 +297,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const clearCart = async () => {
+  const clearCart = useCallback(async () => {
     try {
       const sessionId = localStorage.getItem('session_id');
       const token = localStorage.getItem('auth_token');
@@ -321,7 +321,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Failed to clear cart:', error);
       toast.error('Failed to clear cart');
     }
-  };
+  }, []);
 
   return (
     <CartContext.Provider value={{ state, addItem, removeItem, updateQuantity, clearCart }}>

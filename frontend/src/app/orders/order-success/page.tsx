@@ -5,16 +5,22 @@ import { useCart } from "@/contexts/CartContext";
 import { CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, Suspense } from "react";
+import { useEffect, Suspense, useRef } from "react";
 
 function OrderSuccessContent() {
   const { clearCart } = useCart();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
+  const hasClearedCart = useRef(false);
 
   useEffect(() => {
-    clearCart();
-  }, [clearCart]);
+    // Only clear cart once when component mounts
+    if (!hasClearedCart.current) {
+      hasClearedCart.current = true;
+      clearCart();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center">
