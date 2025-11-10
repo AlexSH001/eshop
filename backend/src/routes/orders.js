@@ -625,16 +625,22 @@ router.put('/:id/status', authenticateAdmin, updateOrderStatusValidation, async 
     throw new NotFoundError('Order not found');
   }
 
-  const updates = ['status = $1', 'updated_at = CURRENT_TIMESTAMP'];
-  const params = [status];
+  const updates = [];
+  const params = [];
 
+  // Add status update
+  updates.push(`status = $${params.length + 1}`);
+  params.push(status);
+
+  // Add tracking number if provided
   if (trackingNumber) {
-    updates.push('tracking_number = $2');
+    updates.push(`tracking_number = $${params.length + 1}`);
     params.push(trackingNumber);
   }
 
+  // Add notes if provided
   if (notes) {
-    updates.push('notes = $3');
+    updates.push(`notes = $${params.length + 1}`);
     params.push(notes);
   }
 
@@ -645,10 +651,15 @@ router.put('/:id/status', authenticateAdmin, updateOrderStatusValidation, async 
     updates.push('delivered_at = CURRENT_TIMESTAMP');
   }
 
+  // Always update updated_at
+  updates.push('updated_at = CURRENT_TIMESTAMP');
+
+  // Add orderId for WHERE clause
   params.push(orderId);
+  const whereParamIndex = params.length;
 
   await database.execute(
-    `UPDATE orders SET ${updates.join(', ')} WHERE id = $1`,
+    `UPDATE orders SET ${updates.join(', ')} WHERE id = $${whereParamIndex}`,
     params
   );
 
