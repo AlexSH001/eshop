@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger
@@ -192,6 +193,7 @@ export default function AdminOrdersPage() {
                     <DialogContent className="bg-white">
                       <DialogHeader>
                         <DialogTitle>Order Details</DialogTitle>
+                        <DialogDescription>View detailed information about this order</DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
                         <div>Customer: {order.customer} ({order.email})</div>
@@ -221,6 +223,7 @@ export default function AdminOrdersPage() {
                     <DialogContent className="bg-white">
                       <DialogHeader>
                         <DialogTitle>Edit Order Status</DialogTitle>
+                        <DialogDescription>Update the status of this order</DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
                         <select
@@ -251,6 +254,7 @@ export default function AdminOrdersPage() {
                     <DialogContent className="bg-white">
                       <DialogHeader>
                         <DialogTitle>Delete Order</DialogTitle>
+                        <DialogDescription>This action cannot be undone. This will permanently delete the order.</DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
                         <div>Are you sure you want to delete this order?</div>
