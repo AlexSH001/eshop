@@ -41,7 +41,19 @@ export default function OrderDetailPage() {
         if (!res.ok) throw new Error("Failed to fetch order");
         return res.json();
       })
-      .then(data => setOrder(data.order))
+      .then(data => {
+        // Transform the data to convert string numbers to actual numbers
+        const order = data.order;
+        setOrder({
+          ...order,
+          total: parseFloat(order.total) || 0,
+          items: (order.items || []).map((item: any) => ({
+            ...item,
+            price: parseFloat(item.price) || 0,
+            total: parseFloat(item.total) || 0
+          }))
+        });
+      })
       .catch(err => setError(err.message || "Unknown error"))
       .finally(() => setLoading(false));
   }, [id]);

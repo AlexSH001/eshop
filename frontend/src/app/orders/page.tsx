@@ -57,7 +57,17 @@ export default function OrdersPage() {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/orders`, { credentials: 'include' });
         if (!res.ok) throw new Error('Failed to fetch orders');
         const data = await res.json();
-        setOrders(data.orders);
+        // Transform the data to convert string numbers to actual numbers
+        const transformedOrders = data.orders.map((order: any) => ({
+          ...order,
+          total: parseFloat(order.total) || 0,
+          items: (order.items || []).map((item: any) => ({
+            ...item,
+            price: parseFloat(item.price) || 0,
+            total: parseFloat(item.total) || 0
+          }))
+        }));
+        setOrders(transformedOrders);
       } catch (err: unknown) {
         setError((err as Error).message || 'Unknown error');
       } finally {

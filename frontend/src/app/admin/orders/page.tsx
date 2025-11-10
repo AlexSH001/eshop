@@ -77,10 +77,14 @@ export default function AdminOrdersPage() {
         id: order.id,
         customer: `${order.billing_first_name || ''} ${order.billing_last_name || ''}`.trim() || order.email,
         email: order.email,
-        total: order.total,
+        total: parseFloat(order.total) || 0,
         status: order.status,
         createdAt: new Date(order.created_at).toLocaleDateString(),
-        items: order.items || []
+        items: (order.items || []).map((item: any) => ({
+          ...item,
+          price: parseFloat(item.price) || 0,
+          total: parseFloat(item.total) || 0
+        }))
       }));
       
       setOrders(transformedOrders);
