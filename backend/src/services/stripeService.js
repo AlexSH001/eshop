@@ -8,24 +8,22 @@ if (!process.env.STRIPE_SECRET_KEY) {
 const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
 
 /**
- * Create a Stripe Checkout Session for an order (supports pre-filling shipping address)
+ * Create a Stripe payment link for an order
  * @param {Object} params - Payment parameters
  * @param {string} params.orderId - Order ID
  * @param {number} params.total - Total amount in cents
  * @param {string} params.currency - Currency code (default: 'sgd')
  * @param {string} params.customerEmail - Customer email
- * @param {Object} params.shippingAddress - Shipping address to pre-fill (optional)
  * @param {Object} params.metadata - Additional metadata
  * @param {string} params.successUrl - Success redirect URL
  * @param {string} params.cancelUrl - Cancel redirect URL
- * @returns {Promise<Object>} Checkout session object
+ * @returns {Promise<Object>} Payment link object
  */
 async function createPaymentLink({ 
   orderId, 
   total, 
   currency = 'sgd', 
   customerEmail, 
-  shippingAddress,
   metadata = {}, 
   successUrl, 
   cancelUrl 
@@ -35,115 +33,47 @@ async function createPaymentLink({
   }
 
   try {
-    // Build checkout session configuration
-    const sessionConfig = {
-      payment_method_types: ['card'],
+    // Create a price for the order
+    const price = await stripe.prices.create({
+      unit_amount: Math.round(total * 100), // Convert to cents
+      currency: currency.toLowerCase(),
+      product_data: {
+        name: `Order #${orderId}`,
+      },
+    });
+
+    // Create payment link
+    const paymentLink = await stripe.paymentLinks.create({
       line_items: [
         {
-          price_data: {
-            currency: currency.toLowerCase(),
-            product_data: {
-              name: `Order #${orderId}`,
-            },
-            unit_amount: Math.round(total * 100), // Convert to cents
-          },
+          price: price.id,
           quantity: 1,
         },
       ],
-      mode: 'payment',
-      success_url: successUrl,
-      cancel_url: cancelUrl,
       metadata: {
         orderId,
         ...metadata,
       },
+      after_completion: {
+        type: 'redirect',
+        redirect: {
+          url: successUrl,
+        },
+      },
       allow_promotion_codes: true,
       billing_address_collection: 'required',
-    };
-
-    // Pre-fill shipping address if provided
-    if (shippingAddress) {
-      const firstName = shippingAddress.firstName || shippingAddress.first_name || '';
-      const lastName = shippingAddress.lastName || shippingAddress.last_name || '';
-      const fullName = `${firstName} ${lastName}`.trim();
-      
-      // Build shipping address object, filtering out undefined values
-      const shippingAddr = {
-        line1: shippingAddress.addressLine1 || shippingAddress.address_line_1,
-        city: shippingAddress.city,
-        state: shippingAddress.state,
-        postal_code: shippingAddress.postalCode || shippingAddress.postal_code,
-        country: shippingAddress.country || 'US',
-      };
-      
-      // Only add line2 if it exists
-      const addressLine2 = shippingAddress.addressLine2 || shippingAddress.address_line_2;
-      if (addressLine2 && addressLine2.trim()) {
-        shippingAddr.line2 = addressLine2.trim();
-      }
-      
-      // Pre-fill customer details with shipping address
-      sessionConfig.customer_email = customerEmail;
-      sessionConfig.customer_details = {
-        email: customerEmail,
-      };
-      
-      // Add shipping details
-      const shippingDetails = {
-        address: shippingAddr,
-      };
-      
-      // Only add name if we have it
-      if (fullName) {
-        shippingDetails.name = fullName;
-      }
-      
-      sessionConfig.customer_details.shipping = shippingDetails;
-
-      // Shipping address collection is still needed to enable shipping address collection
-      // The pre-filled address in customer_details.shipping will be used as default
-      sessionConfig.shipping_address_collection = {
+      shipping_address_collection: {
         allowed_countries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE'],
-      };
-    } else {
-      // If no shipping address provided, require collection
-      if (customerEmail) {
-        sessionConfig.customer_email = customerEmail;
-      }
-      sessionConfig.shipping_address_collection = {
-        allowed_countries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE'],
-      };
-    }
-
-    // Create checkout session
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+      },
+    });
 
     return {
-      paymentLinkId: session.id, // Keep same property name for compatibility
-      url: session.url,
-      sessionId: session.id,
+      paymentLinkId: paymentLink.id,
+      url: paymentLink.url,
+      priceId: price.id,
     };
   } catch (error) {
-    console.error('Error creating Stripe checkout session:', error);
-    console.error('Error type:', error.type);
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
-    console.error('Error details:', error.details);
-    console.error('Error stack:', error.stack);
-    
-    // Log the session config for debugging (without sensitive data)
-    console.error('Session config (sanitized):', JSON.stringify({
-      ...sessionConfig,
-      line_items: sessionConfig.line_items.map(item => ({
-        ...item,
-        price_data: item.price_data ? {
-          currency: item.price_data.currency,
-          unit_amount: item.price_data.unit_amount,
-          product_data: item.price_data.product_data
-        } : item.price
-      }))
-    }, null, 2));
-    
+    console.error('Error creating Stripe payment link:', error);
     throw new Error(`Failed to create payment link: ${error.message}`);
   }
 }

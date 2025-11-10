@@ -743,24 +743,11 @@ router.post('/:id/pay/stripe', optionalAuth, async (req, res) => {
   const cancelUrl = `${process.env.FRONTEND_URL}/orders/${id}`;
   
   try {
-    // Extract shipping address from order to pre-fill in Stripe
-    const shippingAddress = order.shipping_address_line_1 ? {
-      firstName: order.shipping_first_name,
-      lastName: order.shipping_last_name,
-      addressLine1: order.shipping_address_line_1,
-      addressLine2: order.shipping_address_line_2,
-      city: order.shipping_city,
-      state: order.shipping_state,
-      postalCode: order.shipping_postal_code,
-      country: order.shipping_country || 'US',
-    } : null;
-
     const paymentLink = await stripeService.createPaymentLink({
       orderId: order.order_number,
       total: order.total,
       currency: 'sgd',
       customerEmail: order.email,
-      shippingAddress: shippingAddress,
       metadata: {
         orderId: order.id,
         userId: order.user_id,
@@ -769,24 +756,22 @@ router.post('/:id/pay/stripe', optionalAuth, async (req, res) => {
       cancelUrl,
     });
 
-    // Store checkout session ID in order for reference
+    // Store payment link ID in order for reference
     await database.execute(
       'UPDATE orders SET payment_id = $1 WHERE id = $2',
-      [paymentLink.sessionId || paymentLink.paymentLinkId, order.id]
+      [paymentLink.paymentLinkId, order.id]
     );
 
     res.json({
       paymentUrl: paymentLink.url,
       url: paymentLink.url, // Alternative key for compatibility
-      paymentLinkId: paymentLink.sessionId || paymentLink.paymentLinkId,
+      paymentLinkId: paymentLink.paymentLinkId,
     });
   } catch (error) {
     console.error('Stripe payment link creation failed:', error);
-    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       error: 'Failed to create Stripe payment link', 
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      message: error.message
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined 
     });
   }
 });
@@ -807,38 +792,29 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
     if (event.type === 'checkout.session.completed') {
       const paymentDetails = stripeService.handlePaymentSuccess(event);
       
-      // Try to find order by ID from metadata first (more reliable)
-      let order = null;
-      if (paymentDetails.metadata?.orderId) {
-        order = await database.get(
-          'SELECT * FROM orders WHERE id = $1',
-          [paymentDetails.metadata.orderId]
-        );
-      }
-      
-      // If not found by ID, try by order_number (fallback)
-      if (!order && paymentDetails.orderId) {
-        order = await database.get(
+      if (paymentDetails.orderId) {
+        // Find order by order_number (stored in metadata)
+        const order = await database.get(
           'SELECT * FROM orders WHERE order_number = $1',
           [paymentDetails.orderId]
         );
-      }
-      
-      if (order && order.payment_status === 'pending') {
-        await database.execute(
-          'UPDATE orders SET payment_status = $1, payment_id = $2 WHERE id = $3',
-          ['paid', paymentDetails.sessionId, order.id]
-        );
 
-        // Clear cart for authenticated users
-        if (order.user_id) {
+        if (order && order.payment_status === 'pending') {
           await database.execute(
-            'DELETE FROM cart_items WHERE user_id = $1',
-            [order.user_id]
+            'UPDATE orders SET payment_status = $1, payment_id = $2 WHERE id = $3',
+            ['paid', paymentDetails.sessionId, order.id]
           );
-        }
 
-        console.log(`Order ${order.id} marked as paid via Stripe`);
+          // Clear cart for authenticated users
+          if (order.user_id) {
+            await database.execute(
+              'DELETE FROM cart_items WHERE user_id = $1',
+              [order.user_id]
+            );
+          }
+
+          console.log(`Order ${order.id} marked as paid via Stripe`);
+        }
       }
     }
 
