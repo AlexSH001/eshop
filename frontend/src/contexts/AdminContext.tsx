@@ -145,6 +145,15 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       });
       if (!res.ok) {
         const data = await res.json();
+        // Handle rate limiting specifically
+        if (res.status === 429) {
+          const retryAfter = data.retryAfter || Math.ceil(15 * 60); // Default to 15 minutes
+          const minutes = Math.ceil(retryAfter / 60);
+          return { 
+            success: false, 
+            error: `Too many login attempts. Please wait ${minutes} minute${minutes !== 1 ? 's' : ''} before trying again.` 
+          };
+        }
         return { success: false, error: data.error || 'Invalid admin credentials' };
       }
       const data = await res.json();
