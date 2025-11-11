@@ -16,7 +16,8 @@ class ImageService {
       path.join(this.optimizedDir, 'products'),
       path.join(this.optimizedDir, 'avatars'),
       path.join(this.optimizedDir, 'thumbnails'),
-      path.join(this.optimizedDir, 'banners')
+      path.join(this.optimizedDir, 'banners'),
+      path.join(this.optimizedDir, 'categories')
     ];
 
     for (const dir of dirs) {
@@ -175,13 +176,63 @@ class ImageService {
     });
   }
 
+  async optimizeCategoryImage(inputPath, originalFilename) {
+    // Extract extension from original filename
+    const ext = path.extname(originalFilename);
+    const baseName = path.basename(originalFilename, ext);
+    
+    // Use webp format for optimized version, but keep original extension as fallback
+    const optimizedFilename = `${baseName}.webp`;
+    const outputPath = path.join(this.optimizedDir, 'categories', optimizedFilename);
+    
+    // Ensure categories directory exists
+    const categoriesDir = path.dirname(outputPath);
+    await fs.mkdir(categoriesDir, { recursive: true });
+    
+    try {
+      const result = await this.optimizeImage(inputPath, outputPath, {
+        width: 1200,
+        height: 600,
+        quality: 85,
+        format: 'webp',
+        fit: 'inside'
+      });
+      
+      // Also keep a copy in the main categories upload directory with original name
+      // This ensures the URL structure matches what we expect
+      const categoriesUploadDir = path.join(__dirname, '../../uploads/categories');
+      await fs.mkdir(categoriesUploadDir, { recursive: true });
+      const finalPath = path.join(categoriesUploadDir, optimizedFilename);
+      
+      // Copy optimized image to final location
+      await fs.copyFile(outputPath, finalPath);
+      
+      return {
+        ...result,
+        filename: optimizedFilename,
+        path: finalPath
+      };
+    } catch (error) {
+      console.error('Error optimizing category image:', error);
+      // If optimization fails, return original file info
+      return {
+        filename: originalFilename,
+        path: inputPath,
+        originalSize: (await fs.stat(inputPath)).size,
+        optimizedSize: (await fs.stat(inputPath)).size,
+        compressionRatio: 0
+      };
+    }
+  }
+
   async deleteOptimizedImages(imagePath) {
     try {
       const filename = path.basename(imagePath, path.extname(imagePath));
       const optimizedDirs = [
         path.join(this.optimizedDir, 'products'),
         path.join(this.optimizedDir, 'avatars'),
-        path.join(this.optimizedDir, 'banners')
+        path.join(this.optimizedDir, 'banners'),
+        path.join(this.optimizedDir, 'categories')
       ];
       
       for (const dir of optimizedDirs) {

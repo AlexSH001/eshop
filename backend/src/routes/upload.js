@@ -12,8 +12,9 @@ const uploadDir = path.join(__dirname, '../../uploads');
 const productImagesDir = path.join(uploadDir, 'products');
 const avatarsDir = path.join(uploadDir, 'avatars');
 const miscDir = path.join(uploadDir, 'misc');
+const categoriesDir = path.join(uploadDir, 'categories');
 
-[uploadDir, productImagesDir, avatarsDir, miscDir].forEach(dir => {
+[uploadDir, productImagesDir, avatarsDir, miscDir, categoriesDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -66,6 +67,17 @@ const miscStorage = multer.diskStorage({
   }
 });
 
+// Storage configuration for category images
+const categoryStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, categoriesDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = `category-${uuidv4()}-${Date.now()}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  }
+});
+
 // Multer configurations
 const uploadProductImages = multer({
   storage: productStorage,
@@ -88,6 +100,14 @@ const uploadMisc = multer({
   fileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB limit for misc files
+  }
+});
+
+const uploadCategoryImage = multer({
+  storage: categoryStorage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit for category images
   }
 });
 
@@ -272,6 +292,64 @@ router.post('/misc', authenticateAdmin, (req, res) => {
   });
 });
 
+// Upload category image
+router.post('/category-image', authenticateAdmin, (req, res) => {
+  uploadCategoryImage.single('image')(req, res, async (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'File too large. Maximum size is 5MB.' });
+      } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ error: 'Unexpected file field. Use "image" field name.' });
+      }
+      return res.status(400).json({ error: err.message });
+    } else if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    try {
+      // Optimize the image using imageService
+      const imageService = require('../services/imageService');
+      const optimizedResult = await imageService.optimizeCategoryImage(
+        req.file.path,
+        req.file.filename
+      );
+
+      const fileUrl = `/uploads/categories/${optimizedResult.filename || req.file.filename}`;
+
+      res.json({
+        message: 'Category image uploaded and optimized successfully',
+        file: {
+          originalName: req.file.originalname,
+          filename: optimizedResult.filename || req.file.filename,
+          size: optimizedResult.optimizedSize || req.file.size,
+          url: fileUrl,
+          path: optimizedResult.path || req.file.path,
+          originalSize: optimizedResult.originalSize,
+          compressionRatio: optimizedResult.compressionRatio
+        }
+      });
+    } catch (optimizeError) {
+      console.error('Error optimizing category image:', optimizeError);
+      // Return the unoptimized image if optimization fails
+      const fileUrl = `/uploads/categories/${req.file.filename}`;
+      res.json({
+        message: 'Category image uploaded successfully (optimization failed)',
+        file: {
+          originalName: req.file.originalname,
+          filename: req.file.filename,
+          size: req.file.size,
+          url: fileUrl,
+          path: req.file.path
+        }
+      });
+    }
+  });
+});
+
 // Delete uploaded file
 router.delete('/file', authenticateAdmin, async (req, res) => {
   const { filename, category = 'products' } = req.body;
@@ -290,6 +368,9 @@ router.delete('/file', authenticateAdmin, async (req, res) => {
       break;
     case 'misc':
       filePath = path.join(miscDir, filename);
+      break;
+    case 'categories':
+      filePath = path.join(categoriesDir, filename);
       break;
     default:
       return res.status(400).json({ error: 'Invalid category' });
@@ -379,6 +460,51 @@ router.delete('/product-image', authenticateAdmin, async (req, res) => {
   }
 });
 
+// Delete category image by URL
+router.delete('/category-image', authenticateAdmin, async (req, res) => {
+  const { imageUrl } = req.body;
+
+  if (!imageUrl) {
+    return res.status(400).json({ error: 'Image URL is required' });
+  }
+
+  try {
+    // Extract filename from URL
+    const urlParts = imageUrl.split('/');
+    const filename = urlParts[urlParts.length - 1];
+    
+    let filePath = path.join(categoriesDir, filename);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      // Try alternative path resolution
+      const alternativePath = path.join(__dirname, '../../uploads', imageUrl.replace('/uploads/', ''));
+      if (fs.existsSync(alternativePath)) {
+        filePath = alternativePath;
+      } else {
+        return res.status(404).json({ error: 'File not found' });
+      }
+    }
+
+    // Move to deleted folder instead of permanently deleting
+    const deletedDir = path.join(__dirname, '../../uploads/categories/_DELETED');
+    if (!fs.existsSync(deletedDir)) {
+      fs.mkdirSync(deletedDir, { recursive: true });
+    }
+
+    const deletedFilePath = path.join(deletedDir, filename);
+    fs.renameSync(filePath, deletedFilePath);
+
+    res.json({
+      message: 'Category image moved to deleted folder successfully',
+      filename
+    });
+  } catch (error) {
+    console.error('Error moving category image to deleted folder:', error);
+    res.status(500).json({ error: 'Failed to delete category image' });
+  }
+});
+
 // Get file info
 router.get('/file/:category/:filename', (req, res) => {
   const { category, filename } = req.params;
@@ -393,6 +519,9 @@ router.get('/file/:category/:filename', (req, res) => {
       break;
     case 'misc':
       filePath = path.join(miscDir, filename);
+      break;
+    case 'categories':
+      filePath = path.join(categoriesDir, filename);
       break;
     default:
       return res.status(400).json({ error: 'Invalid category' });
@@ -429,6 +558,9 @@ router.get('/files/:category', authenticateAdmin, (req, res) => {
       break;
     case 'misc':
       dirPath = miscDir;
+      break;
+    case 'categories':
+      dirPath = categoriesDir;
       break;
     default:
       return res.status(400).json({ error: 'Invalid category' });
