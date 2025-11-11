@@ -19,8 +19,10 @@ import {
 } from "lucide-react";
 import { useCart, type CartItem } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSettings } from "@/contexts/SettingsContext";
 import AddressSelector from "@/components/AddressSelector";
 import AuthModal from "@/components/AuthModal";
+import PriceDisplay from "@/components/PriceDisplay";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -29,7 +31,7 @@ import { createUserAddress, getUserAddresses } from "@/lib/api";
 export default function CheckoutPage() {
   const { state, clearCart } = useCart();
   const { isAuthenticated, user, isLoading } = useAuth();
-  // Removed payment method selection - using Stripe payment links directly
+  const { settings } = useSettings();
   const [isProcessing, setIsProcessing] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
@@ -429,11 +431,9 @@ export default function CheckoutPage() {
                         <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                        <PriceDisplay price={item.price * item.quantity} className="font-semibold" />
                         {item.originalPrice && (
-                          <p className="text-sm text-gray-500 line-through">
-                            ${(item.originalPrice * item.quantity).toFixed(2)}
-                          </p>
+                          <PriceDisplay price={item.originalPrice * item.quantity} className="text-sm text-gray-500 line-through" />
                         )}
                       </div>
                     </div>
@@ -445,7 +445,7 @@ export default function CheckoutPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Subtotal</span>
-                    <span>${state.total.toFixed(2)}</span>
+                    <PriceDisplay price={state.total} />
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Shipping</span>
@@ -453,12 +453,12 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Tax</span>
-                    <span>${(state.total * 0.08).toFixed(2)}</span>
+                    <PriceDisplay price={state.total * 0.08} />
                   </div>
                   <Separator />
                   <div className="flex justify-between text-lg font-semibold">
                     <span>Total</span>
-                    <span>${(state.total * 1.08).toFixed(2)}</span>
+                    <PriceDisplay price={state.total * 1.08} />
                   </div>
                 </div>
               </CardContent>
@@ -663,7 +663,11 @@ export default function CheckoutPage() {
                     {isProcessing ? (
                       "Processing Payment..."
                     ) : (
-                      `Complete Order • $${(state.total * 1.08).toFixed(2)}`
+                      (() => {
+                        const currency = settings?.store?.currency || 'USD';
+                        const total = state.total * 1.08;
+                        return `Complete Order • ${new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(total)}`;
+                      })()
                     )}
                   </Button>
 

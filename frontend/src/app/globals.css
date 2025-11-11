@@ -29,6 +29,43 @@
     }
   }
 
+  /* Primary color theme variables */
+  :root {
+    --primary-color: #000000;
+    --primary-rgb: 0, 0, 0;
+    --primary-light: rgba(0, 0, 0, 0.1);
+    --primary-dark: #000000;
+  }
+
+  /* Apply primary color to buttons */
+  button[class*="bg-gray"]:not([class*="hover:bg-gray"]),
+  button[class*="bg-black"],
+  .btn-primary {
+    background-color: var(--primary-color) !important;
+  }
+
+  button[class*="bg-gray"]:hover:not([class*="hover:bg-gray"]),
+  button[class*="bg-black"]:hover,
+  .btn-primary:hover {
+    background-color: var(--primary-dark) !important;
+  }
+
+  /* Apply primary color to borders and accents */
+  [class*="border-gray"][class*="hover:border"],
+  .border-primary {
+    border-color: var(--primary-color) !important;
+  }
+
+  /* Apply primary color to text accents */
+  .text-primary {
+    color: var(--primary-color) !important;
+  }
+
+  /* Apply primary color to card backgrounds with opacity */
+  .card-primary {
+    background-color: var(--primary-light) !important;
+  }
+
   /* Mobile tap feedback */
   .mobile-tap:active {
     transform: scale(0.98);

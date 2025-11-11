@@ -8,6 +8,7 @@ import { ShoppingCart, Plus, Minus, Trash2, ShoppingBag } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthModal from "@/components/AuthModal";
+import PriceDisplay from "@/components/PriceDisplay";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -73,11 +74,9 @@ export default function ShoppingCartSheet({ children }: ShoppingCartSheetProps) 
                     <div className="flex-1 min-w-0 mr-4">
                       <h3 className="font-medium text-sm leading-tight mb-2 break-words">{item.name}</h3>
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="font-bold text-purple-600">${item.price}</span>
+                        <PriceDisplay price={item.price} className="font-bold text-purple-600" />
                         {item.originalPrice && (
-                          <span className="text-xs text-gray-500 line-through">
-                            ${item.originalPrice}
-                          </span>
+                          <PriceDisplay price={item.originalPrice} className="text-xs text-gray-500 line-through" />
                         )}
                       </div>
                       <div className="flex items-center space-x-2">
@@ -117,9 +116,7 @@ export default function ShoppingCartSheet({ children }: ShoppingCartSheetProps) 
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total:</span>
-                  <span className="text-2xl font-bold text-purple-600">
-                    ${state.total.toFixed(2)}
-                  </span>
+                  <PriceDisplay price={state.total} className="text-2xl font-bold text-purple-600" />
                 </div>
 
                 <div className="space-y-2">

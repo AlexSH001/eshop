@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PriceDisplay from "@/components/PriceDisplay";
 import {
   Heart,
   Star,
@@ -262,14 +263,10 @@ export default function ProductQuickView({ product, children }: ProductQuickView
               {/* Price */}
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl font-bold text-gray-900">
-                    ${product.price}
-                  </span>
+                  <PriceDisplay price={product.price} className="text-3xl font-bold text-gray-900" />
                   {product.originalPrice && (
                     <>
-                      <span className="text-lg text-gray-500 line-through">
-                        ${product.originalPrice}
-                      </span>
+                      <PriceDisplay price={product.originalPrice} className="text-lg text-gray-500 line-through" />
                       <Badge className="bg-red-500">
                         {discountPercentage}% OFF
                       </Badge>

@@ -7,7 +7,7 @@ export function formatCurrency(amount: number, currency?: string): string {
   const settings = typeof window !== 'undefined' ? 
     JSON.parse(localStorage.getItem('settings') || '{}') : null;
   
-  const currencyCode = currency || settings?.store?.currency || 'SGD';
+  const currencyCode = currency || settings?.store?.currency || 'USD';
   
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -22,7 +22,7 @@ export function formatCurrency(amount: number, currency?: string): string {
  */
 export function useCurrency() {
   const { settings } = useSettings();
-  const currency = settings?.store?.currency || 'SGD';
+  const currency = settings?.store?.currency || 'USD';
   
   return {
     currency,
