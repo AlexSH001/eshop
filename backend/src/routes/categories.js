@@ -9,7 +9,7 @@ const router = express.Router();
 // Get all categories (public)
 router.get('/', async (req, res) => {
   const categories = await database.query(`
-    SELECT id, name, slug, description, icon, image, parent_id, sort_order
+    SELECT id, name, slug, description, icon, image, parent_id, sort_order, gradient_from, gradient_to
     FROM categories
     WHERE is_active = TRUE
     ORDER BY sort_order ASC, name ASC
@@ -40,7 +40,7 @@ router.get('/:id', idValidation, async (req, res) => {
 
   const category = await database.get(`
     SELECT * FROM categories
-    WHERE id = $1 AND is_active = TRUE
+    WHERE id = ? AND is_active = TRUE
   `, [categoryId]);
 
   if (!category) {
@@ -51,7 +51,7 @@ router.get('/:id', idValidation, async (req, res) => {
   const products = await database.query(`
     SELECT id, name, price, original_price, featured_image, stock, status
     FROM products
-    WHERE category_id = $1 AND status = 'active'
+    WHERE category_id = ? AND status = 'active'
     ORDER BY is_featured DESC, created_at DESC
     LIMIT 20
   `, [categoryId]);
@@ -80,13 +80,13 @@ router.get('/admin/list', authenticateAdmin, paginationValidation, async (req, r
 
   // Status filter
   if (status !== 'all') {
-    whereConditions.push('is_active = $1');
+    whereConditions.push('is_active = ?');
     params.push(status === 'active');
   }
 
   // Search filter
   if (search) {
-    whereConditions.push('(name LIKE $2 OR description LIKE $3)');
+    whereConditions.push('(name LIKE ? OR description LIKE ?)');
     const searchTerm = `%${search}%`;
     params.push(searchTerm, searchTerm);
   }
@@ -99,6 +99,9 @@ router.get('/admin/list', authenticateAdmin, paginationValidation, async (req, r
   const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'sort_order';
   const sortDirection = validSortOrder.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'ASC';
 
+  // Add limit and offset to params
+  const queryParams = [...params, parseInt(limit), offset];
+
   const categories = await database.query(`
     SELECT 
       c.*,
@@ -108,8 +111,8 @@ router.get('/admin/list', authenticateAdmin, paginationValidation, async (req, r
     ${whereClause}
     GROUP BY c.id
     ORDER BY c.${sortColumn} ${sortDirection}
-    LIMIT $1 OFFSET $2
-  `, [parseInt(limit), offset]);
+    LIMIT ? OFFSET ?
+  `, queryParams);
 
   const [{ total }] = await database.query(`
     SELECT COUNT(*) as total FROM categories ${whereClause}
@@ -134,7 +137,9 @@ router.post('/', authenticateAdmin, async (req, res) => {
     icon,
     image,
     parentId,
-    sortOrder = 0
+    sortOrder = 0,
+    gradientFrom,
+    gradientTo
   } = req.body;
 
   // Validate required fields
@@ -144,7 +149,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
 
   // Check if category with same name exists
   const existingCategory = await database.get(
-    'SELECT id FROM categories WHERE name = $1',
+    'SELECT id FROM categories WHERE name = ?',
     [name]
   );
 
@@ -157,11 +162,11 @@ router.post('/', authenticateAdmin, async (req, res) => {
 
   // Create category
   const result = await database.execute(`
-    INSERT INTO categories (name, slug, description, icon, image, parent_id, sort_order)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
-  `, [name, slug, description || null, icon || null, image || null, parentId || null, sortOrder]);
+    INSERT INTO categories (name, slug, description, icon, image, parent_id, sort_order, gradient_from, gradient_to)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [name, slug, description || null, icon || null, image || null, parentId || null, sortOrder, gradientFrom || null, gradientTo || null]);
 
-  const category = await database.get('SELECT * FROM categories WHERE id = $1', [result.id]);
+  const category = await database.get('SELECT * FROM categories WHERE id = ?', [result.id]);
 
   res.status(201).json({
     message: 'Category created successfully',
@@ -183,7 +188,7 @@ router.put('/:id', authenticateAdmin, idValidation, async (req, res) => {
   } = req.body;
 
   // Check if category exists
-  const existingCategory = await database.get('SELECT * FROM categories WHERE id = $1', [categoryId]);
+  const existingCategory = await database.get('SELECT * FROM categories WHERE id = ?', [categoryId]);
   if (!existingCategory) {
     throw new NotFoundError('Category not found');
   }
@@ -191,7 +196,7 @@ router.put('/:id', authenticateAdmin, idValidation, async (req, res) => {
   // Check if name is being changed and if it conflicts
   if (name && name !== existingCategory.name) {
     const nameConflict = await database.get(
-      'SELECT id FROM categories WHERE name = $1 AND id != $2',
+      'SELECT id FROM categories WHERE name = ? AND id != ?',
       [name, categoryId]
     );
 
@@ -204,19 +209,35 @@ router.put('/:id', authenticateAdmin, idValidation, async (req, res) => {
   const params = [];
 
   // Build dynamic update query
-  const allowedFields = ['name', 'description', 'icon', 'image', 'parent_id', 'sort_order', 'is_active'];
+  // Map camelCase frontend fields to snake_case database fields
+  const fieldMapping = {
+    'name': 'name',
+    'description': 'description',
+    'icon': 'icon',
+    'image': 'image',
+    'parentId': 'parent_id',
+    'parent_id': 'parent_id',
+    'sortOrder': 'sort_order',
+    'sort_order': 'sort_order',
+    'isActive': 'is_active',
+    'is_active': 'is_active',
+    'gradientFrom': 'gradient_from',
+    'gradient_from': 'gradient_from',
+    'gradientTo': 'gradient_to',
+    'gradient_to': 'gradient_to'
+  };
 
-  for (const field of allowedFields) {
-    if (req.body[field] !== undefined) {
-      updates.push(`${field} = $1`);
-      params.push(req.body[field]);
+  for (const [frontendField, dbField] of Object.entries(fieldMapping)) {
+    if (req.body[frontendField] !== undefined) {
+      updates.push(`${dbField} = ?`);
+      params.push(req.body[frontendField]);
     }
   }
 
   // Update slug if name changed
   if (name && name !== existingCategory.name) {
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    updates.push('slug = $1');
+    updates.push('slug = ?');
     params.push(slug);
   }
 
@@ -228,11 +249,11 @@ router.put('/:id', authenticateAdmin, idValidation, async (req, res) => {
   params.push(categoryId);
 
   await database.execute(
-    `UPDATE categories SET ${updates.join(', ')} WHERE id = $1`,
+    `UPDATE categories SET ${updates.join(', ')} WHERE id = ?`,
     params
   );
 
-  const updatedCategory = await database.get('SELECT * FROM categories WHERE id = $1', [categoryId]);
+  const updatedCategory = await database.get('SELECT * FROM categories WHERE id = ?', [categoryId]);
 
   res.json({
     message: 'Category updated successfully',
@@ -245,14 +266,14 @@ router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
   const categoryId = req.params.id;
 
   // Check if category exists
-  const category = await database.get('SELECT * FROM categories WHERE id = $1', [categoryId]);
+  const category = await database.get('SELECT * FROM categories WHERE id = ?', [categoryId]);
   if (!category) {
     throw new NotFoundError('Category not found');
   }
 
   // Check if category has products
   const productCount = await database.get(
-    'SELECT COUNT(*) as count FROM products WHERE category_id = $1',
+    'SELECT COUNT(*) as count FROM products WHERE category_id = ?',
     [categoryId]
   );
 
@@ -264,7 +285,7 @@ router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
 
   // Check if category has subcategories
   const subcategoryCount = await database.get(
-    'SELECT COUNT(*) as count FROM categories WHERE parent_id = $1',
+    'SELECT COUNT(*) as count FROM categories WHERE parent_id = ?',
     [categoryId]
   );
 
@@ -274,7 +295,7 @@ router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
     });
   }
 
-  await database.execute('DELETE FROM categories WHERE id = $1', [categoryId]);
+  await database.execute('DELETE FROM categories WHERE id = ?', [categoryId]);
 
   res.json({
     message: 'Category deleted successfully'

@@ -14,11 +14,13 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdmin } from "@/contexts/AdminContext";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { adminApiRequestJson } from "@/lib/admin-api";
+import { availableGradients } from "@/config/categoryGradients";
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +30,8 @@ interface Category {
   slug: string;
   description: string;
   icon: string;
+  gradient_from?: string;
+  gradient_to?: string;
 }
 
 type CategoryFormData = {
@@ -35,6 +39,8 @@ type CategoryFormData = {
   slug: string;
   description: string;
   icon: string;
+  gradientFrom: string;
+  gradientTo: string;
 };
 
 export default function AdminCategoriesPage() {
@@ -49,7 +55,9 @@ export default function AdminCategoriesPage() {
     name: "",
     slug: "",
     description: "",
-    icon: ""
+    icon: "",
+    gradientFrom: "",
+    gradientTo: ""
   });
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
 
@@ -91,7 +99,7 @@ export default function AdminCategoriesPage() {
       });
       toast.success('Category added successfully');
       setIsAddModalOpen(false);
-      setFormData({ name: "", slug: "", description: "", icon: "" });
+      setFormData({ name: "", slug: "", description: "", icon: "", gradientFrom: "", gradientTo: "" });
       fetchCategories();
     } catch (err: unknown) {
       const errorMessage = (err as Error).message || 'Unknown error';
@@ -116,7 +124,7 @@ export default function AdminCategoriesPage() {
       });
       toast.success('Category updated successfully');
       setEditingCategory(null);
-      setFormData({ name: "", slug: "", description: "", icon: "" });
+      setFormData({ name: "", slug: "", description: "", icon: "", gradientFrom: "", gradientTo: "" });
       fetchCategories();
     } catch (err: unknown) {
       const errorMessage = (err as Error).message || 'Unknown error';
@@ -201,6 +209,34 @@ export default function AdminCategoriesPage() {
                   onChange={e => setFormData((prev: CategoryFormData) => ({ ...prev, description: e.target.value }))}
                 />
               </div>
+              <div>
+                <Label htmlFor="gradient">Gradient Color</Label>
+                <Select
+                  value={formData.gradientFrom && formData.gradientTo 
+                    ? `${formData.gradientFrom}|${formData.gradientTo}` 
+                    : ""}
+                  onValueChange={(value) => {
+                    if (value) {
+                      const [from, to] = value.split('|');
+                      setFormData((prev: CategoryFormData) => ({ ...prev, gradientFrom: from, gradientTo: to }));
+                    } else {
+                      setFormData((prev: CategoryFormData) => ({ ...prev, gradientFrom: "", gradientTo: "" }));
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gradient color (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Default (Auto-generated)</SelectItem>
+                    {availableGradients.map((gradient, index) => (
+                      <SelectItem key={index} value={`${gradient.from}|${gradient.to}`}>
+                        {gradient.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button onClick={handleAddCategory} disabled={loading}>
                 Add
               </Button>
@@ -233,7 +269,9 @@ export default function AdminCategoriesPage() {
                           name: category.name,
                           slug: category.slug,
                           description: category.description,
-                          icon: category.icon
+                          icon: category.icon,
+                          gradientFrom: category.gradient_from || "",
+                          gradientTo: category.gradient_to || ""
                         });
                       }}>
                         <Edit className="h-4 w-4 mr-1" /> Edit
@@ -275,6 +313,34 @@ export default function AdminCategoriesPage() {
                             value={formData.description}
                             onChange={e => setFormData((prev: CategoryFormData) => ({ ...prev, description: e.target.value }))}
                           />
+                        </div>
+                        <div>
+                          <Label htmlFor="gradient">Gradient Color</Label>
+                          <Select
+                            value={formData.gradientFrom && formData.gradientTo 
+                              ? `${formData.gradientFrom}|${formData.gradientTo}` 
+                              : ""}
+                            onValueChange={(value) => {
+                              if (value) {
+                                const [from, to] = value.split('|');
+                                setFormData((prev: CategoryFormData) => ({ ...prev, gradientFrom: from, gradientTo: to }));
+                              } else {
+                                setFormData((prev: CategoryFormData) => ({ ...prev, gradientFrom: "", gradientTo: "" }));
+                              }
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select gradient color (optional)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Default (Auto-generated)</SelectItem>
+                              {availableGradients.map((gradient, index) => (
+                                <SelectItem key={index} value={`${gradient.from}|${gradient.to}`}>
+                                  {gradient.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <Button onClick={handleEditCategory} disabled={loading}>
                           Save
