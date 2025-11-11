@@ -103,7 +103,7 @@ export default function AdminSettingsPage() {
       email: '',
       phone: '',
       address: '',
-      currency: 'SGD',
+      currency: 'USD',
       timezone: 'UTC'
     },
     email: {

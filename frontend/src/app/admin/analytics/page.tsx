@@ -129,10 +129,10 @@ export default function AdminAnalyticsPage() {
   }, [isAuthenticated, period]);
 
   const formatCurrency = (amount: number) => {
-    // Try to get currency from settings, fallback to SGD
+    // Try to get currency from settings, fallback to USD
     const settings = typeof window !== 'undefined' ? 
       JSON.parse(localStorage.getItem('settings') || '{}') : null;
-    const currency = settings?.store?.currency || 'SGD';
+    const currency = settings?.store?.currency || 'USD';
     
     return new Intl.NumberFormat('en-US', {
       style: 'currency',

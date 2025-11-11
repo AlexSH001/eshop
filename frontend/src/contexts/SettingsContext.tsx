@@ -38,7 +38,7 @@ const defaultSettings: Settings = {
     email: '',
     phone: '',
     address: '',
-    currency: 'SGD',
+    currency: 'USD',
     timezone: 'UTC'
   },
   appearance: {
@@ -93,9 +93,25 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Apply primary color as CSS variable
+      // Apply primary color as CSS variables for theme
       if (fetchedSettings.appearance?.primaryColor) {
-        document.documentElement.style.setProperty('--primary-color', fetchedSettings.appearance.primaryColor);
+        const primaryColor = fetchedSettings.appearance.primaryColor;
+        document.documentElement.style.setProperty('--primary-color', primaryColor);
+        
+        // Convert hex to RGB for opacity variations
+        const hex = primaryColor.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        
+        // Set RGB values for use with opacity
+        document.documentElement.style.setProperty('--primary-rgb', `${r}, ${g}, ${b}`);
+        
+        // Set lighter and darker variations
+        const lighter = `rgba(${r}, ${g}, ${b}, 0.1)`;
+        const darker = `rgba(${Math.max(0, r - 20)}, ${Math.max(0, g - 20)}, ${Math.max(0, b - 20)}, 1)`;
+        document.documentElement.style.setProperty('--primary-light', lighter);
+        document.documentElement.style.setProperty('--primary-dark', darker);
       }
     } catch (err) {
       console.error('Error fetching settings:', err);

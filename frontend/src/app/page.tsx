@@ -15,6 +15,8 @@ import MobileBottomNav from "@/components/MobileBottomNav";
 import AuthModal from "@/components/AuthModal";
 import UserDropdown from "@/components/UserDropdown";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import PriceDisplay from "@/components/PriceDisplay";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
@@ -345,10 +347,10 @@ export default function Home() {
                             )}
                           </div>
                           <div className="mb-3 flex items-center gap-2">
-                            <span className="font-semibold text-gray-900">${product.price}</span>
+                            <PriceDisplay price={product.price} />
                             {product.originalPrice && (
                               <span className="text-sm text-gray-500 line-through">
-                                ${product.originalPrice}
+                                <PriceDisplay price={product.originalPrice} />
                               </span>
                             )}
                           </div>
@@ -378,64 +380,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-100 bg-gray-50">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <div className="flex items-center space-x-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white">
-                  <ShoppingBag className="h-5 w-5" />
-                </div>
-                <span className="text-xl font-semibold text-gray-900">Shop</span>
-              </div>
-              <p className="mt-4 text-sm text-gray-600">
-                Your one-stop shop for quality products across all categories.
-                Secure payments with multiple options.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Badge variant="outline" className="text-xs">Alipay</Badge>
-                <Badge variant="outline" className="text-xs">WeChat Pay</Badge>
-                <Badge variant="outline" className="text-xs">PayPal</Badge>
-                <Badge variant="outline" className="text-xs">Credit Cards</Badge>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-gray-900">Shop</h3>
-              <ul className="mt-4 space-y-2 text-sm text-gray-600">
-                <li><Link href="/categories/electronics" className="hover:text-gray-900">Electronics</Link></li>
-                <li><Link href="/categories/fashion" className="hover:text-gray-900">Fashion</Link></li>
-                <li><Link href="/categories/home-garden" className="hover:text-gray-900">Home & Garden</Link></li>
-                <li><Link href="/categories/sports" className="hover:text-gray-900">Sports</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-gray-900">Support</h3>
-              <ul className="mt-4 space-y-2 text-sm text-gray-600">
-                <li><Link href="/help" className="hover:text-gray-900">Help Center</Link></li>
-                <li><Link href="/contact" className="hover:text-gray-900">Contact Us</Link></li>
-                <li><Link href="/shipping" className="hover:text-gray-900">Shipping Info</Link></li>
-                <li><Link href="/returns" className="hover:text-gray-900">Returns</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-gray-900">Account</h3>
-              <ul className="mt-4 space-y-2 text-sm text-gray-600">
-                <li><Link href="/account" className="hover:text-gray-900">My Account</Link></li>
-                <li><Link href="/orders" className="hover:text-gray-900">Order History</Link></li>
-                <li><Link href="/wishlist" className="hover:text-gray-900">Wishlist</Link></li>
-                <li><Link href="/privacy" className="hover:text-gray-900">Privacy Policy</Link></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="mt-8 border-t border-gray-200 pt-8 text-center text-sm text-gray-500">
-            <p>&copy; 2024 Shop. All rights reserved. Secure payments supported worldwide.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       <style jsx global>{`
         .scrollbar-hide {
