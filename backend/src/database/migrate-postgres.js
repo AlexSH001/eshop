@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS categories (
   parent_id INTEGER,
   sort_order INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT TRUE,
+  gradient_from VARCHAR(50),
+  gradient_to VARCHAR(50),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (parent_id) REFERENCES categories(id)

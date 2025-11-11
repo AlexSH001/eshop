@@ -4,48 +4,7 @@ import { useEffect, useState } from "react";
 import CategoryPage from "@/components/CategoryPage";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
-
-// Fallback gradient configurations for known categories (optional, for better UX)
-const gradientPresets: Record<string, { from: string; to: string }> = {
-  'automotive': { from: 'from-red-600', to: 'to-orange-600' },
-  'books': { from: 'from-blue-600', to: 'to-purple-600' },
-  'electronics': { from: 'from-gray-700', to: 'to-gray-900' },
-  'fashion': { from: 'from-pink-600', to: 'to-rose-600' },
-  'gaming': { from: 'from-green-600', to: 'to-emerald-600' },
-  'home-garden': { from: 'from-green-500', to: 'to-teal-600' },
-  'music': { from: 'from-purple-600', to: 'to-indigo-600' },
-  'photography': { from: 'from-cyan-600', to: 'to-blue-600' },
-  'sports': { from: 'from-orange-500', to: 'to-red-600' },
-  'baby-kids': { from: 'from-yellow-400', to: 'to-pink-500' },
-};
-
-// Generate gradient based on category name (for new categories)
-function generateGradient(categoryName: string): { from: string; to: string } {
-  // Use preset if available
-  const slug = categoryName.toLowerCase().replace(/\s+/g, '-');
-  if (gradientPresets[slug]) {
-    return gradientPresets[slug];
-  }
-  
-  // Generate consistent gradient based on category name hash
-  let hash = 0;
-  for (let i = 0; i < categoryName.length; i++) {
-    hash = categoryName.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  
-  const colors = [
-    { from: 'from-blue-600', to: 'to-purple-600' },
-    { from: 'from-green-600', to: 'to-teal-600' },
-    { from: 'from-orange-600', to: 'to-red-600' },
-    { from: 'from-purple-600', to: 'to-pink-600' },
-    { from: 'from-cyan-600', to: 'to-blue-600' },
-    { from: 'from-yellow-500', to: 'to-orange-600' },
-    { from: 'from-indigo-600', to: 'to-purple-600' },
-    { from: 'from-emerald-600', to: 'to-green-600' },
-  ];
-  
-  return colors[Math.abs(hash) % colors.length];
-}
+import { generateGradient } from "@/config/categoryGradients";
 
 interface Category {
   id: number;
@@ -54,6 +13,8 @@ interface Category {
   description: string;
   icon?: string;
   image?: string;
+  gradient_from?: string;
+  gradient_to?: string;
 }
 
 export default function CategorySlugPage({ params }: { params: { slug: string } }) {
@@ -125,7 +86,11 @@ export default function CategorySlugPage({ params }: { params: { slug: string } 
     );
   }
 
-  const gradient = generateGradient(category.name);
+  // Use stored gradient from database, or generate one if not set
+  const gradient = category.gradient_from && category.gradient_to
+    ? { from: category.gradient_from, to: category.gradient_to }
+    : generateGradient(category.name);
+  
   const description = category.description || `Browse our collection of ${category.name} products`;
 
   return (

@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS categories (
   parent_id INTEGER,
   sort_order INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT TRUE,
+  gradient_from TEXT,
+  gradient_to TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (parent_id) REFERENCES categories(id)
