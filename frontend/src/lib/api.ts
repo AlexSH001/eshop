@@ -432,4 +432,12 @@ export const updateUserProfile = async (profileData: any): Promise<any> => {
   });
 };
 
+// Change password
+export const changePassword = async (currentPassword: string, newPassword: string): Promise<any> => {
+  return apiRequest('/auth/password', {
+    method: 'PUT',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+};
+
 export { ApiError }; 
