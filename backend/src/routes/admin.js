@@ -531,4 +531,109 @@ router.get('/system/health', authenticateAdmin, async (req, res) => {
   });
 });
 
+// Get all settings
+router.get('/settings', authenticateAdmin, async (req, res) => {
+  try {
+    const settingsRows = await database.query('SELECT section, data FROM settings');
+    
+    // Convert database rows to settings object
+    const settings = {};
+    settingsRows.forEach(row => {
+      try {
+        // Parse JSON data (handle both SQLite TEXT and PostgreSQL JSONB)
+        const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+        settings[row.section] = data;
+      } catch (err) {
+        console.error(`Error parsing settings for section ${row.section}:`, err);
+      }
+    });
+
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+});
+
+// Get specific settings section
+router.get('/settings/:section', authenticateAdmin, async (req, res) => {
+  const { section } = req.params;
+
+  try {
+    const row = await database.get('SELECT data FROM settings WHERE section = ?', [section]);
+    
+    if (!row) {
+      return res.status(404).json({ error: 'Settings section not found' });
+    }
+
+    // Parse JSON data
+    const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+    res.json(data);
+  } catch (error) {
+    console.error(`Error fetching settings for section ${section}:`, error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+});
+
+// Update settings section
+router.put('/settings/:section', authenticateAdmin, async (req, res) => {
+  const { section } = req.params;
+  const data = req.body;
+
+  // Validate section name
+  const validSections = ['store', 'email', 'payment', 'shipping', 'appearance', 'notifications', 'security'];
+  if (!validSections.includes(section)) {
+    return res.status(400).json({ error: 'Invalid settings section' });
+  }
+
+  try {
+    // Get database type from the database instance
+    const dbType = typeof database.getType === 'function' ? database.getType() : 'sqlite3';
+    const isPostgres = dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql';
+    
+    // Prepare data for storage
+    // PostgreSQL accepts JSON objects directly, SQLite needs stringified JSON
+    const dataToStore = isPostgres ? data : JSON.stringify(data);
+    
+    // Check if settings exist
+    const existing = await database.get('SELECT id FROM settings WHERE section = ?', [section]);
+    
+    if (existing) {
+      // Update existing settings
+      // Use CAST for PostgreSQL to ensure JSONB type
+      if (isPostgres) {
+        // For PostgreSQL, we need to use CAST in the SQL
+        // The adapter will convert ? to $1, $2, etc.
+        await database.execute(
+          'UPDATE settings SET data = CAST(? AS jsonb), updated_at = CURRENT_TIMESTAMP WHERE section = ?',
+          [JSON.stringify(data), section]
+        );
+      } else {
+        await database.execute(
+          'UPDATE settings SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE section = ?',
+          [dataToStore, section]
+        );
+      }
+    } else {
+      // Insert new settings
+      if (isPostgres) {
+        await database.execute(
+          'INSERT INTO settings (section, data) VALUES (?, CAST(? AS jsonb))',
+          [section, JSON.stringify(data)]
+        );
+      } else {
+        await database.execute(
+          'INSERT INTO settings (section, data) VALUES (?, ?)',
+          [section, dataToStore]
+        );
+      }
+    }
+
+    res.json({ message: 'Settings updated successfully', section, data });
+  } catch (error) {
+    console.error(`Error updating settings for section ${section}:`, error);
+    res.status(500).json({ error: 'Failed to update settings' });
+  }
+});
+
 module.exports = router;

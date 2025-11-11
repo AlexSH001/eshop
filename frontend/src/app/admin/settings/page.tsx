@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdmin } from "@/contexts/AdminContext";
 import { toast } from "sonner";
+import { adminApiRequestJson } from "@/lib/admin-api";
 import { 
   Save, 
   Store, 
@@ -162,12 +163,34 @@ export default function AdminSettingsPage() {
     setLoading(true);
     setError(null);
     try {
-      // In a real app, you would fetch settings from the backend
-      // For now, we'll use default values
-      setSettings(settings);
+      const fetchedSettings = await adminApiRequestJson<Partial<SettingsData>>('/admin/settings');
+      
+      // Merge fetched settings with defaults to ensure all sections exist
+      setSettings(prev => ({
+        store: { ...prev.store, ...(fetchedSettings.store || {}) },
+        email: { ...prev.email, ...(fetchedSettings.email || {}) },
+        payment: { ...prev.payment, ...(fetchedSettings.payment || {}) },
+        shipping: { ...prev.shipping, ...(fetchedSettings.shipping || {}) },
+        appearance: { ...prev.appearance, ...(fetchedSettings.appearance || {}) },
+        notifications: { ...prev.notifications, ...(fetchedSettings.notifications || {}) },
+        security: { 
+          ...prev.security, 
+          ...(fetchedSettings.security || {}),
+          passwordPolicy: {
+            ...prev.security.passwordPolicy,
+            ...(fetchedSettings.security?.passwordPolicy || {})
+          }
+        }
+      }));
     } catch (err: unknown) {
-      setError((err as Error).message || 'Unknown error');
-      toast.error('Failed to fetch settings');
+      const errorMessage = (err as Error).message || 'Unknown error';
+      setError(errorMessage);
+      // Don't show error toast if settings don't exist yet (first time setup)
+      // Settings will use default values
+      if (!errorMessage.includes('404') && !errorMessage.includes('not found')) {
+        console.error('Failed to fetch settings:', err);
+        // Continue with default settings
+      }
     } finally {
       setLoading(false);
     }
@@ -182,11 +205,14 @@ export default function AdminSettingsPage() {
   const handleSave = async (section: keyof SettingsData) => {
     setSaving(true);
     try {
-      // In a real app, you would save settings to the backend
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      toast.success(`${section} settings saved successfully`);
+      await adminApiRequestJson(`/admin/settings/${section}`, {
+        method: 'PUT',
+        body: JSON.stringify(settings[section])
+      });
+      toast.success(`${section.charAt(0).toUpperCase() + section.slice(1)} settings saved successfully`);
     } catch (err: unknown) {
-      toast.error(`Failed to save ${section} settings`);
+      const errorMessage = (err as Error).message || 'Unknown error';
+      toast.error(`Failed to save ${section} settings: ${errorMessage}`);
     } finally {
       setSaving(false);
     }
