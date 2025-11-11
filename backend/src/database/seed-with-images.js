@@ -41,7 +41,7 @@ async function seedWithImages() {
         slug: 'electronics',
         description: 'Electronic devices and gadgets',
         icon: 'smartphone',
-        image: '/static/images/categories/category_electronics.jpg',
+        image: '/uploads/categories/category_electronics.jpg',
         href: '/categories/electronics',
         sort_order: 0,
         is_active: true
@@ -52,7 +52,7 @@ async function seedWithImages() {
         slug: 'fashion',
         description: 'Clothing, shoes, and accessories',
         icon: 'shopping-bag',
-        image: '/static/images/categories/category_fashion.jpg',
+        image: '/uploads/categories/category_fashion.jpg',
         href: '/categories/fashion',
         sort_order: 1,
         is_active: true
@@ -63,7 +63,7 @@ async function seedWithImages() {
         slug: 'home-garden',
         description: 'Home improvement and garden supplies',
         icon: 'home',
-        image: '/static/images/categories/category_home_garden.jpg',
+        image: '/uploads/categories/category_home_garden.jpg',
         href: '/categories/home-garden',
         sort_order: 2,
         is_active: true
@@ -74,7 +74,7 @@ async function seedWithImages() {
         slug: 'gaming',
         description: 'Gaming consoles, games, and accessories',
         icon: 'gamepad-2',
-        image: '/static/images/categories/category_gaming.jpg',
+        image: '/uploads/categories/category_gaming.jpg',
         href: '/categories/gaming',
         sort_order: 3,
         is_active: true
@@ -85,7 +85,7 @@ async function seedWithImages() {
         slug: 'sports',
         description: 'Sports equipment and fitness gear',
         icon: 'dumbbell',
-        image: '/static/images/categories/category_sports.jpg',
+        image: '/uploads/categories/category_sports.jpg',
         href: '/categories/sports',
         sort_order: 4,
         is_active: true
@@ -96,7 +96,7 @@ async function seedWithImages() {
         slug: 'photography',
         description: 'Cameras and photography equipment',
         icon: 'camera',
-        image: '/static/images/categories/category_photography.jpg',
+        image: '/uploads/categories/category_photography.jpg',
         href: '/categories/photography',
         sort_order: 5,
         is_active: true
@@ -107,7 +107,7 @@ async function seedWithImages() {
         slug: 'books',
         description: 'Books, movies, and entertainment',
         icon: 'book',
-        image: '/static/images/categories/category_books.jpg',
+        image: '/uploads/categories/category_books.jpg',
         href: '/categories/books',
         sort_order: 6,
         is_active: true
@@ -118,7 +118,7 @@ async function seedWithImages() {
         slug: 'automotive',
         description: 'Car parts and automotive accessories',
         icon: 'car',
-        image: '/static/images/categories/category_automotive.jpg',
+        image: '/uploads/categories/category_automotive.jpg',
         href: '/categories/automotive',
         sort_order: 7,
         is_active: true
@@ -129,7 +129,7 @@ async function seedWithImages() {
         slug: 'music',
         description: 'Musical instruments and audio equipment',
         icon: 'music',
-        image: '/static/images/categories/category_music.jpg',
+        image: '/uploads/categories/category_music.jpg',
         href: '/categories/music',
         sort_order: 8,
         is_active: true
@@ -140,7 +140,7 @@ async function seedWithImages() {
         slug: 'baby-kids',
         description: 'Baby products and children\'s items',
         icon: 'baby',
-        image: '/static/images/categories/category_baby_&_kids.jpg',
+        image: '/uploads/categories/category_baby_&_kids.jpg',
         href: '/categories/baby-kids',
         sort_order: 9,
         is_active: true
