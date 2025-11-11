@@ -261,7 +261,7 @@ export default function OrdersPage() {
                 When you place orders, they'll appear here
               </p>
               <Link href="/categories">
-                <Button className="bg-black hover:bg-gray-800">
+                <Button className="bg-gray-50 hover:bg-gray-800">
                   Start Shopping
                 </Button>
               </Link>
