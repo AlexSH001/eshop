@@ -61,10 +61,6 @@ async function createPaymentLink({
         },
       },
       allow_promotion_codes: true,
-      billing_address_collection: 'required',
-      shipping_address_collection: {
-        allowed_countries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE'],
-      },
     });
 
     return {
