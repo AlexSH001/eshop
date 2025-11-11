@@ -57,7 +57,7 @@ export const fetchCategories = async () => {
       ...category,
       href: category.href || `/categories/${category.slug || category.name.toLowerCase().replace(/\s+/g, '-')}`,
       icon: getCategoryIcon(category.name),
-      image: category.image || `/static/images/categories/category_${category.slug || category.name.toLowerCase().replace(/\s+/g, '_')}.jpg`
+      image: category.image || `/uploads/categories/category_${category.slug || category.name.toLowerCase().replace(/\s+/g, '_')}.jpg`
     }));
     
     return processedCategories;
@@ -161,7 +161,7 @@ export async function fetchGroupedProducts(): Promise<Record<string, Product[]>>
 
 // -------------------------------
 const defaultProductImage = "/static/images/products/product_1001.jpg";
-const defaultCategoryImage = "/static/images/categories/category_1001.jpg";
+const defaultCategoryImage = "/uploads/categories/category_1001.jpg";
 const defaultBannerImage = "/static/images/banners/banner_1.jpg";
 const defaultImage = "/static/images/default.jpg";
 
