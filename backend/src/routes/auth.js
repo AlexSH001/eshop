@@ -27,6 +27,7 @@ const {
   UnauthorizedError,
   NotFoundError
 } = require('../middleware/errorHandler');
+const { refreshLimiter } = require('../middleware/security');
 const emailService = require('../services/emailService');
 const logger = require('../config/logger');
 
@@ -158,8 +159,8 @@ router.post('/admin/login', adminLoginValidation, async (req, res) => {
   });
 });
 
-// Refresh Token
-router.post('/refresh', async (req, res) => {
+// Refresh Token (with separate rate limiting)
+router.post('/refresh', refreshLimiter, async (req, res) => {
   const { refreshToken } = req.body;
 
   if (!refreshToken) {
