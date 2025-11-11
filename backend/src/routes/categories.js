@@ -160,18 +160,79 @@ router.post('/', authenticateAdmin, async (req, res) => {
   // Generate slug from name
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
+  // Check if slug already exists
+  const existingSlug = await database.get(
+    'SELECT id FROM categories WHERE slug = ?',
+    [slug]
+  );
+
+  if (existingSlug) {
+    return res.status(409).json({ error: 'Category with this slug already exists' });
+  }
+
   // Create category
-  const result = await database.execute(`
-    INSERT INTO categories (name, slug, description, icon, image, parent_id, sort_order, gradient_from, gradient_to)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `, [name, slug, description || null, icon || null, image || null, parentId || null, sortOrder, gradientFrom || null, gradientTo || null]);
+  try {
+    const result = await database.execute(`
+      INSERT INTO categories (name, slug, description, icon, image, parent_id, sort_order, gradient_from, gradient_to)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      RETURNING id
+    `, [name, slug, description || null, icon || null, image || null, parentId || null, sortOrder, gradientFrom || null, gradientTo || null]);
 
-  const category = await database.get('SELECT * FROM categories WHERE id = ?', [result.id]);
+    if (!result.id) {
+      // If no ID returned, query by slug as fallback
+      const category = await database.get('SELECT * FROM categories WHERE slug = ?', [slug]);
+      if (category) {
+        return res.status(201).json({
+          message: 'Category created successfully',
+          category
+        });
+      }
+      return res.status(500).json({ error: 'Failed to create category: ID not returned' });
+    }
 
-  res.status(201).json({
-    message: 'Category created successfully',
-    category
-  });
+    const category = await database.get('SELECT * FROM categories WHERE id = ?', [result.id]);
+
+    res.status(201).json({
+      message: 'Category created successfully',
+      category
+    });
+  } catch (error) {
+    // Handle duplicate key error (sequence might be out of sync)
+    if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
+      // Try to sync the sequence and retry once
+      try {
+        const dbType = process.env.DB_CLIENT || 'sqlite3';
+        if (dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql') {
+          // Sync the sequence to the max ID in the table
+          await database.query(`
+            SELECT setval('categories_id_seq', COALESCE((SELECT MAX(id) FROM categories), 1), true)
+          `);
+          
+          // Retry the insert
+          const result = await database.execute(`
+            INSERT INTO categories (name, slug, description, icon, image, parent_id, sort_order, gradient_from, gradient_to)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            RETURNING id
+          `, [name, slug, description || null, icon || null, image || null, parentId || null, sortOrder, gradientFrom || null, gradientTo || null]);
+
+          const category = await database.get('SELECT * FROM categories WHERE id = ?', [result.id]);
+
+          return res.status(201).json({
+            message: 'Category created successfully',
+            category
+          });
+        }
+      } catch (retryError) {
+        console.error('Error retrying category creation after sequence sync:', retryError);
+      }
+    }
+    
+    console.error('Error creating category:', error);
+    return res.status(500).json({ 
+      error: 'Failed to create category',
+      details: error.message 
+    });
+  }
 });
 
 // Admin: Update category
