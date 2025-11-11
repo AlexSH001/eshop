@@ -25,10 +25,28 @@ const generalLimiter = createRateLimit(
 );
 
 // Auth rate limiting (stricter in production, more lenient in development)
-const authLimiter = createRateLimit(
+// This applies to login and registration endpoints, but NOT refresh
+const authLimiter = createRateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'production' ? 5 : 100, // 5 in production, 100 in development
+  message: { error: 'Too many authentication attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Skip rate limiting for refresh token endpoint
+  skip: (req) => req.path === '/refresh' || req.path === '/api/auth/refresh',
+  handler: (req, res) => {
+    res.status(429).json({
+      error: 'Too many authentication attempts, please try again later.',
+      retryAfter: Math.ceil((15 * 60 * 1000) / 1000)
+    });
+  }
+});
+
+// Token refresh rate limiting (more lenient since it's automatic)
+const refreshLimiter = createRateLimit(
   15 * 60 * 1000, // 15 minutes
-  process.env.NODE_ENV === 'production' ? 5 : 100, // 5 in production, 100 in development
-  'Too many authentication attempts, please try again later.'
+  process.env.NODE_ENV === 'production' ? 30 : 200, // 30 in production, 200 in development
+  'Too many token refresh attempts, please try again later.'
 );
 
 // Upload rate limiting
@@ -90,6 +108,7 @@ const validateRequest = (req, res, next) => {
 module.exports = {
   generalLimiter,
   authLimiter,
+  refreshLimiter,
   uploadLimiter,
   securityHeaders,
   validateRequest
