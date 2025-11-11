@@ -100,6 +100,7 @@ export default function CategorySlugPage({ params }: { params: { slug: string } 
       description={description}
       gradientFrom={gradient.from}
       gradientTo={gradient.to}
+      image={category.image}
     />
   );
 }

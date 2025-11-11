@@ -21,6 +21,7 @@ interface CategoryPageProps {
   description: string;
   gradientFrom: string;
   gradientTo: string;
+  image?: string;
 }
 
 export default function CategoryPage({
@@ -29,6 +30,7 @@ export default function CategoryPage({
   description,
   gradientFrom,
   gradientTo,
+  image,
 }: CategoryPageProps) {
   const { addItem } = useCart();
   const { isAuthenticated } = useAuth();
@@ -71,9 +73,16 @@ export default function CategoryPage({
       </div>
 
       {/* Hero Section */}
-      <div className={`relative h-64 bg-gradient-to-r ${gradientFrom} ${gradientTo}`}>
+      <div className={`relative h-64 bg-gradient-to-r ${gradientFrom} ${gradientTo} overflow-hidden`}>
+        {image && (
+          <img
+            src={image}
+            alt={categoryName}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
         <div className="absolute inset-0 bg-black/20" />
-        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 z-10">
           <h1 className="text-4xl font-bold text-white mb-4">{categoryName}</h1>
           <p className="text-xl text-white/90">{description}</p>
         </div>

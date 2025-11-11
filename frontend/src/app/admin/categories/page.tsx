@@ -18,8 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import AdminLayout from "@/components/AdminLayout";
 import { useAdmin } from "@/contexts/AdminContext";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2 } from "lucide-react";
-import { adminApiRequestJson } from "@/lib/admin-api";
+import { Plus, Edit, Trash2, Upload, X } from "lucide-react";
+import { adminApiRequestJson, adminApiRequest } from "@/lib/admin-api";
 import { availableGradients } from "@/config/categoryGradients";
 
 export const dynamic = 'force-dynamic';
@@ -30,6 +30,7 @@ interface Category {
   slug: string;
   description: string;
   icon: string;
+  image?: string;
   gradient_from?: string;
   gradient_to?: string;
 }
@@ -39,6 +40,7 @@ type CategoryFormData = {
   slug: string;
   description: string;
   icon: string;
+  image: string;
   gradientFrom: string;
   gradientTo: string;
 };
@@ -56,10 +58,12 @@ export default function AdminCategoriesPage() {
     slug: "",
     description: "",
     icon: "",
+    image: "",
     gradientFrom: "",
     gradientTo: ""
   });
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -89,6 +93,98 @@ export default function AdminCategoriesPage() {
     fetchCategories();
   }, []);
 
+  // Helper function to make authenticated file upload requests
+  const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
+    const adminToken = localStorage.getItem('admin_token');
+    
+    if (!adminToken) {
+      throw new Error('Admin authentication required. Please login again.');
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        'Authorization': `Bearer ${adminToken}`,
+        // Don't set Content-Type for FormData, let browser set it with boundary
+      },
+      credentials: 'include',
+    });
+
+    if (response.status === 401) {
+      throw new Error('Session expired. Please login again.');
+    }
+
+    return response;
+  };
+
+  // Handle category image upload
+  const handleImageUpload = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append('image', file);
+
+      const res = await makeAuthenticatedRequest(
+        `${process.env.NEXT_PUBLIC_API_URL || '/api'}/upload/category-image`,
+        {
+          method: 'POST',
+          body: uploadFormData
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      const data = await res.json();
+      setFormData(prev => ({
+        ...prev,
+        image: data.file.url
+      }));
+      toast.success('Image uploaded successfully');
+    } catch (err: unknown) {
+      const errorMessage = (err as Error).message || 'Failed to upload image';
+      toast.error(errorMessage);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Handle image removal
+  const handleImageRemove = async () => {
+    if (!formData.image) return;
+
+    try {
+      const res = await makeAuthenticatedRequest(
+        `${process.env.NEXT_PUBLIC_API_URL || '/api'}/upload/category-image`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ imageUrl: formData.image })
+        }
+      );
+
+      if (res.ok) {
+        setFormData(prev => ({
+          ...prev,
+          image: ""
+        }));
+        toast.success('Image removed successfully');
+      }
+    } catch (err) {
+      console.error('Error removing image:', err);
+      // Still remove from form even if deletion fails
+      setFormData(prev => ({
+        ...prev,
+        image: ""
+      }));
+    }
+  };
+
   const handleAddCategory = async () => {
     setLoading(true);
     setError(null);
@@ -99,7 +195,7 @@ export default function AdminCategoriesPage() {
       });
       toast.success('Category added successfully');
       setIsAddModalOpen(false);
-      setFormData({ name: "", slug: "", description: "", icon: "", gradientFrom: "", gradientTo: "" });
+      setFormData({ name: "", slug: "", description: "", icon: "", image: "", gradientFrom: "", gradientTo: "" });
       fetchCategories();
     } catch (err: unknown) {
       const errorMessage = (err as Error).message || 'Unknown error';
@@ -124,7 +220,7 @@ export default function AdminCategoriesPage() {
       });
       toast.success('Category updated successfully');
       setEditingCategory(null);
-      setFormData({ name: "", slug: "", description: "", icon: "", gradientFrom: "", gradientTo: "" });
+      setFormData({ name: "", slug: "", description: "", icon: "", image: "", gradientFrom: "", gradientTo: "" });
       fetchCategories();
     } catch (err: unknown) {
       const errorMessage = (err as Error).message || 'Unknown error';
@@ -210,6 +306,58 @@ export default function AdminCategoriesPage() {
                 />
               </div>
               <div>
+                <Label htmlFor="image">Category Image</Label>
+                {formData.image ? (
+                  <div className="relative mt-2">
+                    <img
+                      src={formData.image}
+                      alt="Category preview"
+                      className="w-full h-48 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={handleImageRemove}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="mt-2">
+                    <label
+                      htmlFor="image-upload"
+                      className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                    >
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-10 h-10 mb-3 text-gray-400" />
+                        <p className="mb-2 text-sm text-gray-500">
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-500">PNG, JPG, GIF, WEBP (MAX. 5MB)</p>
+                      </div>
+                      <input
+                        id="image-upload"
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleImageUpload(file);
+                          }
+                        }}
+                        disabled={uploadingImage}
+                      />
+                    </label>
+                    {uploadingImage && (
+                      <p className="mt-2 text-sm text-gray-500">Uploading image...</p>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div>
                 <Label htmlFor="gradient">Gradient Color</Label>
                 <Select
                   value={formData.gradientFrom && formData.gradientTo 
@@ -237,7 +385,7 @@ export default function AdminCategoriesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleAddCategory} disabled={loading}>
+              <Button onClick={handleAddCategory} disabled={loading || uploadingImage}>
                 Add
               </Button>
             </div>
@@ -257,6 +405,15 @@ export default function AdminCategoriesPage() {
                 <Badge>{category.icon}</Badge>
               </CardHeader>
               <CardContent>
+                {category.image && (
+                  <div className="mb-3">
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
+                  </div>
+                )}
                 <div className="text-sm text-gray-600 mb-2">{category.description}</div>
                 <div className="flex gap-2">
                   <Dialog open={editingCategory?.id === category.id} onOpenChange={open => {
@@ -270,6 +427,7 @@ export default function AdminCategoriesPage() {
                           slug: category.slug,
                           description: category.description,
                           icon: category.icon,
+                          image: category.image || "",
                           gradientFrom: category.gradient_from || "",
                           gradientTo: category.gradient_to || ""
                         });
@@ -315,6 +473,58 @@ export default function AdminCategoriesPage() {
                           />
                         </div>
                         <div>
+                          <Label htmlFor="edit-image">Category Image</Label>
+                          {formData.image ? (
+                            <div className="relative mt-2">
+                              <img
+                                src={formData.image}
+                                alt="Category preview"
+                                className="w-full h-48 object-cover rounded-lg border"
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                className="absolute top-2 right-2"
+                                onClick={handleImageRemove}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="mt-2">
+                              <label
+                                htmlFor="edit-image-upload"
+                                className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                              >
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                  <Upload className="w-10 h-10 mb-3 text-gray-400" />
+                                  <p className="mb-2 text-sm text-gray-500">
+                                    <span className="font-semibold">Click to upload</span> or drag and drop
+                                  </p>
+                                  <p className="text-xs text-gray-500">PNG, JPG, GIF, WEBP (MAX. 5MB)</p>
+                                </div>
+                                <input
+                                  id="edit-image-upload"
+                                  type="file"
+                                  className="hidden"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      handleImageUpload(file);
+                                    }
+                                  }}
+                                  disabled={uploadingImage}
+                                />
+                              </label>
+                              {uploadingImage && (
+                                <p className="mt-2 text-sm text-gray-500">Uploading image...</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div>
                           <Label htmlFor="gradient">Gradient Color</Label>
                           <Select
                             value={formData.gradientFrom && formData.gradientTo 
@@ -342,7 +552,7 @@ export default function AdminCategoriesPage() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <Button onClick={handleEditCategory} disabled={loading}>
+                        <Button onClick={handleEditCategory} disabled={loading || uploadingImage}>
                           Save
                         </Button>
                       </div>
