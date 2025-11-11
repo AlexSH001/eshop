@@ -214,9 +214,9 @@ export default function AdminCategoriesPage() {
                 <Select
                   value={formData.gradientFrom && formData.gradientTo 
                     ? `${formData.gradientFrom}|${formData.gradientTo}` 
-                    : ""}
+                    : "default"}
                   onValueChange={(value) => {
-                    if (value) {
+                    if (value && value !== "default") {
                       const [from, to] = value.split('|');
                       setFormData((prev: CategoryFormData) => ({ ...prev, gradientFrom: from, gradientTo: to }));
                     } else {
@@ -228,7 +228,7 @@ export default function AdminCategoriesPage() {
                     <SelectValue placeholder="Select gradient color (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Default (Auto-generated)</SelectItem>
+                    <SelectItem value="default">Default (Auto-generated)</SelectItem>
                     {availableGradients.map((gradient, index) => (
                       <SelectItem key={index} value={`${gradient.from}|${gradient.to}`}>
                         {gradient.label}
@@ -319,9 +319,9 @@ export default function AdminCategoriesPage() {
                           <Select
                             value={formData.gradientFrom && formData.gradientTo 
                               ? `${formData.gradientFrom}|${formData.gradientTo}` 
-                              : ""}
+                              : "default"}
                             onValueChange={(value) => {
-                              if (value) {
+                              if (value && value !== "default") {
                                 const [from, to] = value.split('|');
                                 setFormData((prev: CategoryFormData) => ({ ...prev, gradientFrom: from, gradientTo: to }));
                               } else {
@@ -333,7 +333,7 @@ export default function AdminCategoriesPage() {
                               <SelectValue placeholder="Select gradient color (optional)" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">Default (Auto-generated)</SelectItem>
+                              <SelectItem value="default">Default (Auto-generated)</SelectItem>
                               {availableGradients.map((gradient, index) => (
                                 <SelectItem key={index} value={`${gradient.from}|${gradient.to}`}>
                                   {gradient.label}
