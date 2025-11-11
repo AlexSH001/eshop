@@ -11,9 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   User,
   MapPin,
-  ShoppingBag,
-  Heart,
-  Settings,
   ArrowLeft,
   Edit,
   Save,
@@ -108,7 +105,7 @@ export default function ProfilePage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Profile
@@ -116,14 +113,6 @@ export default function ProfilePage() {
             <TabsTrigger value="addresses" className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               Addresses
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="flex items-center gap-2">
-              <ShoppingBag className="h-4 w-4" />
-              Orders
-            </TabsTrigger>
-            <TabsTrigger value="wishlist" className="flex items-center gap-2">
-              <Heart className="h-4 w-4" />
-              Wishlist
             </TabsTrigger>
           </TabsList>
 
@@ -245,52 +234,6 @@ export default function ProfilePage() {
                 <AddressSelector
                   onAddressSelect={() => {}}
                 />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Orders Tab */}
-          <TabsContent value="orders" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">Order History</CardTitle>
-                <p className="text-sm text-gray-600">
-                  View and track your past orders
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <ShoppingBag className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                  <p className="text-gray-500">View your order history</p>
-                  <Link href="/orders">
-                    <Button className="mt-4">
-                      View Orders
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Wishlist Tab */}
-          <TabsContent value="wishlist" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">Wishlist</CardTitle>
-                <p className="text-sm text-gray-600">
-                  Your saved items and favorites
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <Heart className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                  <p className="text-gray-500">View your wishlist</p>
-                  <Link href="/wishlist">
-                    <Button className="mt-4">
-                      View Wishlist
-                    </Button>
-                  </Link>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
