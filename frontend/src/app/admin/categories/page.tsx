@@ -18,6 +18,7 @@ import AdminLayout from "@/components/AdminLayout";
 import { useAdmin } from "@/contexts/AdminContext";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { adminApiRequestJson } from "@/lib/admin-api";
 
 export const dynamic = 'force-dynamic';
 
@@ -63,23 +64,14 @@ export default function AdminCategoriesPage() {
     setLoading(true);
     setError(null);
     try {
-      const adminToken = localStorage.getItem('admin_token');
-      if (!adminToken) {
-        throw new Error('No admin token found');
-      }
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/categories/admin/list`, {
-        headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      });
-      if (!res.ok) throw new Error('Failed to fetch categories');
-      const data = await res.json();
+      const data = await adminApiRequestJson<{ categories: Category[] }>('/categories/admin/list');
       setCategories(data.categories);
     } catch (err: unknown) {
-      setError((err as Error).message || 'Unknown error');
+      const errorMessage = (err as Error).message || 'Unknown error';
+      setError(errorMessage);
+      if (errorMessage.includes('Session expired') || errorMessage.includes('authentication')) {
+        router.push('/admin');
+      }
     } finally {
       setLoading(false);
     }
@@ -93,28 +85,21 @@ export default function AdminCategoriesPage() {
     setLoading(true);
     setError(null);
     try {
-      const adminToken = localStorage.getItem('admin_token');
-      if (!adminToken) {
-        throw new Error('No admin token found');
-      }
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/categories`, {
+      await adminApiRequestJson('/categories', {
         method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json' 
-        },
-        credentials: 'include',
         body: JSON.stringify(formData)
       });
-      if (!res.ok) throw new Error('Failed to add category');
       toast.success('Category added successfully');
       setIsAddModalOpen(false);
       setFormData({ name: "", slug: "", description: "", icon: "" });
       fetchCategories();
     } catch (err: unknown) {
-      setError((err as Error).message || 'Unknown error');
+      const errorMessage = (err as Error).message || 'Unknown error';
+      setError(errorMessage);
       toast.error('Failed to add category');
+      if (errorMessage.includes('Session expired') || errorMessage.includes('authentication')) {
+        router.push('/admin');
+      }
     } finally {
       setLoading(false);
     }
@@ -125,28 +110,21 @@ export default function AdminCategoriesPage() {
     setLoading(true);
     setError(null);
     try {
-      const adminToken = localStorage.getItem('admin_token');
-      if (!adminToken) {
-        throw new Error('No admin token found');
-      }
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/categories/${editingCategory.id}`, {
+      await adminApiRequestJson(`/categories/${editingCategory.id}`, {
         method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json' 
-        },
-        credentials: 'include',
         body: JSON.stringify(formData)
       });
-      if (!res.ok) throw new Error('Failed to update category');
       toast.success('Category updated successfully');
       setEditingCategory(null);
       setFormData({ name: "", slug: "", description: "", icon: "" });
       fetchCategories();
     } catch (err: unknown) {
-      setError((err as Error).message || 'Unknown error');
+      const errorMessage = (err as Error).message || 'Unknown error';
+      setError(errorMessage);
       toast.error('Failed to update category');
+      if (errorMessage.includes('Session expired') || errorMessage.includes('authentication')) {
+        router.push('/admin');
+      }
     } finally {
       setLoading(false);
     }
@@ -157,25 +135,19 @@ export default function AdminCategoriesPage() {
     setLoading(true);
     setError(null);
     try {
-      const adminToken = localStorage.getItem('admin_token');
-      if (!adminToken) {
-        throw new Error('No admin token found');
-      }
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/categories/${deletingCategory.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        },
-        credentials: 'include'
+      await adminApiRequestJson(`/categories/${deletingCategory.id}`, {
+        method: 'DELETE'
       });
-      if (!res.ok) throw new Error('Failed to delete category');
       toast.success('Category deleted successfully');
       setDeletingCategory(null);
       fetchCategories();
     } catch (err: unknown) {
-      setError((err as Error).message || 'Unknown error');
+      const errorMessage = (err as Error).message || 'Unknown error';
+      setError(errorMessage);
       toast.error('Failed to delete category');
+      if (errorMessage.includes('Session expired') || errorMessage.includes('authentication')) {
+        router.push('/admin');
+      }
     } finally {
       setLoading(false);
     }
