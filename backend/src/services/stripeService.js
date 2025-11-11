@@ -60,7 +60,7 @@ async function createPaymentLink({
           url: successUrl,
         },
       },
-      allow_promotion_codes: true,
+      allow_promotion_codes: false,
     });
 
     return {
