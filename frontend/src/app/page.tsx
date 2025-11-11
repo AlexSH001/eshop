@@ -14,6 +14,7 @@ import MobileSearchBar from "@/components/MobileSearchBar";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import AuthModal from "@/components/AuthModal";
 import UserDropdown from "@/components/UserDropdown";
+import Header from "@/components/Header";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
@@ -100,67 +101,16 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white pb-16 sm:pb-0">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white">
-                  <ShoppingBag className="h-5 w-5" />
-                </div>
-                <span className="text-xl font-semibold text-gray-900">
-                  Shop
-                </span>
-              </Link>
-            </div>
-
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              {/* Desktop Search */}
-              <div className="hidden md:block">
-                <SearchBar />
-              </div>
-
-              {/* Mobile Search Button */}
-              <div className="md:hidden">
-                <MobileSearchBar>
-                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
-                    <Search className="h-5 w-5" />
-                  </Button>
-                </MobileSearchBar>
-              </div>
-
-              {isAuthenticated ? (
-                <Link href="/wishlist">
-                  <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full">
-                    <Heart className="h-5 w-5" />
-                    {wishlistState.itemCount > 0 && (
-                      <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs">
-                        {wishlistState.itemCount}
-                      </Badge>
-                    )}
-                  </Button>
-                </Link>
-              ) : (
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
-                  <Heart className="h-5 w-5" />
-                </Button>
-              )}
-
-              {isAuthenticated ? (
-                <UserDropdown />
-              ) : (
-                <AuthModal>
-                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </AuthModal>
-              )}
-
-              <ShoppingCartSheet />
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
+      
+      {/* Mobile Search Button */}
+      <div className="md:hidden fixed bottom-20 right-4 z-40">
+        <MobileSearchBar>
+          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
+            <Search className="h-5 w-5" />
+          </Button>
+        </MobileSearchBar>
+      </div>
 
       {/* Hero Carousel Banner */}
       <section className="relative">

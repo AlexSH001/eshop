@@ -531,7 +531,37 @@ router.get('/system/health', authenticateAdmin, async (req, res) => {
   });
 });
 
-// Get all settings
+// Get public settings (store and appearance only - no authentication required)
+router.get('/settings/public', async (req, res) => {
+  try {
+    const publicSections = ['store', 'appearance'];
+    const placeholders = publicSections.map(() => '?').join(',');
+    const settingsRows = await database.query(
+      `SELECT section, data FROM settings WHERE section IN (${placeholders})`,
+      publicSections
+    );
+    
+    // Convert database rows to settings object
+    const settings = {};
+    settingsRows.forEach(row => {
+      try {
+        // Parse JSON data (handle both SQLite TEXT and PostgreSQL JSONB)
+        const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+        settings[row.section] = data;
+      } catch (err) {
+        console.error(`Error parsing settings for section ${row.section}:`, err);
+      }
+    });
+
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching public settings:', error);
+    // Return empty settings if error (first time setup)
+    res.json({});
+  }
+});
+
+// Get all settings (admin only)
 router.get('/settings', authenticateAdmin, async (req, res) => {
   try {
     const settingsRows = await database.query('SELECT section, data FROM settings');

@@ -210,6 +210,14 @@ export default function AdminSettingsPage() {
         body: JSON.stringify(settings[section])
       });
       toast.success(`${section.charAt(0).toUpperCase() + section.slice(1)} settings saved successfully`);
+      
+      // If store or appearance settings were saved, trigger a page refresh to apply changes
+      if (section === 'store' || section === 'appearance') {
+        // Dispatch a custom event that SettingsContext can listen to
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('settingsUpdated'));
+        }
+      }
     } catch (err: unknown) {
       const errorMessage = (err as Error).message || 'Unknown error';
       toast.error(`Failed to save ${section} settings: ${errorMessage}`);

@@ -4,6 +4,7 @@ import "./globals.css";
 import ClientBody from "./ClientBody";
 import Script from "next/script";
 import { Toaster } from "@/components/ui/sonner";
+import { SettingsProvider } from "@/contexts/SettingsContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,8 +35,10 @@ export default function RootLayout({
         />
       </head>
       <body suppressHydrationWarning className="antialiased">
-        <ClientBody>{children}</ClientBody>
-        <Toaster richColors position="top-center" offset={20} />
+        <SettingsProvider>
+          <ClientBody>{children}</ClientBody>
+          <Toaster richColors position="top-center" offset={20} />
+        </SettingsProvider>
       </body>
     </html>
   );
