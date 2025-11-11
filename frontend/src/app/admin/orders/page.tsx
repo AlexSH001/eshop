@@ -17,6 +17,7 @@ import AdminLayout from "@/components/AdminLayout";
 import { useAdmin } from "@/contexts/AdminContext";
 import { toast } from "sonner";
 import { Edit, Trash2, Eye } from "lucide-react";
+import { adminApiRequestJson } from "@/lib/admin-api";
 
 export const dynamic = 'force-dynamic';
 
@@ -58,20 +59,7 @@ export default function AdminOrdersPage() {
     setLoading(true);
     setError(null);
     try {
-      const adminToken = localStorage.getItem('admin_token');
-      if (!adminToken) {
-        throw new Error('No admin token found');
-      }
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/orders/authenticated`, {
-        headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      });
-      if (!res.ok) throw new Error('Failed to fetch orders');
-      const data = await res.json();
+      const data = await adminApiRequestJson<{ orders: any[] }>('/orders/authenticated');
       
       // Transform the data to match frontend expectations
       const transformedOrders = data.orders.map((order: any) => ({
@@ -90,7 +78,11 @@ export default function AdminOrdersPage() {
       
       setOrders(transformedOrders);
     } catch (err: unknown) {
-      setError((err as Error).message || 'Unknown error');
+      const errorMessage = (err as Error).message || 'Unknown error';
+      setError(errorMessage);
+      if (errorMessage.includes('Session expired') || errorMessage.includes('authentication')) {
+        router.push('/admin');
+      }
     } finally {
       setLoading(false);
     }
@@ -105,28 +97,21 @@ export default function AdminOrdersPage() {
     setLoading(true);
     setError(null);
     try {
-      const adminToken = localStorage.getItem('admin_token');
-      if (!adminToken) {
-        throw new Error('No admin token found');
-      }
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/orders/${editingOrder.id}/status`, {
+      await adminApiRequestJson(`/orders/${editingOrder.id}/status`, {
         method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json' 
-        },
-        credentials: 'include',
         body: JSON.stringify({ status })
       });
-      if (!res.ok) throw new Error('Failed to update order');
       toast.success('Order updated successfully');
       setEditingOrder(null);
       setStatus("");
       fetchOrders();
     } catch (err: unknown) {
-      setError((err as Error).message || 'Unknown error');
+      const errorMessage = (err as Error).message || 'Unknown error';
+      setError(errorMessage);
       toast.error('Failed to update order');
+      if (errorMessage.includes('Session expired') || errorMessage.includes('authentication')) {
+        router.push('/admin');
+      }
     } finally {
       setLoading(false);
     }
@@ -137,25 +122,19 @@ export default function AdminOrdersPage() {
     setLoading(true);
     setError(null);
     try {
-      const adminToken = localStorage.getItem('admin_token');
-      if (!adminToken) {
-        throw new Error('No admin token found');
-      }
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/orders/${deletingOrder.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        },
-        credentials: 'include'
+      await adminApiRequestJson(`/orders/${deletingOrder.id}`, {
+        method: 'DELETE'
       });
-      if (!res.ok) throw new Error('Failed to delete order');
       toast.success('Order deleted successfully');
       setDeletingOrder(null);
       fetchOrders();
     } catch (err: unknown) {
-      setError((err as Error).message || 'Unknown error');
+      const errorMessage = (err as Error).message || 'Unknown error';
+      setError(errorMessage);
       toast.error('Failed to delete order');
+      if (errorMessage.includes('Session expired') || errorMessage.includes('authentication')) {
+        router.push('/admin');
+      }
     } finally {
       setLoading(false);
     }

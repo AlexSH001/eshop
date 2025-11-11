@@ -18,6 +18,7 @@ import AdminLayout from "@/components/AdminLayout";
 import { useAdmin } from "@/contexts/AdminContext";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { adminApiRequestJson } from "@/lib/admin-api";
 
 export const dynamic = 'force-dynamic';
 
@@ -68,23 +69,14 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(null);
     try {
-      const adminToken = localStorage.getItem('admin_token');
-      if (!adminToken) {
-        throw new Error('No admin token found');
-      }
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/admin/users/authenticated`, {
-        headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      });
-      if (!res.ok) throw new Error('Failed to fetch users');
-      const data = await res.json();
+      const data = await adminApiRequestJson<{ users: User[] }>('/admin/users/authenticated');
       setUsers(data.users);
     } catch (err: unknown) {
-      setError((err as Error).message || 'Unknown error');
+      const errorMessage = (err as Error).message || 'Unknown error';
+      setError(errorMessage);
+      if (errorMessage.includes('Session expired') || errorMessage.includes('authentication')) {
+        router.push('/admin');
+      }
     } finally {
       setLoading(false);
     }
@@ -98,28 +90,21 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(null);
     try {
-      const adminToken = localStorage.getItem('admin_token');
-      if (!adminToken) {
-        throw new Error('No admin token found');
-      }
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/users`, {
+      await adminApiRequestJson('/users', {
         method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json' 
-        },
-        credentials: 'include',
         body: JSON.stringify(formData)
       });
-      if (!res.ok) throw new Error('Failed to add user');
       toast.success('User added successfully');
       setIsAddModalOpen(false);
       setFormData({ email: "", firstName: "", lastName: "", role: "user", status: "active", password: "" });
       fetchUsers();
     } catch (err: unknown) {
-      setError((err as Error).message || 'Unknown error');
+      const errorMessage = (err as Error).message || 'Unknown error';
+      setError(errorMessage);
       toast.error('Failed to add user');
+      if (errorMessage.includes('Session expired') || errorMessage.includes('authentication')) {
+        router.push('/admin');
+      }
     } finally {
       setLoading(false);
     }
@@ -130,28 +115,21 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(null);
     try {
-      const adminToken = localStorage.getItem('admin_token');
-      if (!adminToken) {
-        throw new Error('No admin token found');
-      }
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/users/${editingUser.id}`, {
+      await adminApiRequestJson(`/users/${editingUser.id}`, {
         method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json' 
-        },
-        credentials: 'include',
         body: JSON.stringify(formData)
       });
-      if (!res.ok) throw new Error('Failed to update user');
       toast.success('User updated successfully');
       setEditingUser(null);
       setFormData({ email: "", firstName: "", lastName: "", role: "user", status: "active", password: "" });
       fetchUsers();
     } catch (err: unknown) {
-      setError((err as Error).message || 'Unknown error');
+      const errorMessage = (err as Error).message || 'Unknown error';
+      setError(errorMessage);
       toast.error('Failed to update user');
+      if (errorMessage.includes('Session expired') || errorMessage.includes('authentication')) {
+        router.push('/admin');
+      }
     } finally {
       setLoading(false);
     }
@@ -162,25 +140,19 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(null);
     try {
-      const adminToken = localStorage.getItem('admin_token');
-      if (!adminToken) {
-        throw new Error('No admin token found');
-      }
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/users/${deletingUser.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        },
-        credentials: 'include'
+      await adminApiRequestJson(`/users/${deletingUser.id}`, {
+        method: 'DELETE'
       });
-      if (!res.ok) throw new Error('Failed to delete user');
       toast.success('User deleted successfully');
       setDeletingUser(null);
       fetchUsers();
     } catch (err: unknown) {
-      setError((err as Error).message || 'Unknown error');
+      const errorMessage = (err as Error).message || 'Unknown error';
+      setError(errorMessage);
       toast.error('Failed to delete user');
+      if (errorMessage.includes('Session expired') || errorMessage.includes('authentication')) {
+        router.push('/admin');
+      }
     } finally {
       setLoading(false);
     }
