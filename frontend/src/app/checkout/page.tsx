@@ -24,7 +24,7 @@ import AuthModal from "@/components/AuthModal";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { createUserAddress } from "@/lib/api";
+import { createUserAddress, getUserAddresses } from "@/lib/api";
 
 export default function CheckoutPage() {
   const { state, clearCart } = useCart();
@@ -34,7 +34,7 @@ export default function CheckoutPage() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
   const [saveContactAndAddress, setSaveContactAndAddress] = useState(false);
-  const [useSavedAddress, setUseSavedAddress] = useState(false);
+  const [useSavedAddress, setUseSavedAddress] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
     phone: '',
@@ -57,6 +57,38 @@ export default function CheckoutPage() {
       }));
     }
   }, [user?.id, isAuthenticated]);
+
+  // Fetch and auto-select address if user has addresses
+  useEffect(() => {
+    const fetchAndSelectAddress = async () => {
+      if (isAuthenticated && user) {
+        try {
+          const response = await getUserAddresses();
+          const addresses = response.addresses || [];
+          
+          if (addresses.length > 0) {
+            // If there's only one address, select it
+            if (addresses.length === 1) {
+              setSelectedAddress(addresses[0]);
+            } else {
+              // If multiple addresses, select the default one or the first one
+              const defaultAddress = addresses.find((addr: any) => addr.isDefault);
+              setSelectedAddress(defaultAddress || addresses[0]);
+            }
+          } else {
+            // No addresses available, uncheck the checkbox
+            setUseSavedAddress(false);
+          }
+        } catch (error) {
+          console.error('Failed to fetch addresses:', error);
+          // If fetching fails, uncheck the checkbox
+          setUseSavedAddress(false);
+        }
+      }
+    };
+
+    fetchAndSelectAddress();
+  }, [isAuthenticated, user?.id]);
 
   // Clear form when switching to saved address
   useEffect(() => {
