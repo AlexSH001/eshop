@@ -757,7 +757,7 @@ router.post('/:id/pay/stripe', optionalAuth, async (req, res) => {
     const paymentLink = await stripeService.createPaymentLink({
       orderId: order.order_number,
       total: order.total,
-      currency: 'sgd',
+      currency: process.env.CURRENCY || 'sgd',
       customerEmail: order.email,
       metadata: {
         orderId: order.id,
