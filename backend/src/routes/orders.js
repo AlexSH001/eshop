@@ -2,7 +2,7 @@ const express = require('express');
 const { database } = require('../database');
 const { adapter } = require('../database/adapter');
 const { generateOrderNumber } = require('../utils/auth');
-const { authenticateUser, authenticateAdmin, optionalAuth } = require('../middleware/auth');
+const { authenticateUser, authenticateAdmin, requireSuperAdmin, optionalAuth } = require('../middleware/auth');
 const {
   createOrderValidation,
   updateOrderStatusValidation,
@@ -672,8 +672,8 @@ router.put('/:id/status', authenticateAdmin, updateOrderStatusValidation, async 
   });
 });
 
-// Admin: Delete order
-router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
+// Admin: Delete order (Super Admin only)
+router.delete('/:id', authenticateAdmin, requireSuperAdmin, idValidation, async (req, res) => {
   const orderId = req.params.id;
 
   const order = await database.get('SELECT * FROM orders WHERE id = $1', [orderId]);
