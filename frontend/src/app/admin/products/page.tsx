@@ -294,7 +294,8 @@ export default function AdminProductsPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/products`);
+        // Fetch all products including inactive ones
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/products?status=all`);
         if (!res.ok) throw new Error('Failed to fetch products');
         const data = await res.json();
         const mappedProducts: Product[] = data.products.map((p: Record<string, unknown>) => {
@@ -519,13 +520,38 @@ export default function AdminProductsPage() {
         <h1 className="text-2xl font-bold mb-6">Products Management</h1>
         <p className="text-gray-600 mb-8">Manage your product catalog</p>
 
-        <div className="flex justify-between items-center mb-4">
-          <Input
-            placeholder="Search products..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="w-1/3"
-          />
+        <div className="flex justify-between items-center mb-4 gap-4">
+          <div className="flex gap-4 flex-1">
+            <Input
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="flex-1 max-w-md"
+            />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category.id} value={category.name}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button onClick={() => {
             // Reset form data when opening add modal
             setFormData({
