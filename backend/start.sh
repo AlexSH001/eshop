@@ -53,14 +53,27 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Seed database with sample data
-echo ""
-echo "🌱 Seeding database with sample data..."
-npm run seed
-
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to seed database"
-    exit 1
+# Seed database with demo data (only in demo/development environments)
+# Only seeds if NODE_ENV is "demo" or "development" AND SEED_DEMO_DATA=true
+if [ "$NODE_ENV" = "demo" ] || [ "$NODE_ENV" = "development" ]; then
+    if [ "$SEED_DEMO_DATA" = "true" ]; then
+        echo ""
+        echo "🌱 Seeding database with demo data (NODE_ENV=$NODE_ENV, SEED_DEMO_DATA=true)..."
+        npm run seed
+        
+        if [ $? -ne 0 ]; then
+            echo "❌ Failed to seed database"
+            exit 1
+        fi
+    else
+        echo ""
+        echo "⏭️  Skipping database seeding (set SEED_DEMO_DATA=true to enable in demo/development)"
+        echo "   💡 Your existing database data will be preserved"
+    fi
+else
+    echo ""
+    echo "⏭️  Skipping database seeding (only available in demo/development environments)"
+    echo "   💡 Production environments never seed automatically to protect data"
 fi
 
 echo ""
