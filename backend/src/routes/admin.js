@@ -108,7 +108,7 @@ router.get('/dashboard/top-products', authenticateAdmin, async (req, res) => {
     LEFT JOIN order_items oi ON p.id = oi.product_id
     LEFT JOIN orders o ON oi.order_id = o.id AND ${orderDateComparison}
     WHERE p.status = 'active'
-    GROUP BY p.id
+    GROUP BY p.id, p.name, p.price, p.featured_image, c.name
     ORDER BY units_sold DESC, revenue DESC
     LIMIT ?
   `, [periodDays, limit]);
