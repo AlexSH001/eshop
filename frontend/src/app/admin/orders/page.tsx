@@ -208,7 +208,7 @@ export default function AdminOrdersPage() {
                         <select
                           value={status}
                           onChange={e => setStatus(e.target.value)}
-                          className="w-full border rounded p-2"
+                          className="w-full border rounded p-2 bg-white dark:bg-gray-900"
                         >
                           <option value="pending">Pending</option>
                           <option value="processing">Processing</option>
