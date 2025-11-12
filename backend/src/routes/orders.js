@@ -145,7 +145,26 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
 
     // Calculate totals
     const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const taxRate = 0.08; // 8% tax rate
+    
+    // Get tax rate from settings (default to 0.08 if not set)
+    let taxRate = 0.08; // Default 8% tax rate
+    try {
+      const storeSettings = await database.get('SELECT data FROM settings WHERE section = $1', ['store']);
+      if (storeSettings && storeSettings.data) {
+        const storeData = typeof storeSettings.data === 'string' 
+          ? JSON.parse(storeSettings.data) 
+          : storeSettings.data;
+        if (storeData.taxRate !== undefined && storeData.taxRate !== null) {
+          taxRate = parseFloat(storeData.taxRate);
+          // Ensure tax rate is between 0 and 1 (0% to 100%)
+          if (isNaN(taxRate) || taxRate < 0) taxRate = 0;
+          if (taxRate > 1) taxRate = taxRate / 100; // Convert percentage to decimal if needed
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch tax rate from settings, using default:', error);
+    }
+    
     const taxAmount = subtotal * taxRate;
     const shippingAmount = subtotal > 100 ? 0 : 9.99; // Free shipping over $100
     const total = subtotal + taxAmount + shippingAmount;

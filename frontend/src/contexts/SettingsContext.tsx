@@ -10,6 +10,7 @@ interface StoreSettings {
   address: string;
   currency: string;
   timezone: string;
+  taxRate?: number;
 }
 
 interface AppearanceSettings {
@@ -39,7 +40,8 @@ const defaultSettings: Settings = {
     phone: '',
     address: '',
     currency: 'USD',
-    timezone: 'UTC'
+    timezone: 'UTC',
+    taxRate: 0.08
   },
   appearance: {
     primaryColor: '#000000',

@@ -453,12 +453,12 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Tax</span>
-                    <PriceDisplay price={state.total * 0.08} />
+                    <PriceDisplay price={state.total * (settings?.store?.taxRate || 0.08)} />
                   </div>
                   <Separator />
                   <div className="flex justify-between text-lg font-semibold">
                     <span>Total</span>
-                    <PriceDisplay price={state.total * 1.08} />
+                    <PriceDisplay price={state.total * (1 + (settings?.store?.taxRate || 0.08))} />
                   </div>
                 </div>
               </CardContent>
@@ -665,7 +665,8 @@ export default function CheckoutPage() {
                     ) : (
                       (() => {
                         const currency = settings?.store?.currency || 'USD';
-                        const total = state.total * 1.08;
+                        const taxRate = settings?.store?.taxRate || 0.08;
+                        const total = state.total * (1 + taxRate);
                         return `Complete Order • ${new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(total)}`;
                       })()
                     )}

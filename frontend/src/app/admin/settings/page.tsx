@@ -38,6 +38,7 @@ interface SettingsData {
     address: string;
     currency: string;
     timezone: string;
+    taxRate: number;
   };
   email: {
     smtpHost: string;
@@ -104,7 +105,8 @@ export default function AdminSettingsPage() {
       phone: '',
       address: '',
       currency: 'USD',
-      timezone: 'UTC'
+      timezone: 'UTC',
+      taxRate: 0.08
     },
     email: {
       smtpHost: '',
@@ -337,6 +339,20 @@ export default function AdminSettingsPage() {
                         <SelectItem value="SGD">SGD (S$)</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="taxRate">Tax Rate (%)</Label>
+                    <Input
+                      id="taxRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={settings.store.taxRate * 100}
+                      onChange={(e) => updateSettings('store', 'taxRate', parseFloat(e.target.value) / 100 || 0)}
+                      placeholder="8.00"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Enter as percentage (e.g., 8 for 8%)</p>
                   </div>
                 </div>
                 <div>
