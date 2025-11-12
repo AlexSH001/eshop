@@ -30,6 +30,13 @@ router.get('/dashboard/stats', authenticateAdmin, async (req, res) => {
       (SELECT COUNT(*) FROM users WHERE created_at BETWEEN datetime('now', '-${period * 2} days') AND datetime('now', '-${period} days')) as prev_users
   `);
 
+  // Get current period new users
+  const currentPeriodUsers = await database.get(`
+    SELECT COUNT(*) as new_users
+    FROM users
+    WHERE created_at >= datetime('now', '-${period} days')
+  `);
+
   const calculateGrowth = (current, previous) => {
     if (previous === 0) return current > 0 ? 100 : 0;
     return Math.round(((current - previous) / previous) * 100 * 100) / 100;
@@ -47,7 +54,7 @@ router.get('/dashboard/stats', authenticateAdmin, async (req, res) => {
     growth: {
       ordersGrowth: calculateGrowth(stats.total_orders, previousStats.prev_orders),
       revenueGrowth: calculateGrowth(stats.total_revenue, previousStats.prev_revenue),
-      usersGrowth: calculateGrowth(0, previousStats.prev_users) // New users in current period vs previous
+      usersGrowth: calculateGrowth(currentPeriodUsers.new_users, previousStats.prev_users)
     }
   });
 });
