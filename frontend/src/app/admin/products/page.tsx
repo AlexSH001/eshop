@@ -801,6 +801,7 @@ export default function AdminProductsPage() {
                         {uploadingImages ? 'Uploading...' : 'Click to upload images or drag and drop'}
                       </p>
                       <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB each</p>
+                      <p className="text-xs text-blue-600 font-medium mt-1">Recommended: 1:1 aspect ratio (square, e.g., 1000×1000)</p>
                     </label>
                   </div>
                 </div>
@@ -1052,6 +1053,7 @@ export default function AdminProductsPage() {
                         {uploadingImages ? 'Uploading...' : 'Click to upload images or drag and drop'}
                       </p>
                       <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB each</p>
+                      <p className="text-xs text-blue-600 font-medium mt-1">Recommended: 1:1 aspect ratio (square, e.g., 1000×1000)</p>
                     </label>
                   </div>
                 </div>
