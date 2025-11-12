@@ -1,5 +1,6 @@
 const express = require('express');
 const { database } = require('../database');
+const { adapter } = require('../database/adapter');
 const { generateOrderNumber } = require('../utils/auth');
 const { authenticateUser, authenticateAdmin, optionalAuth } = require('../middleware/auth');
 const {
@@ -703,8 +704,10 @@ router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
 
 // Admin: Get order statistics
 router.get('/admin/statistics', authenticateAdmin, async (req, res) => {
-  const { period = '30' } = req.query; // days
+  const period = parseInt(req.query.period) || 30; // days
+  const periodDays = period.toString();
 
+  const dateComparison = adapter.getDateComparison('created_at', '>=');
   const stats = await database.get(`
     SELECT
       COUNT(*) as total_orders,
@@ -716,8 +719,8 @@ router.get('/admin/statistics', authenticateAdmin, async (req, res) => {
       COALESCE(SUM(total), 0) as total_revenue,
       COALESCE(AVG(total), 0) as average_order_value
     FROM orders
-    WHERE created_at >= datetime('now', '-${period} days')
-  `);
+    WHERE ${dateComparison}
+  `, [periodDays]);
 
   const dailyStats = await database.query(`
     SELECT
@@ -725,10 +728,10 @@ router.get('/admin/statistics', authenticateAdmin, async (req, res) => {
       COUNT(*) as orders_count,
       COALESCE(SUM(total), 0) as revenue
     FROM orders
-    WHERE created_at >= datetime('now', '-${period} days')
+    WHERE ${dateComparison}
     GROUP BY DATE(created_at)
     ORDER BY date DESC
-  `);
+  `, [periodDays]);
 
   res.json({
     summary: {

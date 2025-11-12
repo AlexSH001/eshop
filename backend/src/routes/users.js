@@ -1,5 +1,6 @@
 const express = require('express');
 const { database } = require('../database');
+const { adapter } = require('../database/adapter');
 const { authenticateAdmin, authenticateUser } = require('../middleware/auth');
 const { paginationValidation, idValidation } = require('../middleware/validation');
 const { hashPassword } = require('../utils/auth');
@@ -9,27 +10,31 @@ const router = express.Router();
 
 // Public analytics endpoints for admin portal
 router.get('/analytics/stats', async (req, res) => {
-  const { period = '30' } = req.query; // days
+  const period = parseInt(req.query.period) || 30; // days
+  const periodDays = period.toString();
+  const period2x = (period * 2).toString();
 
   try {
     // Get overview stats
+    const dateComparison = adapter.getDateComparison('created_at', '>=');
     const stats = await database.get(`
       SELECT
         (SELECT COUNT(*) FROM products WHERE status = 'active') as total_products,
-        (SELECT COUNT(*) FROM orders WHERE created_at >= datetime('now', '-${period} days')) as total_orders,
+        (SELECT COUNT(*) FROM orders WHERE ${dateComparison}) as total_orders,
         (SELECT COUNT(*) FROM users WHERE is_active = TRUE) as total_users,
-        (SELECT COALESCE(SUM(total), 0) FROM orders WHERE created_at >= datetime('now', '-${period} days')) as total_revenue,
+        (SELECT COALESCE(SUM(total), 0) FROM orders WHERE ${dateComparison}) as total_revenue,
         (SELECT COUNT(*) FROM orders WHERE status = 'pending') as pending_orders,
         (SELECT COUNT(*) FROM products WHERE stock <= min_stock AND status = 'active') as low_stock_products
-    `);
+    `, [periodDays, periodDays]);
 
     // Growth calculations (compare with previous period)
+    const dateRange = adapter.getDateRange('created_at');
     const previousStats = await database.get(`
       SELECT
-        (SELECT COUNT(*) FROM orders WHERE created_at BETWEEN datetime('now', '-${period * 2} days') AND datetime('now', '-${period} days')) as prev_orders,
-        (SELECT COALESCE(SUM(total), 0) FROM orders WHERE created_at BETWEEN datetime('now', '-${period * 2} days') AND datetime('now', '-${period} days')) as prev_revenue,
-        (SELECT COUNT(*) FROM users WHERE created_at BETWEEN datetime('now', '-${period * 2} days') AND datetime('now', '-${period} days')) as prev_users
-    `);
+        (SELECT COUNT(*) FROM orders WHERE ${dateRange}) as prev_orders,
+        (SELECT COALESCE(SUM(total), 0) FROM orders WHERE ${dateRange}) as prev_revenue,
+        (SELECT COUNT(*) FROM users WHERE ${dateRange}) as prev_users
+    `, [period2x, periodDays, period2x, periodDays, period2x, periodDays]);
 
     const calculateGrowth = (current, previous) => {
       if (previous === 0) return current > 0 ? 100 : 0;
@@ -57,19 +62,21 @@ router.get('/analytics/stats', async (req, res) => {
 });
 
 router.get('/analytics/sales-data', async (req, res) => {
-  const { days = '30' } = req.query;
+  const days = parseInt(req.query.days) || 30;
+  const daysStr = days.toString();
 
   try {
+    const salesDateComparison = adapter.getDateComparison('created_at', '>=');
     const salesData = await database.query(`
       SELECT
         DATE(created_at) as date,
         COUNT(*) as orders_count,
         COALESCE(SUM(total), 0) as revenue
       FROM orders
-      WHERE created_at >= datetime('now', '-${days} days')
+      WHERE ${salesDateComparison}
       GROUP BY DATE(created_at)
       ORDER BY date ASC
-    `);
+    `, [daysStr]);
 
     res.json({
       salesData: salesData.map(day => ({
@@ -84,9 +91,12 @@ router.get('/analytics/sales-data', async (req, res) => {
 });
 
 router.get('/analytics/top-products', async (req, res) => {
-  const { limit = 10, period = '30' } = req.query;
+  const limit = parseInt(req.query.limit) || 10;
+  const period = parseInt(req.query.period) || 30;
+  const periodDays = period.toString();
 
   try {
+    const orderDateComparison = adapter.getDateComparison('o.created_at', '>=');
     const products = await database.query(`
       SELECT
         p.id,
@@ -99,12 +109,12 @@ router.get('/analytics/top-products', async (req, res) => {
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN order_items oi ON p.id = oi.product_id
-      LEFT JOIN orders o ON oi.order_id = o.id AND o.created_at >= datetime('now', '-${period} days')
+      LEFT JOIN orders o ON oi.order_id = o.id AND ${orderDateComparison}
       WHERE p.status = 'active'
-      GROUP BY p.id
+      GROUP BY p.id, p.name, p.price, p.featured_image, c.name
       ORDER BY units_sold DESC, revenue DESC
       LIMIT ?
-    `, [parseInt(limit)]);
+    `, [periodDays, limit]);
 
     res.json({
       products: products.map(p => ({
@@ -118,9 +128,11 @@ router.get('/analytics/top-products', async (req, res) => {
 });
 
 router.get('/analytics/category-performance', async (req, res) => {
-  const { period = '30' } = req.query;
+  const period = parseInt(req.query.period) || 30;
+  const periodDays = period.toString();
 
   try {
+    const categoryDateComparison = adapter.getDateComparison('o.created_at', '>=');
     const categoryStats = await database.query(`
       SELECT
         c.id,
@@ -131,11 +143,11 @@ router.get('/analytics/category-performance', async (req, res) => {
       FROM categories c
       LEFT JOIN products p ON c.id = p.category_id AND p.status = 'active'
       LEFT JOIN order_items oi ON p.id = oi.product_id
-      LEFT JOIN orders o ON oi.order_id = o.id AND o.created_at >= datetime('now', '-${period} days')
+      LEFT JOIN orders o ON oi.order_id = o.id AND ${categoryDateComparison}
       WHERE c.is_active = TRUE
       GROUP BY c.id, c.name
       ORDER BY revenue DESC
-    `);
+    `, [periodDays]);
 
     res.json({
       categories: categoryStats.map(cat => ({
