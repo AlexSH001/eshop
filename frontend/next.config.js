@@ -29,7 +29,7 @@ const nextConfig = {
         ],
       },
       {
-        source: '/static/images/:path*',
+        source: '/uploads/:path*',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
@@ -81,7 +81,7 @@ const nextConfig = {
         test: /\.(jpg|jpeg|png|gif|webp)$/,
         type: 'asset/resource',
         generator: {
-          filename: 'static/images/[name][ext]',
+          filename: 'uploads/[name][ext]',
         },
       });
       
