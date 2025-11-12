@@ -31,15 +31,25 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const { user, logout } = useAdmin();
 
-  const navigation = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Products', href: '/admin/products', icon: Package },
-    { name: 'Categories', href: '/admin/categories', icon: LayoutDashboard },
-    { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
-    { name: 'Users', href: '/admin/users', icon: Users },
-    { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
-    { name: 'Settings', href: '/admin/settings', icon: Settings },
+  // Base navigation items available to all admins
+  const allNavigationItems = [
+    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, requiresSuperAdmin: false },
+    { name: 'Products', href: '/admin/products', icon: Package, requiresSuperAdmin: false },
+    { name: 'Categories', href: '/admin/categories', icon: LayoutDashboard, requiresSuperAdmin: false },
+    { name: 'Orders', href: '/admin/orders', icon: ShoppingCart, requiresSuperAdmin: false },
+    { name: 'Users', href: '/admin/users', icon: Users, requiresSuperAdmin: true },
+    { name: 'Analytics', href: '/admin/analytics', icon: BarChart3, requiresSuperAdmin: false },
+    { name: 'Settings', href: '/admin/settings', icon: Settings, requiresSuperAdmin: true },
   ];
+
+  // Filter navigation based on admin role
+  const navigation = allNavigationItems.filter(item => {
+    // Show all items for super admins, hide super-admin-only items for regular admins
+    if (item.requiresSuperAdmin) {
+      return user?.role === 'super_admin';
+    }
+    return true; // Show items that don't require super admin
+  });
 
   const handleLogout = () => {
     logout();
