@@ -1,6 +1,6 @@
 const express = require('express');
 const { database } = require('../database');
-const { authenticateAdmin } = require('../middleware/auth');
+const { authenticateAdmin, requireSuperAdmin } = require('../middleware/auth');
 const { idValidation, paginationValidation } = require('../middleware/validation');
 const { NotFoundError } = require('../middleware/errorHandler');
 
@@ -322,8 +322,8 @@ router.put('/:id', authenticateAdmin, idValidation, async (req, res) => {
   });
 });
 
-// Admin: Delete category
-router.delete('/:id', authenticateAdmin, idValidation, async (req, res) => {
+// Admin: Delete category (Super Admin only)
+router.delete('/:id', authenticateAdmin, requireSuperAdmin, idValidation, async (req, res) => {
   const categoryId = req.params.id;
 
   // Check if category exists

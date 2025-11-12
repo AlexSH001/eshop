@@ -244,8 +244,8 @@ router.get('/users', paginationValidation, async (req, res) => {
   });
 });
 
-// User management (authenticated)
-router.get('/users/authenticated', authenticateAdmin, paginationValidation, async (req, res) => {
+// User management (Super Admin only)
+router.get('/users/authenticated', authenticateAdmin, requireSuperAdmin, paginationValidation, async (req, res) => {
   const {
     page = 1,
     limit = 20,
@@ -311,8 +311,8 @@ router.get('/users/authenticated', authenticateAdmin, paginationValidation, asyn
   });
 });
 
-// User details
-router.get('/users/:id', authenticateAdmin, idValidation, async (req, res) => {
+// User details (Super Admin only)
+router.get('/users/:id', authenticateAdmin, requireSuperAdmin, idValidation, async (req, res) => {
   const userId = req.params.id;
 
   const user = await database.get(`
@@ -357,8 +357,8 @@ router.get('/users/:id', authenticateAdmin, idValidation, async (req, res) => {
   });
 });
 
-// Toggle user status
-router.put('/users/:id/toggle-status', authenticateAdmin, idValidation, async (req, res) => {
+// Toggle user status (Super Admin only)
+router.put('/users/:id/toggle-status', authenticateAdmin, requireSuperAdmin, idValidation, async (req, res) => {
   const userId = req.params.id;
 
   const user = await database.get('SELECT id, is_active FROM users WHERE id = ?', [userId]);
@@ -581,8 +581,8 @@ router.get('/settings/public', async (req, res) => {
   }
 });
 
-// Get all settings (admin only)
-router.get('/settings', authenticateAdmin, async (req, res) => {
+// Get all settings (Super Admin only)
+router.get('/settings', authenticateAdmin, requireSuperAdmin, async (req, res) => {
   try {
     const settingsRows = await database.query('SELECT section, data FROM settings');
     
@@ -605,8 +605,8 @@ router.get('/settings', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Get specific settings section
-router.get('/settings/:section', authenticateAdmin, async (req, res) => {
+// Get specific settings section (Super Admin only)
+router.get('/settings/:section', authenticateAdmin, requireSuperAdmin, async (req, res) => {
   const { section } = req.params;
 
   try {
@@ -625,8 +625,8 @@ router.get('/settings/:section', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Update settings section
-router.put('/settings/:section', authenticateAdmin, async (req, res) => {
+// Update settings section (Super Admin only)
+router.put('/settings/:section', authenticateAdmin, requireSuperAdmin, async (req, res) => {
   const { section } = req.params;
   const data = req.body;
 

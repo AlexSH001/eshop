@@ -1,7 +1,7 @@
 const express = require('express');
 const { db } = require('../database');
 const { generateSlug, generateSKU } = require('../utils/auth');
-const { authenticateAdmin, optionalAuth } = require('../middleware/auth');
+const { authenticateAdmin, requireSuperAdmin, optionalAuth } = require('../middleware/auth');
 const {
   createProductValidation,
   updateProductValidation,
@@ -600,8 +600,8 @@ router.put('/:id', updateProductValidation, async (req, res) => {
   });
 });
 
-// Delete product (public for admin portal)
-router.delete('/:id', idValidation, async (req, res) => {
+// Delete product (Super Admin only)
+router.delete('/:id', authenticateAdmin, requireSuperAdmin, idValidation, async (req, res) => {
   const productId = req.params.id;
 
   const product = await db.get('SELECT id, featured_image, images FROM products WHERE id = $1', [productId]);

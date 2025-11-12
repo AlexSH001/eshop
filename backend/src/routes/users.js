@@ -1,7 +1,7 @@
 const express = require('express');
 const { database } = require('../database');
 const { adapter } = require('../database/adapter');
-const { authenticateAdmin, authenticateUser } = require('../middleware/auth');
+const { authenticateAdmin, requireSuperAdmin, authenticateUser } = require('../middleware/auth');
 const { paginationValidation, idValidation } = require('../middleware/validation');
 const { hashPassword } = require('../utils/auth');
 const { NotFoundError } = require('../middleware/errorHandler');
@@ -301,8 +301,8 @@ router.post('/', async (req, res) => {
   });
 });
 
-// Update user (public for admin portal)
-router.put('/:id', idValidation, async (req, res) => {
+// Update user (Super Admin only)
+router.put('/:id', authenticateAdmin, requireSuperAdmin, idValidation, async (req, res) => {
   const { id } = req.params;
   const {
     email,
@@ -388,8 +388,8 @@ router.put('/:id', idValidation, async (req, res) => {
   });
 });
 
-// Delete user (public for admin portal)
-router.delete('/:id', idValidation, async (req, res) => {
+// Delete user (Super Admin only)
+router.delete('/:id', authenticateAdmin, requireSuperAdmin, idValidation, async (req, res) => {
   const { id } = req.params;
 
   // Check if user exists
