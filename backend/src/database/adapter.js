@@ -117,6 +117,44 @@ class DatabaseAdapter {
     
     return `${column} LIKE ?`;
   }
+
+  // 获取数据库特定的日期函数语法
+  // 返回一个函数，用于生成日期比较的SQL片段
+  // 例如: getDateComparison('created_at', '>=') 
+  // SQLite: created_at >= datetime('now', '-' || ? || ' days')
+  // PostgreSQL: created_at >= NOW() - (INTERVAL '1 day' * ?)
+  getDateComparison(column, operator) {
+    const dbType = this.getDatabaseType();
+    
+    if (dbType === 'sqlite3' || dbType === 'sqlite') {
+      // SQLite: datetime('now', '-' || ? || ' days')
+      return `${column} ${operator} datetime('now', '-' || ? || ' days')`;
+    } else if (dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql') {
+      // PostgreSQL: NOW() - (INTERVAL '1 day' * ?)
+      return `${column} ${operator} (NOW() - (INTERVAL '1 day' * ?))`;
+    }
+    
+    // Fallback to SQLite syntax
+    return `${column} ${operator} datetime('now', '-' || ? || ' days')`;
+  }
+
+  // 获取数据库特定的日期范围语法
+  // 返回用于BETWEEN的日期范围SQL片段
+  // 例如: getDateRange('created_at')
+  getDateRange(column) {
+    const dbType = this.getDatabaseType();
+    
+    if (dbType === 'sqlite3' || dbType === 'sqlite') {
+      // SQLite: BETWEEN datetime('now', '-' || ? || ' days') AND datetime('now', '-' || ? || ' days')
+      return `${column} BETWEEN datetime('now', '-' || ? || ' days') AND datetime('now', '-' || ? || ' days')`;
+    } else if (dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql') {
+      // PostgreSQL: BETWEEN (NOW() - (INTERVAL '1 day' * ?)) AND (NOW() - (INTERVAL '1 day' * ?))
+      return `${column} BETWEEN (NOW() - (INTERVAL '1 day' * ?)) AND (NOW() - (INTERVAL '1 day' * ?))`;
+    }
+    
+    // Fallback to SQLite syntax
+    return `${column} BETWEEN datetime('now', '-' || ? || ' days') AND datetime('now', '-' || ? || ' days')`;
+  }
 }
 
 // 创建单例实例
@@ -132,5 +170,7 @@ module.exports = {
   convertResult: (result, operation) => adapter.convertResult(result, operation),
   handleTransaction: (db, callback) => adapter.handleTransaction(db, callback),
   getLimitSyntax: (limit, offset) => adapter.getLimitSyntax(limit, offset),
-  getLikeSyntax: (column, paramIndex) => adapter.getLikeSyntax(column, paramIndex)
+  getLikeSyntax: (column, paramIndex) => adapter.getLikeSyntax(column, paramIndex),
+  getDateComparison: (column, operator, daysParamIndex) => adapter.getDateComparison(column, operator, daysParamIndex),
+  getDateRange: (column, startDaysParamIndex, endDaysParamIndex) => adapter.getDateRange(column, startDaysParamIndex, endDaysParamIndex)
 }; 
