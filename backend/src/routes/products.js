@@ -12,6 +12,25 @@ const { NotFoundError } = require('../middleware/errorHandler');
 
 const router = express.Router();
 
+// Helper function to safely parse JSON fields from database
+const safeParseJSON = (value, defaultValue = null) => {
+  if (!value) return defaultValue;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch (e) {
+      // If parsing fails, return the default value
+      console.warn('Failed to parse JSON:', e.message, 'Value:', value);
+      return defaultValue;
+    }
+  }
+  // If already parsed (object/array), return as-is
+  if (typeof value === 'object') {
+    return value;
+  }
+  return defaultValue;
+};
+
 // Ensure slug is unique by suffixing -2, -3, ... if needed
 async function ensureUniqueSlug(baseSlug) {
   const existing = await db.query(
@@ -416,11 +435,11 @@ router.post('/', createProductValidation, async (req, res) => {
     message: 'Product created successfully',
     product: {
       ...product,
-      images: JSON.parse(product.images),
-      tags: JSON.parse(product.tags),
-      attributes: JSON.parse(product.attributes),
-      dimensions: product.dimensions ? JSON.parse(product.dimensions) : null,
-      specifications: product.specifications ? JSON.parse(product.specifications) : {},
+      images: safeParseJSON(product.images, []),
+      tags: safeParseJSON(product.tags, []),
+      attributes: safeParseJSON(product.attributes, {}),
+      dimensions: safeParseJSON(product.dimensions, null),
+      specifications: safeParseJSON(product.specifications, {}),
       shipping: product.shipping || ''
     }
   });
@@ -501,11 +520,11 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
     message: 'Product created successfully',
     product: {
       ...product,
-      images: JSON.parse(product.images),
-      tags: JSON.parse(product.tags),
-      attributes: JSON.parse(product.attributes),
-      dimensions: product.dimensions ? JSON.parse(product.dimensions) : null,
-      specifications: product.specifications ? JSON.parse(product.specifications) : {},
+      images: safeParseJSON(product.images, []),
+      tags: safeParseJSON(product.tags, []),
+      attributes: safeParseJSON(product.attributes, {}),
+      dimensions: safeParseJSON(product.dimensions, null),
+      specifications: safeParseJSON(product.specifications, {}),
       shipping: product.shipping || ''
     }
   });
@@ -590,11 +609,11 @@ router.put('/:id', updateProductValidation, async (req, res) => {
     message: 'Product updated successfully',
     product: {
       ...updatedProduct,
-      images: JSON.parse(updatedProduct.images),
-      tags: JSON.parse(updatedProduct.tags),
-      attributes: JSON.parse(updatedProduct.attributes),
-      dimensions: updatedProduct.dimensions ? JSON.parse(updatedProduct.dimensions) : null,
-      specifications: updatedProduct.specifications ? JSON.parse(updatedProduct.specifications) : {},
+      images: safeParseJSON(updatedProduct.images, []),
+      tags: safeParseJSON(updatedProduct.tags, []),
+      attributes: safeParseJSON(updatedProduct.attributes, {}),
+      dimensions: safeParseJSON(updatedProduct.dimensions, null),
+      specifications: safeParseJSON(updatedProduct.specifications, {}),
       shipping: updatedProduct.shipping || ''
     }
   });
