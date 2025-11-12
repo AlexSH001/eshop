@@ -336,6 +336,7 @@ export default function AdminCategoriesPage() {
                           <span className="font-semibold">Click to upload</span> or drag and drop
                         </p>
                         <p className="text-xs text-gray-500">PNG, JPG, GIF, WEBP (MAX. 5MB)</p>
+                        <p className="text-xs text-blue-600 font-medium mt-1">Recommended: 16:9 aspect ratio (e.g., 1920×1080)</p>
                       </div>
                       <input
                         id="image-upload"
@@ -503,6 +504,7 @@ export default function AdminCategoriesPage() {
                                     <span className="font-semibold">Click to upload</span> or drag and drop
                                   </p>
                                   <p className="text-xs text-gray-500">PNG, JPG, GIF, WEBP (MAX. 5MB)</p>
+                                  <p className="text-xs text-blue-600 font-medium mt-1">Recommended: 16:9 aspect ratio (e.g., 1920×1080)</p>
                                 </div>
                                 <input
                                   id="edit-image-upload"
