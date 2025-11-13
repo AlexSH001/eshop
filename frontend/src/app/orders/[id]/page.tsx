@@ -24,6 +24,18 @@ interface Order {
   items: OrderItem[];
   tracking?: string;
   estimatedDelivery?: string;
+  phone?: string;
+  shippingAddress?: {
+    firstName: string;
+    lastName: string;
+    company?: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
 }
 
 export default function OrderDetailPage() {
@@ -47,11 +59,23 @@ export default function OrderDetailPage() {
         setOrder({
           ...order,
           total: parseFloat(order.total) || 0,
+          phone: order.phone || undefined,
           items: (order.items || []).map((item: any) => ({
             ...item,
             price: parseFloat(item.price) || 0,
             total: parseFloat(item.total) || 0
-          }))
+          })),
+          shippingAddress: order.shipping_first_name ? {
+            firstName: order.shipping_first_name,
+            lastName: order.shipping_last_name,
+            company: order.shipping_company,
+            addressLine1: order.shipping_address_line_1,
+            addressLine2: order.shipping_address_line_2,
+            city: order.shipping_city,
+            state: order.shipping_state,
+            postalCode: order.shipping_postal_code,
+            country: order.shipping_country
+          } : undefined
         });
       })
       .catch(err => setError(err.message || "Unknown error"))
@@ -131,6 +155,20 @@ export default function OrderDetailPage() {
                   </div>
                 ))}
               </div>
+              {order.shippingAddress && (
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Shipping Address</h3>
+                  <div className="text-sm text-gray-600">
+                    <div>{order.shippingAddress.firstName} {order.shippingAddress.lastName}</div>
+                    {order.shippingAddress.company && <div>{order.shippingAddress.company}</div>}
+                    <div>{order.shippingAddress.addressLine1}</div>
+                    {order.shippingAddress.addressLine2 && <div>{order.shippingAddress.addressLine2}</div>}
+                    <div>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.postalCode}</div>
+                    <div>{order.shippingAddress.country}</div>
+                    {order.phone && <div className="mt-2">Phone: {order.phone}</div>}
+                  </div>
+                </div>
+              )}
               <div className="border-t pt-4">
                 <div className="flex items-center justify-between">
                   <div>
