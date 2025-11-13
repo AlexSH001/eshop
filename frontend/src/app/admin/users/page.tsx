@@ -14,6 +14,13 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import AdminLayout from "@/components/AdminLayout";
 import { useAdmin } from "@/contexts/AdminContext";
 import { toast } from "sonner";
@@ -173,37 +180,73 @@ export default function AdminUsersPage() {
               <DialogTitle>Add User</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <Input
-                placeholder="Email"
-                value={formData.email}
-                onChange={e => setFormData((prev: UserFormData) => ({ ...prev, email: e.target.value }))}
-              />
-              <Input
-                placeholder="First Name"
-                value={formData.firstName}
-                onChange={e => setFormData((prev: UserFormData) => ({ ...prev, firstName: e.target.value }))}
-              />
-              <Input
-                placeholder="Last Name"
-                value={formData.lastName}
-                onChange={e => setFormData((prev: UserFormData) => ({ ...prev, lastName: e.target.value }))}
-              />
-              <Input
-                placeholder="Password"
-                type="password"
-                value={formData.password}
-                onChange={e => setFormData((prev: UserFormData) => ({ ...prev, password: e.target.value }))}
-              />
-              <Input
-                placeholder="Role (user/admin)"
-                value={formData.role}
-                onChange={e => setFormData((prev: UserFormData) => ({ ...prev, role: e.target.value }))}
-              />
-              <Input
-                placeholder="Status (active/inactive)"
-                value={formData.status}
-                onChange={e => setFormData((prev: UserFormData) => ({ ...prev, status: e.target.value }))}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  placeholder="Email"
+                  value={formData.email}
+                  onChange={e => setFormData((prev: UserFormData) => ({ ...prev, email: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  placeholder="First Name"
+                  value={formData.firstName}
+                  onChange={e => setFormData((prev: UserFormData) => ({ ...prev, firstName: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  placeholder="Last Name"
+                  value={formData.lastName}
+                  onChange={e => setFormData((prev: UserFormData) => ({ ...prev, lastName: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  placeholder="Password"
+                  type="password"
+                  value={formData.password}
+                  onChange={e => setFormData((prev: UserFormData) => ({ ...prev, password: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) => setFormData((prev: UserFormData) => ({ ...prev, role: value }))}
+                >
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => setFormData((prev: UserFormData) => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button onClick={handleAddUser} disabled={loading}>
                 Add
               </Button>
@@ -249,37 +292,73 @@ export default function AdminUsersPage() {
                         <DialogTitle>Edit User</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4">
-                        <Input
-                          placeholder="Email"
-                          value={formData.email}
-                          onChange={e => setFormData((prev: UserFormData) => ({ ...prev, email: e.target.value }))}
-                        />
-                        <Input
-                          placeholder="First Name"
-                          value={formData.firstName}
-                          onChange={e => setFormData((prev: UserFormData) => ({ ...prev, firstName: e.target.value }))}
-                        />
-                        <Input
-                          placeholder="Last Name"
-                          value={formData.lastName}
-                          onChange={e => setFormData((prev: UserFormData) => ({ ...prev, lastName: e.target.value }))}
-                        />
-                        <Input
-                          placeholder="Password (leave blank to keep current)"
-                          type="password"
-                          value={formData.password}
-                          onChange={e => setFormData((prev: UserFormData) => ({ ...prev, password: e.target.value }))}
-                        />
-                        <Input
-                          placeholder="Role (user/admin)"
-                          value={formData.role}
-                          onChange={e => setFormData((prev: UserFormData) => ({ ...prev, role: e.target.value }))}
-                        />
-                        <Input
-                          placeholder="Status (active/inactive)"
-                          value={formData.status}
-                          onChange={e => setFormData((prev: UserFormData) => ({ ...prev, status: e.target.value }))}
-                        />
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-email">Email</Label>
+                          <Input
+                            id="edit-email"
+                            placeholder="Email"
+                            value={formData.email}
+                            onChange={e => setFormData((prev: UserFormData) => ({ ...prev, email: e.target.value }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-firstName">First Name</Label>
+                          <Input
+                            id="edit-firstName"
+                            placeholder="First Name"
+                            value={formData.firstName}
+                            onChange={e => setFormData((prev: UserFormData) => ({ ...prev, firstName: e.target.value }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-lastName">Last Name</Label>
+                          <Input
+                            id="edit-lastName"
+                            placeholder="Last Name"
+                            value={formData.lastName}
+                            onChange={e => setFormData((prev: UserFormData) => ({ ...prev, lastName: e.target.value }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-password">Password</Label>
+                          <Input
+                            id="edit-password"
+                            placeholder="Password (leave blank to keep current)"
+                            type="password"
+                            value={formData.password}
+                            onChange={e => setFormData((prev: UserFormData) => ({ ...prev, password: e.target.value }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-role">Role</Label>
+                          <Select
+                            value={formData.role}
+                            onValueChange={(value) => setFormData((prev: UserFormData) => ({ ...prev, role: value }))}
+                          >
+                            <SelectTrigger id="edit-role">
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="user">User</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-status">Status</Label>
+                          <Select
+                            value={formData.status}
+                            onValueChange={(value) => setFormData((prev: UserFormData) => ({ ...prev, status: value }))}
+                          >
+                            <SelectTrigger id="edit-status">
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <Button onClick={handleEditUser} disabled={loading}>
                           Save
                         </Button>

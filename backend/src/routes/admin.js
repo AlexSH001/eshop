@@ -262,13 +262,13 @@ router.get('/users/authenticated', authenticateAdmin, requireSuperAdmin, paginat
 
   // Status filter
   if (status !== 'all') {
-    whereConditions.push('is_active = ?');
+    whereConditions.push('u.is_active = ?');
     params.push(status === 'active');
   }
 
   // Search filter
   if (search) {
-    whereConditions.push('(first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)');
+    whereConditions.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)');
     const searchTerm = `%${search}%`;
     params.push(searchTerm, searchTerm, searchTerm);
   }
@@ -283,24 +283,41 @@ router.get('/users/authenticated', authenticateAdmin, requireSuperAdmin, paginat
 
   const users = await database.query(`
     SELECT
-      id, email, first_name, last_name, phone, avatar,
-      email_verified, is_active, created_at, updated_at,
-      (SELECT COUNT(*) FROM orders WHERE user_id = users.id) as order_count,
-      (SELECT COALESCE(SUM(total), 0) FROM orders WHERE user_id = users.id) as total_spent
-    FROM users
+      u.id, u.email, u.first_name, u.last_name, u.phone, u.avatar,
+      u.email_verified, u.is_active, u.created_at, u.updated_at,
+      CASE 
+        WHEN a.id IS NOT NULL THEN 'admin'
+        ELSE 'user'
+      END as role,
+      (SELECT COUNT(*) FROM orders WHERE user_id = u.id) as order_count,
+      (SELECT COALESCE(SUM(total), 0) FROM orders WHERE user_id = u.id) as total_spent
+    FROM users u
+    LEFT JOIN admins a ON u.email = a.email
     ${whereClause}
-    ORDER BY ${sortColumn} ${sortDirection}
+    ORDER BY u.${sortColumn} ${sortDirection}
     LIMIT ? OFFSET ?
   `, [...params, parseInt(limit), offset]);
 
   const [{ total }] = await database.query(`
-    SELECT COUNT(*) as total FROM users ${whereClause}
+    SELECT COUNT(*) as total FROM users u ${whereClause}
   `, params);
 
   res.json({
     users: users.map(user => ({
-      ...user,
-      total_spent: Math.round(user.total_spent * 100) / 100
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      phone: user.phone,
+      avatar: user.avatar,
+      emailVerified: user.email_verified,
+      isActive: user.is_active,
+      role: user.role,
+      status: user.is_active ? 'active' : 'inactive',
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+      orderCount: user.order_count,
+      totalSpent: Math.round(user.total_spent * 100) / 100
     })),
     pagination: {
       page: parseInt(page),
