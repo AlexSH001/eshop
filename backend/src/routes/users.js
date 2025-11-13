@@ -309,18 +309,76 @@ router.post('/', async (req, res) => {
       return res.status(500).json({ error: 'Failed to create user' });
     }
     const newUser = userByEmail;
+    
+    // If role is admin, create admin entry
+    if (role === 'admin' && newUser.role !== 'admin') {
+      const adminName = `${firstName} ${lastName}`;
+      try {
+        if (isPostgres) {
+          await database.execute(`
+            INSERT INTO admins (email, password, name, role)
+            VALUES (?, ?, ?, ?)
+            RETURNING id
+          `, [email, hashedPassword, adminName, 'admin']);
+        } else {
+          await database.execute(`
+            INSERT INTO admins (email, password, name, role)
+            VALUES (?, ?, ?, ?)
+          `, [email, hashedPassword, adminName, 'admin']);
+        }
+      } catch (err) {
+        // Admin might already exist, ignore error
+        console.error('Error creating admin entry:', err);
+      }
+    }
+    
+    // Re-fetch user to get updated role
+    const updatedUser = await database.get(`
+      SELECT u.id, u.email, u.first_name, u.last_name, u.is_active, u.created_at,
+             CASE WHEN a.id IS NOT NULL THEN 'admin' ELSE 'user' END as role
+      FROM users u
+      LEFT JOIN admins a ON u.email = a.email
+      WHERE u.email = ?
+    `, [email]);
+    
     return res.status(201).json({
       message: 'User created successfully',
       user: {
-        id: newUser.id,
-        email: newUser.email,
-        firstName: newUser.first_name,
-        lastName: newUser.last_name,
-        role: newUser.role,
-        status: newUser.is_active ? 'active' : 'inactive',
-        createdAt: newUser.created_at
+        id: updatedUser.id,
+        email: updatedUser.email,
+        firstName: updatedUser.first_name,
+        lastName: updatedUser.last_name,
+        role: updatedUser.role,
+        status: updatedUser.is_active ? 'active' : 'inactive',
+        createdAt: updatedUser.created_at
       }
     });
+  }
+
+  // If role is admin, create admin entry in admins table
+  if (role === 'admin') {
+    const adminName = `${firstName} ${lastName}`;
+    try {
+      // Check if admin already exists
+      const existingAdmin = await database.get('SELECT id FROM admins WHERE email = ?', [email]);
+      if (!existingAdmin) {
+        if (isPostgres) {
+          await database.execute(`
+            INSERT INTO admins (email, password, name, role)
+            VALUES (?, ?, ?, ?)
+            RETURNING id
+          `, [email, hashedPassword, adminName, 'admin']);
+        } else {
+          await database.execute(`
+            INSERT INTO admins (email, password, name, role)
+            VALUES (?, ?, ?, ?)
+          `, [email, hashedPassword, adminName, 'admin']);
+        }
+      }
+    } catch (err) {
+      // Admin might already exist, ignore error
+      console.error('Error creating admin entry:', err);
+    }
   }
 
   const newUser = await database.get(`
@@ -361,15 +419,22 @@ router.put('/:id', authenticateAdmin, requireSuperAdmin, idValidation, async (re
     status
   } = req.body;
 
-  // Check if user exists
-  const existingUser = await database.get('SELECT id FROM users WHERE id = $1', [id]);
-  if (!existingUser) {
+  // Get current user info for role management
+  const currentUser = await database.get(`
+    SELECT u.id, u.email, u.first_name, u.last_name, u.password,
+           CASE WHEN a.id IS NOT NULL THEN 'admin' ELSE 'user' END as current_role
+    FROM users u
+    LEFT JOIN admins a ON u.email = a.email
+    WHERE u.id = ?
+  `, [id]);
+
+  if (!currentUser) {
     throw new NotFoundError('User not found');
   }
 
   // Check if email is being changed and if it's already taken
   if (email) {
-    const emailCheck = await database.get('SELECT id FROM users WHERE email = $1 AND id != $2', [email, id]);
+    const emailCheck = await database.get('SELECT id FROM users WHERE email = ? AND id != ?', [email, id]);
     if (emailCheck) {
       return res.status(400).json({
         error: 'Email is already taken by another user'
@@ -398,8 +463,6 @@ router.put('/:id', authenticateAdmin, requireSuperAdmin, idValidation, async (re
     updates.push('password = ?');
     params.push(hashedPassword);
   }
-  // Note: Role updates would need to be handled separately for admins table
-  // For now, we'll skip role updates in the users table
   if (status !== undefined) {
     updates.push('is_active = ?');
     params.push(status === 'active');
@@ -414,12 +477,62 @@ router.put('/:id', authenticateAdmin, requireSuperAdmin, idValidation, async (re
     WHERE id = ?
   `, params);
 
+  // Handle role changes (admin/user)
+  const finalEmail = email || currentUser.email;
+  const finalFirstName = firstName || currentUser.first_name;
+  const finalLastName = lastName || currentUser.last_name;
+  
+  // Get password - use new password if provided, otherwise use current password
+  let adminPassword;
+  if (password) {
+    adminPassword = await hashPassword(password);
+  } else {
+    // Use current password from users table
+    adminPassword = currentUser.password;
+  }
+
+  if (role !== undefined) {
+    const dbType = database.getType ? database.getType() : (process.env.DB_CLIENT || 'sqlite3');
+    const isPostgres = dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql';
+    
+    if (role === 'admin' && currentUser.current_role !== 'admin') {
+      // Add admin role
+      const adminName = `${finalFirstName} ${finalLastName}`;
+      try {
+        const existingAdmin = await database.get('SELECT id FROM admins WHERE email = ?', [finalEmail]);
+        if (!existingAdmin) {
+          if (isPostgres) {
+            await database.execute(`
+              INSERT INTO admins (email, password, name, role)
+              VALUES (?, ?, ?, ?)
+              RETURNING id
+            `, [finalEmail, adminPassword, adminName, 'admin']);
+          } else {
+            await database.execute(`
+              INSERT INTO admins (email, password, name, role)
+              VALUES (?, ?, ?, ?)
+            `, [finalEmail, adminPassword, adminName, 'admin']);
+          }
+        }
+      } catch (err) {
+        console.error('Error creating admin entry:', err);
+      }
+    } else if (role === 'user' && currentUser.current_role === 'admin') {
+      // Remove admin role
+      try {
+        await database.execute('DELETE FROM admins WHERE email = ?', [finalEmail]);
+      } catch (err) {
+        console.error('Error removing admin entry:', err);
+      }
+    }
+  }
+
   const updatedUser = await database.get(`
     SELECT u.id, u.email, u.first_name, u.last_name, u.is_active, u.updated_at,
            CASE WHEN a.id IS NOT NULL THEN 'admin' ELSE 'user' END as role
     FROM users u
     LEFT JOIN admins a ON u.email = a.email
-    WHERE u.id = $1
+    WHERE u.id = ?
   `, [id]);
 
   res.json({
