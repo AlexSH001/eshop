@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   LayoutDashboard,
   Package,
@@ -15,21 +20,40 @@ import {
   X,
   Bell,
   Search,
-  Shield
+  Shield,
+  Clock
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAdmin } from "@/contexts/AdminContext";
 import { toast } from "sonner";
+import { adminApiRequestJson } from "@/lib/admin-api";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
+interface NotificationOrder {
+  id: number;
+  order_number?: string;
+  email: string;
+  total: number;
+  status: string;
+  created_at: string;
+  customer_name?: string;
+}
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
+  const [recentOrders, setRecentOrders] = useState<NotificationOrder[]>([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const pathname = usePathname();
-  const { user, logout } = useAdmin();
+  const router = useRouter();
+  const { user, logout, isAuthenticated } = useAdmin();
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastCheckedRef = useRef<string | null>(null);
 
   // Base navigation items available to all admins
   const allNavigationItems = [
@@ -63,6 +87,135 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  // Get last checked timestamp from localStorage
+  const getLastCheckedTimestamp = (): string | null => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('admin_last_checked_orders');
+  };
+
+  // Save last checked timestamp to localStorage
+  const saveLastCheckedTimestamp = (timestamp: string) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('admin_last_checked_orders', timestamp);
+    lastCheckedRef.current = timestamp;
+  };
+
+  // Fetch new orders since last check
+  const fetchNewOrders = useCallback(async () => {
+    if (!isAuthenticated) return;
+
+    try {
+      setIsLoadingNotifications(true);
+      const lastChecked = getLastCheckedTimestamp();
+      const now = new Date().toISOString();
+
+      // Fetch recent orders (last 10 orders)
+      const data = await adminApiRequestJson<{ orders: any[] }>('/orders/authenticated?limit=10&sortBy=created_at&sortOrder=DESC');
+      
+      if (!data.orders || !Array.isArray(data.orders)) {
+        return;
+      }
+
+      // Transform orders
+      const transformedOrders: NotificationOrder[] = data.orders.map((order: any) => ({
+        id: order.id,
+        order_number: order.order_number,
+        email: order.email,
+        total: parseFloat(order.total) || 0,
+        status: order.status,
+        created_at: order.created_at,
+        customer_name: order.billing_first_name && order.billing_last_name
+          ? `${order.billing_first_name} ${order.billing_last_name}`
+          : order.email
+      }));
+
+      // If we have a last checked timestamp, filter orders created after that
+      if (lastChecked) {
+        const lastCheckedDate = new Date(lastChecked);
+        const newOrders = transformedOrders.filter(order => {
+          const orderDate = new Date(order.created_at);
+          return orderDate > lastCheckedDate;
+        });
+
+        setNewOrdersCount(newOrders.length);
+        setRecentOrders(transformedOrders.slice(0, 5)); // Show 5 most recent
+      } else {
+        // First time - mark all current orders as seen
+        setNewOrdersCount(0);
+        setRecentOrders(transformedOrders.slice(0, 5));
+        saveLastCheckedTimestamp(now);
+      }
+    } catch (error) {
+      console.error('Failed to fetch new orders:', error);
+      // Don't show error toast for background polling
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  }, [isAuthenticated]);
+
+  // Handle notification popover open
+  const handleNotificationOpen = (open: boolean) => {
+    setNotificationOpen(open);
+    if (open) {
+      // When opening, mark current time as last checked
+      const now = new Date().toISOString();
+      saveLastCheckedTimestamp(now);
+      setNewOrdersCount(0);
+      // Refresh the recent orders list
+      fetchNewOrders();
+    }
+  };
+
+  // Poll for new orders every 30 seconds
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    // Initial fetch
+    fetchNewOrders();
+
+    // Set up polling
+    pollingIntervalRef.current = setInterval(() => {
+      fetchNewOrders();
+    }, 30000); // Poll every 30 seconds
+
+    // Cleanup on unmount
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [isAuthenticated, fetchNewOrders]);
+
+  // Format time ago
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) {
+      return 'Just now';
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes}m ago`;
+    } else if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours}h ago`;
+    } else {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `${days}d ago`;
+    }
+  };
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
   };
 
   return (
@@ -188,10 +341,90 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </div>
 
               {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full" />
-              </Button>
+              <Popover open={notificationOpen} onOpenChange={handleNotificationOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    {newOrdersCount > 0 && (
+                      <span className="absolute top-0 right-0 h-5 w-5 bg-red-500 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+                        {newOrdersCount > 9 ? '9+' : newOrdersCount}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <div className="p-4 border-b">
+                    <h3 className="font-semibold text-sm">Order Notifications</h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Recent orders
+                    </p>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {isLoadingNotifications ? (
+                      <div className="p-4 text-center text-sm text-gray-500">
+                        Loading...
+                      </div>
+                    ) : recentOrders.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-gray-500">
+                        No recent orders
+                      </div>
+                    ) : (
+                      <div className="divide-y">
+                        {recentOrders.map((order) => (
+                          <button
+                            key={order.id}
+                            onClick={() => {
+                              setNotificationOpen(false);
+                              router.push(`/admin/orders`);
+                            }}
+                            className="w-full p-4 text-left hover:bg-gray-50 transition-colors"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-sm font-medium text-gray-900 truncate">
+                                    {order.customer_name || order.email}
+                                  </span>
+                                  {order.order_number && (
+                                    <span className="text-xs text-gray-500">
+                                      #{order.order_number}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                  <Clock className="h-3 w-3" />
+                                  <span>{formatTimeAgo(order.created_at)}</span>
+                                </div>
+                              </div>
+                              <div className="ml-4 text-right">
+                                <div className="text-sm font-semibold text-gray-900">
+                                  {formatCurrency(order.total)}
+                                </div>
+                                <div className="text-xs text-gray-500 capitalize">
+                                  {order.status}
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3 border-t">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setNotificationOpen(false);
+                        router.push('/admin/orders');
+                      }}
+                    >
+                      View All Orders
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
 
               {/* Quick access to main site */}
               <Link href="/">
