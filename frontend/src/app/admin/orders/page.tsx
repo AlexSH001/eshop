@@ -50,7 +50,7 @@ interface Order {
 }
 
 export default function AdminOrdersPage() {
-  const { isAuthenticated, isLoading } = useAdmin();
+  const { isAuthenticated, isLoading, user } = useAdmin();
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -262,14 +262,15 @@ export default function AdminOrdersPage() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <Dialog open={deletingOrder?.id === order.id} onOpenChange={open => {
-                    if (!open) setDeletingOrder(null);
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button variant="destructive" size="sm" onClick={() => setDeletingOrder(order)}>
-                        <Trash2 className="h-4 w-4 mr-1" /> Delete
-                      </Button>
-                    </DialogTrigger>
+                  {user?.role === 'super_admin' && (
+                    <Dialog open={deletingOrder?.id === order.id} onOpenChange={open => {
+                      if (!open) setDeletingOrder(null);
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button variant="destructive" size="sm" onClick={() => setDeletingOrder(order)}>
+                          <Trash2 className="h-4 w-4 mr-1" /> Delete
+                        </Button>
+                      </DialogTrigger>
                     <DialogContent className="bg-white">
                       <DialogHeader>
                         <DialogTitle>Delete Order</DialogTitle>
@@ -283,6 +284,7 @@ export default function AdminOrdersPage() {
                       </div>
                     </DialogContent>
                   </Dialog>
+                  )}
                 </div>
               </CardContent>
             </Card>

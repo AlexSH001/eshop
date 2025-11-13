@@ -46,7 +46,7 @@ type CategoryFormData = {
 };
 
 export default function AdminCategoriesPage() {
-  const { isAuthenticated, isLoading } = useAdmin();
+  const { isAuthenticated, isLoading, user } = useAdmin();
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -560,14 +560,15 @@ export default function AdminCategoriesPage() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <Dialog open={deletingCategory?.id === category.id} onOpenChange={open => {
-                    if (!open) setDeletingCategory(null);
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button variant="destructive" size="sm" onClick={() => setDeletingCategory(category)}>
-                        <Trash2 className="h-4 w-4 mr-1" /> Delete
-                      </Button>
-                    </DialogTrigger>
+                  {user?.role === 'super_admin' && (
+                    <Dialog open={deletingCategory?.id === category.id} onOpenChange={open => {
+                      if (!open) setDeletingCategory(null);
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button variant="destructive" size="sm" onClick={() => setDeletingCategory(category)}>
+                          <Trash2 className="h-4 w-4 mr-1" /> Delete
+                        </Button>
+                      </DialogTrigger>
                     <DialogContent className="bg-white">
                       <DialogHeader>
                         <DialogTitle>Delete Category</DialogTitle>
@@ -580,6 +581,7 @@ export default function AdminCategoriesPage() {
                       </div>
                     </DialogContent>
                   </Dialog>
+                  )}
                 </div>
               </CardContent>
             </Card>

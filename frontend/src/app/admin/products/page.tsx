@@ -83,7 +83,7 @@ function parseSpecifications(spec: any) {
 }
 
 export default function AdminProductsPage() {
-  const { isAuthenticated, isLoading, refreshToken } = useAdmin();
+  const { isAuthenticated, isLoading, refreshToken, user } = useAdmin();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -669,9 +669,11 @@ export default function AdminProductsPage() {
                     }}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="outline" className="ml-2 text-red-600" onClick={() => setDeletingProduct(product)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {user?.role === 'super_admin' && (
+                      <Button size="sm" variant="outline" className="ml-2 text-red-600" onClick={() => setDeletingProduct(product)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}
