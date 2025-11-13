@@ -274,18 +274,66 @@ router.post('/', async (req, res) => {
   const hashedPassword = await hashPassword(password);
 
   // Insert user
-  const result = await database.execute(`
-    INSERT INTO users (email, first_name, last_name, password, is_active, created_at, updated_at)
-    VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-  `, [email, firstName, lastName, hashedPassword, status === 'active']);
+  // Use RETURNING id for PostgreSQL, SQLite will use lastID from result
+  const dbType = database.getType ? database.getType() : (process.env.DB_CLIENT || 'sqlite3');
+  const isPostgres = dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql';
+  
+  let result;
+  if (isPostgres) {
+    // For PostgreSQL, use RETURNING id to get the inserted ID
+    result = await database.execute(`
+      INSERT INTO users (email, first_name, last_name, password, is_active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING id
+    `, [email, firstName, lastName, hashedPassword, status === 'active']);
+  } else {
+    // For SQLite, lastID will be available in result.id
+    result = await database.execute(`
+      INSERT INTO users (email, first_name, last_name, password, is_active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `, [email, firstName, lastName, hashedPassword, status === 'active']);
+  }
+
+  // Get the inserted user ID
+  const userId = result.id;
+  if (!userId) {
+    // Fallback: query by email if ID is not available
+    const userByEmail = await database.get(`
+      SELECT u.id, u.email, u.first_name, u.last_name, u.is_active, u.created_at,
+             CASE WHEN a.id IS NOT NULL THEN 'admin' ELSE 'user' END as role
+      FROM users u
+      LEFT JOIN admins a ON u.email = a.email
+      WHERE u.email = ?
+    `, [email]);
+    if (!userByEmail) {
+      return res.status(500).json({ error: 'Failed to create user' });
+    }
+    const newUser = userByEmail;
+    return res.status(201).json({
+      message: 'User created successfully',
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        firstName: newUser.first_name,
+        lastName: newUser.last_name,
+        role: newUser.role,
+        status: newUser.is_active ? 'active' : 'inactive',
+        createdAt: newUser.created_at
+      }
+    });
+  }
 
   const newUser = await database.get(`
     SELECT u.id, u.email, u.first_name, u.last_name, u.is_active, u.created_at,
            CASE WHEN a.id IS NOT NULL THEN 'admin' ELSE 'user' END as role
     FROM users u
     LEFT JOIN admins a ON u.email = a.email
-    WHERE u.id = $1
-  `, [result.id]);
+    WHERE u.id = ?
+  `, [userId]);
+
+  if (!newUser) {
+    return res.status(500).json({ error: 'Failed to retrieve created user' });
+  }
 
   res.status(201).json({
     message: 'User created successfully',
