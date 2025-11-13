@@ -48,7 +48,7 @@ type UserFormData = {
 };
 
 export default function AdminUsersPage() {
-  const { isAuthenticated, isLoading } = useAdmin();
+  const { isAuthenticated, isLoading, user: adminUser } = useAdmin();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -365,14 +365,15 @@ export default function AdminUsersPage() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <Dialog open={deletingUser?.id === user.id} onOpenChange={open => {
-                    if (!open) setDeletingUser(null);
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button variant="destructive" size="sm" onClick={() => setDeletingUser(user)}>
-                        <Trash2 className="h-4 w-4 mr-1" /> Delete
-                      </Button>
-                    </DialogTrigger>
+                  {adminUser?.role === 'super_admin' && (
+                    <Dialog open={deletingUser?.id === user.id} onOpenChange={open => {
+                      if (!open) setDeletingUser(null);
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button variant="destructive" size="sm" onClick={() => setDeletingUser(user)}>
+                          <Trash2 className="h-4 w-4 mr-1" /> Delete
+                        </Button>
+                      </DialogTrigger>
                     <DialogContent className="bg-white">
                       <DialogHeader>
                         <DialogTitle>Delete User</DialogTitle>
@@ -385,6 +386,7 @@ export default function AdminUsersPage() {
                       </div>
                     </DialogContent>
                   </Dialog>
+                  )}
                 </div>
               </CardContent>
             </Card>
