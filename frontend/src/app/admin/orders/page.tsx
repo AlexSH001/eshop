@@ -25,6 +25,7 @@ interface Order {
   id: number;
   customer: string;
   email: string;
+  phone?: string;
   total: number;
   status: string;
   createdAt: string;
@@ -35,6 +36,17 @@ interface Order {
     quantity: number;
     image: string;
   }>;
+  shippingAddress?: {
+    firstName: string;
+    lastName: string;
+    company?: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
 }
 
 export default function AdminOrdersPage() {
@@ -66,6 +78,7 @@ export default function AdminOrdersPage() {
         id: order.id,
         customer: `${order.billing_first_name || ''} ${order.billing_last_name || ''}`.trim() || order.email,
         email: order.email,
+        phone: order.phone || undefined,
         total: parseFloat(order.total) || 0,
         status: order.status,
         createdAt: new Date(order.created_at).toLocaleDateString(),
@@ -73,7 +86,18 @@ export default function AdminOrdersPage() {
           ...item,
           price: parseFloat(item.price) || 0,
           total: parseFloat(item.total) || 0
-        }))
+        })),
+        shippingAddress: order.shipping_first_name ? {
+          firstName: order.shipping_first_name,
+          lastName: order.shipping_last_name,
+          company: order.shipping_company,
+          addressLine1: order.shipping_address_line_1,
+          addressLine2: order.shipping_address_line_2,
+          city: order.shipping_city,
+          state: order.shipping_state,
+          postalCode: order.shipping_postal_code,
+          country: order.shipping_country
+        } : undefined
       }));
       
       setOrders(transformedOrders);
@@ -176,15 +200,31 @@ export default function AdminOrdersPage() {
                       </DialogHeader>
                       <div className="space-y-4">
                         <div>Customer: {order.customer} ({order.email})</div>
+                        {order.phone && <div>Phone: {order.phone}</div>}
                         <div>Status: {order.status}</div>
                         <div>Total: ${order.total.toFixed(2)}</div>
                         <div>Created: {order.createdAt}</div>
-                        <div>Items:</div>
-                        <ul className="list-disc ml-6">
-                          {order.items.map(item => (
-                            <li key={item.id}>{item.name} x{item.quantity} (${item.price.toFixed(2)})</li>
-                          ))}
-                        </ul>
+                        {order.shippingAddress && (
+                          <div className="border-t pt-4">
+                            <div className="font-semibold mb-2">Shipping Address:</div>
+                            <div className="text-sm text-gray-600">
+                              <div>{order.shippingAddress.firstName} {order.shippingAddress.lastName}</div>
+                              {order.shippingAddress.company && <div>{order.shippingAddress.company}</div>}
+                              <div>{order.shippingAddress.addressLine1}</div>
+                              {order.shippingAddress.addressLine2 && <div>{order.shippingAddress.addressLine2}</div>}
+                              <div>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.postalCode}</div>
+                              <div>{order.shippingAddress.country}</div>
+                            </div>
+                          </div>
+                        )}
+                        <div className="border-t pt-4">
+                          <div className="font-semibold mb-2">Items:</div>
+                          <ul className="list-disc ml-6">
+                            {order.items.map(item => (
+                              <li key={item.id}>{item.name} x{item.quantity} (${item.price.toFixed(2)})</li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     </DialogContent>
                   </Dialog>
