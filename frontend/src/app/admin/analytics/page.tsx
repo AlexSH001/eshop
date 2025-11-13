@@ -363,18 +363,19 @@ export default function AdminAnalyticsPage() {
                         <Bar
                           yAxisId="orders"
                           dataKey="orders"
-                          fill="hsl(var(--chart-2))"
+                          fill="#8b5cf6"
                           name="Orders"
                           radius={[4, 4, 0, 0]}
+                          opacity={0.8}
                         />
                         <Line
                           yAxisId="revenue"
                           type="monotone"
                           dataKey="revenue"
-                          stroke="hsl(var(--chart-1))"
+                          stroke="#3b82f6"
                           strokeWidth={2}
-                          dot={{ fill: 'hsl(var(--chart-1))', r: 3 }}
-                          activeDot={{ r: 5 }}
+                          dot={{ fill: '#3b82f6', r: 4 }}
+                          activeDot={{ r: 6, fill: '#2563eb' }}
                           name="Revenue"
                         />
                       </ComposedChart>
