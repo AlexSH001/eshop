@@ -21,6 +21,17 @@ import {
   PieChart,
   Activity
 } from "lucide-react";
+import {
+  ComposedChart,
+  Line,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from "recharts";
 
 export const dynamic = 'force-dynamic';
 
@@ -274,7 +285,7 @@ export default function AdminAnalyticsPage() {
               </Card>
             </div>
 
-            {/* Sales Chart Placeholder */}
+            {/* Sales Chart */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -283,12 +294,100 @@ export default function AdminAnalyticsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                  <div className="text-center">
-                    <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-500">Sales chart visualization</p>
-                    <p className="text-sm text-gray-400">Chart library integration needed</p>
-                  </div>
+                <div className="h-80 w-full">
+                  {analyticsData.salesData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart
+                        data={analyticsData.salesData.map(day => ({
+                          date: new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                          revenue: day.revenue,
+                          orders: day.orders
+                        }))}
+                        margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis
+                          dataKey="date"
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <YAxis
+                          yAxisId="revenue"
+                          orientation="left"
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                          tickFormatter={(value) => {
+                            const settings = typeof window !== 'undefined' ? 
+                              JSON.parse(localStorage.getItem('settings') || '{}') : null;
+                            const currency = settings?.store?.currency || 'USD';
+                            return new Intl.NumberFormat('en-US', {
+                              style: 'currency',
+                              currency: currency,
+                              notation: 'compact',
+                              maximumFractionDigits: 0
+                            }).format(value);
+                          }}
+                        />
+                        <YAxis
+                          yAxisId="orders"
+                          orientation="right"
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--popover))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '6px'
+                          }}
+                          formatter={(value: number, name: string) => {
+                            if (name === 'revenue') {
+                              const settings = typeof window !== 'undefined' ? 
+                                JSON.parse(localStorage.getItem('settings') || '{}') : null;
+                              const currency = settings?.store?.currency || 'USD';
+                              return [
+                                new Intl.NumberFormat('en-US', {
+                                  style: 'currency',
+                                  currency: currency
+                                }).format(value),
+                                'Revenue'
+                              ];
+                            }
+                            return [value, 'Orders'];
+                          }}
+                        />
+                        <Legend
+                          wrapperStyle={{ paddingTop: '20px' }}
+                          iconType="line"
+                        />
+                        <Bar
+                          yAxisId="orders"
+                          dataKey="orders"
+                          fill="#8b5cf6"
+                          name="Orders"
+                          radius={[4, 4, 0, 0]}
+                          opacity={0.8}
+                        />
+                        <Line
+                          yAxisId="revenue"
+                          type="monotone"
+                          dataKey="revenue"
+                          stroke="#3b82f6"
+                          strokeWidth={2}
+                          dot={{ fill: '#3b82f6', r: 4 }}
+                          activeDot={{ r: 6, fill: '#2563eb' }}
+                          name="Revenue"
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
+                      <div className="text-center">
+                        <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-500">No sales data available</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
