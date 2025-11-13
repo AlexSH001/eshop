@@ -178,15 +178,15 @@ router.get('/', paginationValidation, async (req, res) => {
 
   // Status filter
   if (status !== 'all') {
-    whereConditions.push('is_active = $1');
+    whereConditions.push('u.is_active = ?');
     params.push(status === 'active');
   }
 
   // Search filter
   if (search) {
-    whereConditions.push('(first_name LIKE $2 OR last_name LIKE $3 OR email LIKE $4)');
+    whereConditions.push('(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)');
     const searchTerm = `%${search}%`;
-    params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    params.push(searchTerm, searchTerm, searchTerm);
   }
 
   const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
@@ -209,8 +209,8 @@ router.get('/', paginationValidation, async (req, res) => {
     LEFT JOIN admins a ON u.email = a.email
     ${whereClause}
     ORDER BY u.${sortColumn} ${sortDirection}
-    LIMIT $1 OFFSET $2
-  `, [parseInt(limit), offset]);
+    LIMIT ? OFFSET ?
+  `, [...params, parseInt(limit), offset]);
 
   // Get total count
   const countResult = await database.get(`
@@ -276,7 +276,7 @@ router.post('/', async (req, res) => {
   // Insert user
   const result = await database.execute(`
     INSERT INTO users (email, first_name, last_name, password, is_active, created_at, updated_at)
-    VALUES ($1, $2, $3, $4, $5, datetime('now'), datetime('now'))
+    VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
   `, [email, firstName, lastName, hashedPassword, status === 'active']);
 
   const newUser = await database.get(`
@@ -334,36 +334,36 @@ router.put('/:id', authenticateAdmin, requireSuperAdmin, idValidation, async (re
   const params = [];
 
   if (email) {
-    updates.push('email = $1');
+    updates.push('email = ?');
     params.push(email);
   }
   if (firstName) {
-    updates.push('first_name = $1');
+    updates.push('first_name = ?');
     params.push(firstName);
   }
   if (lastName) {
-    updates.push('last_name = $1');
+    updates.push('last_name = ?');
     params.push(lastName);
   }
   if (password) {
     const hashedPassword = await hashPassword(password);
-    updates.push('password = $1');
+    updates.push('password = ?');
     params.push(hashedPassword);
   }
   // Note: Role updates would need to be handled separately for admins table
   // For now, we'll skip role updates in the users table
   if (status !== undefined) {
-    updates.push('is_active = $1');
+    updates.push('is_active = ?');
     params.push(status === 'active');
   }
 
-  updates.push('updated_at = datetime("now")');
+  updates.push('updated_at = CURRENT_TIMESTAMP');
   params.push(id);
 
   await database.execute(`
     UPDATE users
     SET ${updates.join(', ')}
-    WHERE id = $1
+    WHERE id = ?
   `, params);
 
   const updatedUser = await database.get(`
