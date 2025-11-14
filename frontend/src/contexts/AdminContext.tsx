@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 
 interface AdminUser {
   id: string;
@@ -41,7 +41,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const refreshToken = async (): Promise<boolean> => {
+  const logoutRef = useRef(logout);
+  logoutRef.current = logout;
+
+  const refreshToken = useCallback(async (): Promise<boolean> => {
     const refreshTokenValue = localStorage.getItem('admin_refresh_token');
     
     console.log('Attempting to refresh admin token...');
@@ -90,15 +93,15 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         const errorData = await response.json().catch(() => ({}));
         console.log('Token refresh failed:', errorData);
         // Refresh token is invalid, logout admin
-        logout();
+        logoutRef.current();
         return false;
       }
     } catch (error) {
       console.error('Failed to refresh admin token:', error);
-      logout();
+      logoutRef.current();
       return false;
     }
-  };
+  }, []);
 
   // Check for existing admin session on mount and listen for logout events
   useEffect(() => {
@@ -155,7 +158,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('admin-logout', handleAdminLogout);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [logout]);
+  }, [logout, refreshToken]);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
