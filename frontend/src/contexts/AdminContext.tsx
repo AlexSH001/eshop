@@ -103,6 +103,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const refreshTokenRef = useRef(refreshToken);
+  refreshTokenRef.current = refreshToken;
+
   // Check for existing admin session on mount and listen for logout events
   useEffect(() => {
     const checkAdminAuth = async () => {
@@ -127,7 +130,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         }
       } else if (adminRefreshToken) {
         // Try to refresh token if we have a refresh token but no access token
-        const refreshed = await refreshToken();
+        const refreshed = await refreshTokenRef.current();
         if (!refreshed) {
           setState(prev => ({ ...prev, isLoading: false }));
         }
@@ -158,7 +161,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('admin-logout', handleAdminLogout);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [logout, refreshToken]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
