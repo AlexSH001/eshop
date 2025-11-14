@@ -507,7 +507,6 @@ export default function CheckoutPage() {
                             <Input 
                               id="email" 
                               type="email" 
-                              placeholder="john@example.com"
                               value={formData.email}
                               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             />
@@ -517,7 +516,6 @@ export default function CheckoutPage() {
                             <Input 
                               id="phone" 
                               type="tel" 
-                              placeholder="+1 (555) 123-4567"
                               value={formData.phone}
                               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                             />
@@ -535,7 +533,6 @@ export default function CheckoutPage() {
                             <Label htmlFor="firstName">First Name *</Label>
                             <Input 
                               id="firstName" 
-                              placeholder="John"
                               value={formData.firstName}
                               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                             />
@@ -544,7 +541,6 @@ export default function CheckoutPage() {
                             <Label htmlFor="lastName">Last Name *</Label>
                             <Input 
                               id="lastName" 
-                              placeholder="Doe"
                               value={formData.lastName}
                               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                             />
@@ -554,7 +550,6 @@ export default function CheckoutPage() {
                           <Label htmlFor="address">Address *</Label>
                           <Input 
                             id="address" 
-                            placeholder="123 Main Street"
                             value={formData.address}
                             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                           />
@@ -564,7 +559,6 @@ export default function CheckoutPage() {
                             <Label htmlFor="city">City *</Label>
                             <Input 
                               id="city" 
-                              placeholder="New York"
                               value={formData.city}
                               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                             />
@@ -573,7 +567,6 @@ export default function CheckoutPage() {
                             <Label htmlFor="state">State *</Label>
                             <Input 
                               id="state" 
-                              placeholder="NY"
                               value={formData.state}
                               onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                             />
@@ -582,7 +575,6 @@ export default function CheckoutPage() {
                             <Label htmlFor="zipCode">ZIP Code *</Label>
                             <Input 
                               id="zipCode" 
-                              placeholder="10001"
                               value={formData.zipCode}
                               onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
                             />

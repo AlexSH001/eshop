@@ -252,7 +252,6 @@ export default function ProfilePage() {
                       value={profileData.firstName}
                       onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
                       disabled={!isEditing}
-                      placeholder="John"
                     />
                   </div>
                   <div>
@@ -262,7 +261,6 @@ export default function ProfilePage() {
                       value={profileData.lastName}
                       onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
                       disabled={!isEditing}
-                      placeholder="Doe"
                     />
                   </div>
                 </div>
