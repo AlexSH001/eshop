@@ -303,7 +303,6 @@ export default function AdminSettingsPage() {
                       id="storeName"
                       value={settings.store.name}
                       onChange={(e) => updateSettings('store', 'name', e.target.value)}
-                      placeholder="eshop"
                     />
                   </div>
                   <div>
@@ -313,7 +312,6 @@ export default function AdminSettingsPage() {
                       type="email"
                       value={settings.store.email}
                       onChange={(e) => updateSettings('store', 'email', e.target.value)}
-                      placeholder="contact@eshop.com"
                     />
                   </div>
                   <div>
@@ -322,7 +320,6 @@ export default function AdminSettingsPage() {
                       id="storePhone"
                       value={settings.store.phone}
                       onChange={(e) => updateSettings('store', 'phone', e.target.value)}
-                      placeholder="+1 (555) 123-4567"
                     />
                   </div>
                   <div>
@@ -350,7 +347,6 @@ export default function AdminSettingsPage() {
                       max="100"
                       value={settings.store.taxRate * 100}
                       onChange={(e) => updateSettings('store', 'taxRate', parseFloat(e.target.value) / 100 || 0)}
-                      placeholder="8.00"
                     />
                     <p className="text-xs text-gray-500 mt-1">Enter as percentage (e.g., 8 for 8%)</p>
                   </div>
@@ -361,7 +357,7 @@ export default function AdminSettingsPage() {
                     id="storeDescription"
                     value={settings.store.description}
                     onChange={(e) => updateSettings('store', 'description', e.target.value)}
-                    placeholder="Brief description of your store"
+                    placeholder="Enter your store description"
                     rows={3}
                   />
                 </div>
@@ -371,7 +367,7 @@ export default function AdminSettingsPage() {
                     id="storeAddress"
                     value={settings.store.address}
                     onChange={(e) => updateSettings('store', 'address', e.target.value)}
-                    placeholder="Store address"
+                    placeholder="Enter your store address"
                     rows={2}
                   />
                 </div>
@@ -498,7 +494,7 @@ export default function AdminSettingsPage() {
                           id="stripePublishableKey"
                           value={settings.payment.stripePublishableKey}
                           onChange={(e) => updateSettings('payment', 'stripePublishableKey', e.target.value)}
-                          placeholder="pk_test_..."
+                          placeholder="Enter your Stripe publishable key. Eg: pk_test_..."
                         />
                       </div>
                       <div>
@@ -508,7 +504,7 @@ export default function AdminSettingsPage() {
                           type="password"
                           value={settings.payment.stripeSecretKey}
                           onChange={(e) => updateSettings('payment', 'stripeSecretKey', e.target.value)}
-                          placeholder="sk_test_..."
+                          placeholder="Enter your Stripe secret key. Eg: sk_test_..."
                         />
                       </div>
                     </div>
@@ -532,7 +528,7 @@ export default function AdminSettingsPage() {
                           id="paypalClientId"
                           value={settings.payment.paypalClientId}
                           onChange={(e) => updateSettings('payment', 'paypalClientId', e.target.value)}
-                          placeholder="Your PayPal Client ID"
+                          placeholder="Enter your PayPal client ID. Eg: A..."
                         />
                       </div>
                       <div>
@@ -542,7 +538,7 @@ export default function AdminSettingsPage() {
                           type="password"
                           value={settings.payment.paypalSecret}
                           onChange={(e) => updateSettings('payment', 'paypalSecret', e.target.value)}
-                          placeholder="Your PayPal Secret"
+                          placeholder="Enter your PayPal secret. Eg: E..."
                         />
                       </div>
                     </div>
@@ -572,7 +568,6 @@ export default function AdminSettingsPage() {
                       type="number"
                       value={settings.shipping.freeShippingThreshold}
                       onChange={(e) => updateSettings('shipping', 'freeShippingThreshold', parseFloat(e.target.value) || 0)}
-                      placeholder="0.00"
                     />
                   </div>
                   <div>
@@ -582,7 +577,6 @@ export default function AdminSettingsPage() {
                       type="number"
                       value={settings.shipping.defaultShippingCost}
                       onChange={(e) => updateSettings('shipping', 'defaultShippingCost', parseFloat(e.target.value) || 0)}
-                      placeholder="0.00"
                     />
                   </div>
                 </div>
