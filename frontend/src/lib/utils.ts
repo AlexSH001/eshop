@@ -195,7 +195,17 @@ export const normalizeImageUrl = (url: string): string => {
     // If it's a backend upload URL, convert it to frontend accessible URL
     // Use relative URL so nginx can proxy it
     if (url.startsWith('/uploads/')) {
-        return url; // Keep as relative URL, nginx will proxy /uploads to backend
+        // URL-encode the path segments to handle special characters like & in category names
+        // The server (express.static) will automatically decode them when serving files
+        const parts = url.split('/');
+        const encodedParts = parts.map((part, index) => {
+            // Don't encode empty strings or the base path segments
+            if (!part || index <= 3) return part;
+            // Encode category folder names and filenames that may contain special characters
+            // This handles existing paths like "home&garden" -> "home%26garden"
+            return encodeURIComponent(part);
+        });
+        return encodedParts.join('/');
     }
     
     return url;

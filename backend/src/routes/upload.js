@@ -185,8 +185,11 @@ router.post('/product-images', authenticateAdmin, (req, res) => {
         return res.status(404).json({ error: 'Category not found' });
       }
 
-      // Create category folder name (remove the spaces from the category name)
-      const categoryFolderName = category.name.replace(/\s+/g, '');
+      // Create category folder name (sanitize: remove spaces and special characters, keep only alphanumeric and hyphens)
+      const categoryFolderName = category.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
+        .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
       const categoryDir = path.join(productImagesDir, categoryFolderName);
       
       // Create category directory if it doesn't exist
