@@ -51,17 +51,51 @@ router.post('/register', registerValidation, async (req, res) => {
   const hashedPassword = await hashPassword(password);
 
   // Create user
-  const result = await database.execute(
-    `INSERT INTO users (email, password, first_name, last_name, phone)
-     VALUES ($1, $2, $3, $4, $5)`,
-    [email, hashedPassword, firstName, lastName, phone || null]
-  );
+  // Use RETURNING id for PostgreSQL, SQLite will use lastID from result
+  const dbType = database.getType ? database.getType() : (process.env.DB_CLIENT || 'sqlite3');
+  const isPostgres = dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql';
+  
+  let result;
+  if (isPostgres) {
+    // For PostgreSQL, use RETURNING id to get the inserted ID
+    result = await database.execute(
+      `INSERT INTO users (email, password, first_name, last_name, phone)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [email, hashedPassword, firstName, lastName, phone || null]
+    );
+  } else {
+    // For SQLite, lastID will be available in result.id
+    result = await database.execute(
+      `INSERT INTO users (email, password, first_name, last_name, phone)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [email, hashedPassword, firstName, lastName, phone || null]
+    );
+  }
 
-  // Get created user (without password)
-  const user = await database.get(
-    'SELECT id, email, first_name, last_name, phone, avatar, created_at FROM users WHERE id = $1',
-    [result.id]
-  );
+  // Get the inserted user ID
+  const userId = result.id;
+  let user;
+  
+  if (!userId) {
+    // Fallback: query by email if ID is not available
+    user = await database.get(
+      'SELECT id, email, first_name, last_name, phone, avatar, created_at FROM users WHERE email = $1',
+      [email]
+    );
+    if (!user) {
+      throw new Error('Failed to create user');
+    }
+  } else {
+    // Get created user (without password)
+    user = await database.get(
+      'SELECT id, email, first_name, last_name, phone, avatar, created_at FROM users WHERE id = $1',
+      [userId]
+    );
+    if (!user) {
+      throw new Error('Failed to retrieve created user');
+    }
+  }
 
   // Generate tokens
   const accessToken = generateAccessToken({ userId: user.id, email: user.email });
