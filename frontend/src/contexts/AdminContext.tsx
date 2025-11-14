@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 
 interface AdminUser {
   id: string;
@@ -29,6 +29,17 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     isAuthenticated: false,
     isLoading: true,
   });
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('admin_user');
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_refresh_token');
+    setState({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
+  }, []);
 
   const refreshToken = async (): Promise<boolean> => {
     const refreshTokenValue = localStorage.getItem('admin_refresh_token');
@@ -89,18 +100,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('admin_user');
-    localStorage.removeItem('admin_token');
-    localStorage.removeItem('admin_refresh_token');
-    setState({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-    });
-  };
-
-  // Check for existing admin session on mount
+  // Check for existing admin session on mount and listen for logout events
   useEffect(() => {
     const checkAdminAuth = async () => {
       const storedAdmin = localStorage.getItem('admin_user');
@@ -134,7 +134,28 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     };
 
     checkAdminAuth();
-  }, []);
+
+    // Listen for admin logout events (triggered by API functions when refresh fails)
+    const handleAdminLogout = () => {
+      logout();
+    };
+
+    // Listen for storage changes (when tokens are cleared by API functions)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'admin_token' && !e.newValue) {
+        // Token was removed, update state
+        logout();
+      }
+    };
+
+    window.addEventListener('admin-logout', handleAdminLogout);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('admin-logout', handleAdminLogout);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [logout]);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {

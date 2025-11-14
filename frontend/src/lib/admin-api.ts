@@ -5,51 +5,86 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
+// Token refresh lock to prevent race conditions
+let adminRefreshPromise: Promise<string | null> | null = null;
+
 /**
  * Refresh admin token using the refresh token stored in localStorage
+ * Uses a lock mechanism to prevent multiple simultaneous refresh attempts
  * @returns {Promise<string | null>} New access token or null if refresh failed
  */
 const refreshAdminToken = async (): Promise<string | null> => {
+  // If a refresh is already in progress, wait for it
+  if (adminRefreshPromise) {
+    return adminRefreshPromise;
+  }
+
   const refreshTokenValue = localStorage.getItem('admin_refresh_token');
   
   if (!refreshTokenValue) {
     return null;
   }
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refreshToken: refreshTokenValue }),
-    });
+  // Create a new refresh promise
+  adminRefreshPromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken: refreshTokenValue }),
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      localStorage.setItem('admin_token', data.accessToken);
-      
-      // Update user data if provided
-      if (data.admin) {
-        localStorage.setItem('admin_user', JSON.stringify(data.admin));
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('admin_token', data.accessToken);
+        
+        // Update user data if provided
+        if (data.admin) {
+          localStorage.setItem('admin_user', JSON.stringify(data.admin));
+        }
+        
+        return data.accessToken;
+      } else {
+        // Refresh token is invalid, clear all admin tokens and trigger logout
+        localStorage.removeItem('admin_user');
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_refresh_token');
+        
+        // Trigger admin logout event to update UI state
+        window.dispatchEvent(new CustomEvent('admin-logout'));
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'admin_token',
+          newValue: null,
+          oldValue: localStorage.getItem('admin_token')
+        }));
+        
+        return null;
       }
-      
-      return data.accessToken;
-    } else {
-      // Refresh token is invalid, clear all admin tokens
+    } catch (error) {
+      console.error('Failed to refresh admin token:', error);
+      // Clear tokens on error and trigger logout
       localStorage.removeItem('admin_user');
       localStorage.removeItem('admin_token');
       localStorage.removeItem('admin_refresh_token');
+      
+      // Trigger admin logout event to update UI state
+      window.dispatchEvent(new CustomEvent('admin-logout'));
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'admin_token',
+        newValue: null,
+        oldValue: localStorage.getItem('admin_token')
+      }));
+      
       return null;
+    } finally {
+      // Clear the lock after refresh completes
+      adminRefreshPromise = null;
     }
-  } catch (error) {
-    console.error('Failed to refresh admin token:', error);
-    // Clear tokens on error
-    localStorage.removeItem('admin_user');
-    localStorage.removeItem('admin_token');
-    localStorage.removeItem('admin_refresh_token');
-    return null;
-  }
+  })();
+
+  return adminRefreshPromise;
 };
 
 /**
@@ -81,37 +116,30 @@ export const adminApiRequest = async (
   });
 
   // If token expired, try to refresh and retry
-  if (response.status === 401) {
-    let errorData: { error?: string } = {};
-    try {
-      const text = await response.text();
-      if (text) {
-        errorData = JSON.parse(text);
-      }
-    } catch {
-      // Response is not JSON, treat as expired token
-      errorData = { error: 'Access token expired' };
-    }
+  // Always attempt refresh on 401 errors when refresh token is available
+  if (response.status === 401 && localStorage.getItem('admin_refresh_token')) {
+    const newToken = await refreshAdminToken();
     
-    // Only refresh if the error indicates token expiration
-    if (errorData.error === 'Access token expired' || errorData.error?.includes('expired') || errorData.error === 'Invalid access token') {
-      const newToken = await refreshAdminToken();
-      
-      if (newToken) {
-        // Retry the request with the new token
-        return fetch(url, {
-          ...options,
-          headers: {
-            'Content-Type': 'application/json',
-            ...options.headers,
-            'Authorization': `Bearer ${newToken}`,
-          },
-          credentials: 'include',
-        });
-      } else {
-        // Refresh failed, throw error to trigger logout
-        throw new Error('Session expired. Please login again.');
-      }
+    if (newToken) {
+      // Retry the request with the new token
+      return fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+          'Authorization': `Bearer ${newToken}`,
+        },
+        credentials: 'include',
+      });
+    } else {
+      // Refresh failed, trigger logout and throw error
+      window.dispatchEvent(new CustomEvent('admin-logout'));
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'admin_token',
+        newValue: null,
+        oldValue: localStorage.getItem('admin_token')
+      }));
+      throw new Error('Session expired. Please login again.');
     }
   }
 
