@@ -9,14 +9,14 @@ const Switch = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
 >(({ className, ...props }, ref) => {
-  const internalRef = React.useRef<HTMLButtonElement>(null);
+  const internalRef = React.useRef<HTMLButtonElement | null>(null) as React.MutableRefObject<HTMLButtonElement | null>;
   const combinedRef = React.useCallback(
     (node: HTMLButtonElement | null) => {
       internalRef.current = node;
       if (typeof ref === 'function') {
         ref(node);
       } else if (ref) {
-        ref.current = node;
+        Object.assign(ref, { current: node });
       }
     },
     [ref]
