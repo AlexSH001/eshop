@@ -414,6 +414,130 @@ router.post('/verify-reset-token', verifyResetTokenValidation, async (req, res) 
   }
 });
 
+// Send Email Verification
+router.post('/send-verification-email', authenticateUser, async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    // Check if email is already verified
+    const user = await database.get(
+      'SELECT id, email, email_verified, first_name FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.email_verified) {
+      return res.json({
+        message: 'Email is already verified'
+      });
+    }
+
+    // Generate verification token
+    const verificationToken = generateToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+    // Delete any existing verification tokens for this user
+    await database.execute(
+      'DELETE FROM email_tokens WHERE user_id = $1 AND type = $2',
+      [userId, 'verification']
+    );
+
+    // Store verification token
+    await database.execute(
+      'INSERT INTO email_tokens (user_id, token, type, expires_at) VALUES ($1, $2, $3, $4)',
+      [userId, verificationToken, 'verification', expiresAt]
+    );
+
+    // Send verification email
+    const verificationUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/verify-email` : null;
+    const emailResult = await emailService.sendVerificationEmail(user.email, verificationToken, verificationUrl);
+
+    if (!emailResult.success) {
+      logger.error('Failed to send verification email:', emailResult.error);
+      return res.status(500).json({ error: 'Failed to send verification email' });
+    }
+
+    res.json({
+      message: 'Verification email sent successfully'
+    });
+  } catch (error) {
+    logger.error('Send verification email error:', error);
+    res.status(500).json({ error: 'Failed to send verification email' });
+  }
+});
+
+// Verify Email with Token
+router.post('/verify-email', async (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ error: 'Verification token is required' });
+  }
+
+  try {
+    // Find valid verification token
+    const dbType = database.getType ? database.getType() : (process.env.DB_CLIENT || 'sqlite3');
+    const isPostgres = dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql';
+    
+    let tokenRecord;
+    if (isPostgres) {
+      tokenRecord = await database.get(
+        `SELECT et.*, u.email, u.email_verified 
+         FROM email_tokens et 
+         JOIN users u ON et.user_id = u.id 
+         WHERE et.token = $1 AND et.type = $2 AND et.expires_at > NOW() AND et.used_at IS NULL`,
+        [token, 'verification']
+      );
+    } else {
+      tokenRecord = await database.get(
+        `SELECT et.*, u.email, u.email_verified 
+         FROM email_tokens et 
+         JOIN users u ON et.user_id = u.id 
+         WHERE et.token = $1 AND et.type = $2 AND et.expires_at > datetime('now') AND et.used_at IS NULL`,
+        [token, 'verification']
+      );
+    }
+
+    if (!tokenRecord) {
+      return res.status(400).json({ error: 'Invalid or expired verification token' });
+    }
+
+    if (tokenRecord.email_verified) {
+      return res.json({
+        message: 'Email is already verified'
+      });
+    }
+
+    // Mark email as verified
+    await database.execute(
+      'UPDATE users SET email_verified = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+      [tokenRecord.user_id]
+    );
+
+    // Mark token as used
+    await database.execute(
+      'UPDATE email_tokens SET used_at = CURRENT_TIMESTAMP WHERE id = $1',
+      [tokenRecord.id]
+    );
+
+    // Delete all verification tokens for this user
+    await database.execute(
+      'DELETE FROM email_tokens WHERE user_id = $1 AND type = $2',
+      [tokenRecord.user_id, 'verification']
+    );
+
+    res.json({
+      message: 'Email verified successfully'
+    });
+  } catch (error) {
+    logger.error('Email verification error:', error);
+    res.status(500).json({ error: 'Failed to verify email' });
+  }
+});
+
 // Logout (invalidate token - in a real app, you'd maintain a blacklist)
 router.post('/logout', (req, res) => {
   res.json({

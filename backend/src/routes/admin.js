@@ -696,6 +696,17 @@ router.put('/settings/:section', authenticateAdmin, requireSuperAdmin, async (re
       }
     }
 
+    // Reload email service if email settings were updated
+    if (section === 'email') {
+      try {
+        const emailService = require('../services/emailService');
+        await emailService.reload();
+      } catch (error) {
+        console.error('Failed to reload email service:', error);
+        // Don't fail the request if email service reload fails
+      }
+    }
+
     res.json({ message: 'Settings updated successfully', section, data });
   } catch (error) {
     console.error(`Error updating settings for section ${section}:`, error);

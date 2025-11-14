@@ -26,6 +26,8 @@ export default function ProfilePage() {
   const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
   const [isEditing, setIsEditing] = useState(false);
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
+  const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [profileData, setProfileData] = useState({
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
@@ -37,8 +39,56 @@ export default function ProfilePage() {
         firstName: user.firstName || "",
         lastName: user.lastName || "",
       });
+      // Fetch user data to get email verification status
+      fetchUserData();
     }
   }, [user]);
+
+  const fetchUserData = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setEmailVerified(data.user?.email_verified || false);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+    }
+  };
+
+  const handleSendVerificationEmail = async () => {
+    setIsSendingVerification(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/auth/send-verification-email`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Verification email sent! Please check your inbox.');
+      } else {
+        toast.error(data.error || 'Failed to send verification email');
+      }
+    } catch (error) {
+      console.error('Failed to send verification email:', error);
+      toast.error('Failed to send verification email');
+    } finally {
+      setIsSendingVerification(false);
+    }
+  };
 
   const handleSaveProfile = async () => {
     try {
@@ -210,12 +260,22 @@ export default function ProfilePage() {
                   <div>
                     <p className="font-medium">Email Verification</p>
                     <p className="text-sm text-gray-600">
-                      Not verified
+                      {emailVerified === null ? 'Loading...' : emailVerified ? 'Verified' : 'Not verified'}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    Verify Email
-                  </Button>
+                  {emailVerified === false && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleSendVerificationEmail}
+                      disabled={isSendingVerification}
+                    >
+                      {isSendingVerification ? 'Sending...' : 'Verify Email'}
+                    </Button>
+                  )}
+                  {emailVerified === true && (
+                    <Badge variant="default" className="bg-green-100 text-green-800">Verified</Badge>
+                  )}
                 </div>
               </CardContent>
             </Card>

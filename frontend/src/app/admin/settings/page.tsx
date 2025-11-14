@@ -395,57 +395,75 @@ export default function AdminSettingsPage() {
                     <Label htmlFor="smtpHost">SMTP Host</Label>
                     <Input
                       id="smtpHost"
-                      value={settings.email.smtpHost}
+                      value={settings.email.smtpHost || ''}
                       onChange={(e) => updateSettings('email', 'smtpHost', e.target.value)}
-                      placeholder="smtp.eshop.com"
+                      placeholder={settings.email.smtpHost ? undefined : 'N/A'}
                     />
+                    {!settings.email.smtpHost && (
+                      <p className="text-xs text-gray-500 mt-1">Current: N/A</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="smtpPort">SMTP Port</Label>
                     <Input
                       id="smtpPort"
-                      value={settings.email.smtpPort}
+                      value={settings.email.smtpPort || ''}
                       onChange={(e) => updateSettings('email', 'smtpPort', e.target.value)}
-                      placeholder="587"
+                      placeholder={settings.email.smtpPort ? undefined : 'N/A'}
                     />
+                    {!settings.email.smtpPort && (
+                      <p className="text-xs text-gray-500 mt-1">Current: N/A</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="smtpUser">SMTP Username</Label>
                     <Input
                       id="smtpUser"
-                      value={settings.email.smtpUser}
+                      value={settings.email.smtpUser || ''}
                       onChange={(e) => updateSettings('email', 'smtpUser', e.target.value)}
-                      placeholder="your-email@eshop.com"
+                      placeholder={settings.email.smtpUser ? undefined : 'N/A'}
                     />
+                    {!settings.email.smtpUser && (
+                      <p className="text-xs text-gray-500 mt-1">Current: N/A</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="smtpPass">SMTP Password</Label>
                     <Input
                       id="smtpPass"
                       type="password"
-                      value={settings.email.smtpPass}
+                      value={settings.email.smtpPass || ''}
                       onChange={(e) => updateSettings('email', 'smtpPass', e.target.value)}
-                      placeholder="Your email password"
+                      placeholder={settings.email.smtpPass ? undefined : 'N/A (leave blank to keep current)'}
                     />
+                    {!settings.email.smtpPass && (
+                      <p className="text-xs text-gray-500 mt-1">Current: N/A</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="fromEmail">From Email</Label>
                     <Input
                       id="fromEmail"
                       type="email"
-                      value={settings.email.fromEmail}
+                      value={settings.email.fromEmail || ''}
                       onChange={(e) => updateSettings('email', 'fromEmail', e.target.value)}
-                      placeholder="noreply@eshop.com"
+                      placeholder={settings.email.fromEmail ? undefined : 'N/A'}
                     />
+                    {!settings.email.fromEmail && (
+                      <p className="text-xs text-gray-500 mt-1">Current: N/A</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="fromName">From Name</Label>
                     <Input
                       id="fromName"
-                      value={settings.email.fromName}
+                      value={settings.email.fromName || ''}
                       onChange={(e) => updateSettings('email', 'fromName', e.target.value)}
-                      placeholder="eshop"
+                      placeholder={settings.email.fromName ? undefined : 'N/A'}
                     />
+                    {!settings.email.fromName && (
+                      <p className="text-xs text-gray-500 mt-1">Current: N/A</p>
+                    )}
                   </div>
                 </div>
                 <Button onClick={() => handleSave('email')} disabled={saving}>
