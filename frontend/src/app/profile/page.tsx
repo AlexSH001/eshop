@@ -44,6 +44,34 @@ export default function ProfilePage() {
     }
   }, [user]);
 
+  // Refresh email verification status when page becomes visible (e.g., after redirect from verify-email)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user) {
+        fetchUserData();
+      }
+    };
+
+    const handleFocus = () => {
+      if (user) {
+        fetchUserData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    // Also fetch on mount to ensure we have the latest status
+    if (user) {
+      fetchUserData();
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user]);
+
   const fetchUserData = async () => {
     try {
       const token = localStorage.getItem('auth_token');

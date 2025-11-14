@@ -51,7 +51,7 @@ const authenticateUser = async (req, res, next) => {
 
     // Verify user still exists and is active
     const user = await database.get(
-      'SELECT id, email, first_name, last_name, phone, avatar, is_active FROM users WHERE id = ? AND is_active = TRUE',
+      'SELECT id, email, first_name, last_name, phone, avatar, is_active, email_verified FROM users WHERE id = ? AND is_active = TRUE',
       [decoded.userId]
     );
 
@@ -131,7 +131,7 @@ const optionalAuth = async (req, res, next) => {
 
     const decoded = verifyAccessToken(token);
     const user = await database.get(
-      'SELECT id, email, first_name, last_name, phone, avatar, is_active FROM users WHERE id = ? AND is_active = TRUE',
+      'SELECT id, email, first_name, last_name, phone, avatar, is_active, email_verified FROM users WHERE id = ? AND is_active = TRUE',
       [decoded.userId]
     );
 
