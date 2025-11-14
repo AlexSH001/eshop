@@ -54,80 +54,6 @@ class ApiError extends Error {
   }
 }
 
-// Token refresh lock to prevent race conditions
-let refreshPromise: Promise<string | null> | null = null;
-
-/**
- * Refresh the access token using the refresh token
- * Uses a lock mechanism to prevent multiple simultaneous refresh attempts
- */
-async function refreshAccessToken(): Promise<string | null> {
-  // If a refresh is already in progress, wait for it
-  if (refreshPromise) {
-    return refreshPromise;
-  }
-
-  const refreshTokenValue = localStorage.getItem('refresh_token');
-  if (!refreshTokenValue) {
-    return null;
-  }
-
-  // Create a new refresh promise
-  refreshPromise = (async () => {
-    try {
-      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken: refreshTokenValue }),
-      });
-
-      if (refreshResponse.ok) {
-        const refreshData = await refreshResponse.json();
-        localStorage.setItem('auth_token', refreshData.accessToken);
-        return refreshData.accessToken;
-      } else {
-        // Refresh failed, clear tokens and trigger logout
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        
-        // Trigger logout event to update UI state
-        window.dispatchEvent(new CustomEvent('logout'));
-        window.dispatchEvent(new StorageEvent('storage', {
-          key: 'auth_token',
-          newValue: null,
-          oldValue: localStorage.getItem('auth_token')
-        }));
-        
-        return null;
-      }
-    } catch (error) {
-      console.error('Token refresh error:', error);
-      // Refresh failed, clear tokens and trigger logout
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
-      
-      // Trigger logout event to update UI state
-      window.dispatchEvent(new CustomEvent('logout'));
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'auth_token',
-        newValue: null,
-        oldValue: localStorage.getItem('auth_token')
-      }));
-      
-      return null;
-    } finally {
-      // Clear the lock after refresh completes
-      refreshPromise = null;
-    }
-  })();
-
-  return refreshPromise;
-}
-
 async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -153,71 +79,63 @@ async function apiRequest<T>(
 
   try {
     const response = await fetch(url, config);
-    
-    // Handle 401 errors before parsing JSON (token expired/invalid)
-    if (response.status === 401 && localStorage.getItem('refresh_token')) {
-      // Try to refresh the token
-      const newToken = await refreshAccessToken();
-      
-      if (newToken) {
-        // Retry the original request with the new token
-        const retryConfig = {
-          ...config,
-          headers: {
-            ...config.headers,
-            Authorization: `Bearer ${newToken}`,
-          },
-        };
-        
-        const retryResponse = await fetch(url, retryConfig);
-        
-        // Parse response
-        let retryData: ApiResponse<T>;
-        try {
-          retryData = await retryResponse.json();
-        } catch {
-          // If response is not JSON, throw error
-          throw new ApiError(retryResponse.status, 'Invalid response format');
-        }
-        
-        if (!retryResponse.ok) {
-          // If retry still fails with 401, token refresh didn't work
-          if (retryResponse.status === 401) {
-            throw new ApiError(401, 'Authentication expired');
-          }
-          throw new ApiError(
-            retryResponse.status,
-            retryData.error || 'API request failed',
-            retryData.details
-          );
-        }
-        
-        return retryData.data || retryData as T;
-      } else {
-        // Refresh failed, trigger logout and throw authentication error
-        window.dispatchEvent(new CustomEvent('logout'));
-        window.dispatchEvent(new StorageEvent('storage', {
-          key: 'auth_token',
-          newValue: null,
-          oldValue: localStorage.getItem('auth_token')
-        }));
-        throw new ApiError(401, 'Authentication expired');
-      }
-    }
-
-    // Parse response for non-401 errors
-    let data: ApiResponse<T>;
-    try {
-      data = await response.json();
-    } catch {
-      // If response is not JSON, create a basic error
-      if (!response.ok) {
-        throw new ApiError(response.status, `Request failed with status ${response.status}`);
-      }
-      throw new ApiError(500, 'Invalid response format');
-    }
+    const data: ApiResponse<T> = await response.json();
 
     if (!response.ok) {
+      // If we get a 401 and have a refresh token, try to refresh
+      if (response.status === 401 && localStorage.getItem('refresh_token')) {
+        try {
+          const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              refreshToken: localStorage.getItem('refresh_token') 
+            }),
+          });
+
+          if (refreshResponse.ok) {
+            const refreshData = await refreshResponse.json();
+            localStorage.setItem('auth_token', refreshData.accessToken);
+            
+            // Retry the original request with the new token
+            const retryConfig = {
+              ...config,
+              headers: {
+                ...config.headers,
+                Authorization: `Bearer ${refreshData.accessToken}`,
+              },
+            };
+            
+            const retryResponse = await fetch(url, retryConfig);
+            const retryData: ApiResponse<T> = await retryResponse.json();
+            
+            if (!retryResponse.ok) {
+              throw new ApiError(
+                retryResponse.status,
+                retryData.error || 'API request failed',
+                retryData.details
+              );
+            }
+            
+            return retryData.data || retryData as T;
+          } else {
+            // Refresh failed, clear tokens and throw error
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user');
+            throw new ApiError(401, 'Authentication expired');
+          }
+        } catch (refreshError) {
+          // Refresh failed, clear tokens and throw error
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user');
+          throw new ApiError(401, 'Authentication expired');
+        }
+      }
+      
       throw new ApiError(
         response.status,
         data.error || 'API request failed',

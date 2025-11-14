@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
 interface User {
   id: string;
@@ -129,27 +129,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     checkAuth();
 
-    // Listen for logout events (triggered by API functions when refresh fails)
-    const handleLogout = () => {
-      logout();
-    };
-
     // Listen for storage changes (when tokens are cleared by API functions)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'auth_token' && !e.newValue) {
         // Token was removed, update state
-        logout();
+        setState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
       }
     };
 
-    window.addEventListener('logout', handleLogout);
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
-      window.removeEventListener('logout', handleLogout);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [logout]);
+  }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -301,7 +298,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = useCallback(() => {
+  const logout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('auth_token');
     localStorage.removeItem('refresh_token');
@@ -322,7 +319,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: false,
       isLoading: false,
     });
-  }, []);
+  };
 
   const refreshToken = async (): Promise<boolean> => {
     const refreshTokenValue = localStorage.getItem('refresh_token');
