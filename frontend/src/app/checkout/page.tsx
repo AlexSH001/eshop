@@ -427,6 +427,15 @@ export default function CheckoutPage() {
                       />
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900">{item.name}</h3>
+                        {item.variant && Object.keys(item.variant).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1 mb-1">
+                            {Object.entries(item.variant).map(([key, value]) => (
+                              <Badge key={key} variant="outline" className="text-xs">
+                                {key}: {value}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                         <p className="text-sm text-gray-500">{item.category}</p>
                         <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                       </div>

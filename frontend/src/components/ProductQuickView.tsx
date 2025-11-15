@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { resolveProductImage, normalizeImageUrl } from "@/lib/utils";
+import ProductVariantSelector, { ProductVariant } from "@/components/ProductVariantSelector";
 
 interface ProductQuickViewProps {
   product: {
@@ -52,6 +53,7 @@ interface ProductDetails {
   inStock?: boolean;
   stockCount?: number;
   specifications?: Record<string, string>;
+  attributes?: Record<string, any>;
 }
 
 export default function ProductQuickView({ product, children }: ProductQuickViewProps) {
@@ -66,6 +68,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
   const [details, setDetails] = useState<ProductDetails | null>(null);
   const [images, setImages] = useState<string[]>([product.image]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant>({});
   // Remove hasFetched state
   // const [hasFetched, setHasFetched] = useState(false);
 
@@ -126,14 +129,21 @@ export default function ProductQuickView({ product, children }: ProductQuickView
   };
 
   const handleAddToCart = () => {
+    // Build product name with variant info
+    const variantString = Object.keys(selectedVariant).length > 0
+      ? ` (${Object.entries(selectedVariant).map(([key, value]) => `${key}: ${value}`).join(', ')})`
+      : '';
+    const productNameWithVariant = `${product.name}${variantString}`;
+
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id,
-        name: product.name,
+        name: productNameWithVariant,
         price: product.price,
         originalPrice: product.originalPrice,
         image: product.image,
-        category: product.category
+        category: product.category,
+        variant: selectedVariant
       });
     }
   };
@@ -285,6 +295,15 @@ export default function ProductQuickView({ product, children }: ProductQuickView
               </div>
 
               <Separator />
+
+              {/* Variant Selector */}
+              {details?.attributes && Object.keys(details.attributes).length > 0 && (
+                <ProductVariantSelector
+                  attributes={details.attributes}
+                  selectedVariant={selectedVariant}
+                  onVariantChange={setSelectedVariant}
+                />
+              )}
 
               {/* Quantity and Add to Cart */}
               <div className="space-y-4">

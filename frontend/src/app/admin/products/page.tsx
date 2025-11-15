@@ -64,6 +64,7 @@ type ProductFormData = {
   shipping: string;
   images: string[]; // Multiple images
   featuredImage: string; // Featured image URL
+  attributes: Record<string, string[]>; // Variants: { color: ["red", "blue"], size: ["S", "M", "L"] }
 };
 
 // Helper to robustly parse specifications
@@ -80,6 +81,39 @@ function parseSpecifications(spec: any) {
     return Object.entries(spec).map(([key, value]) => ({ key, value: String(value) }));
   }
   return [{ key: '', value: '' }];
+}
+
+// Helper to parse attributes/variants
+function parseAttributes(attrs: any): Record<string, string[]> {
+  if (!attrs) return {};
+  if (typeof attrs === 'string') {
+    try {
+      attrs = JSON.parse(attrs);
+    } catch {
+      return {};
+    }
+  }
+  if (typeof attrs === 'object' && !Array.isArray(attrs)) {
+    // Check if it's in the format { variants: { color: [...], size: [...] } }
+    if (attrs.variants && typeof attrs.variants === 'object') {
+      const result: Record<string, string[]> = {};
+      Object.entries(attrs.variants).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          result[key] = value.map(String);
+        }
+      });
+      return result;
+    }
+    // Direct format: { color: [...], size: [...] }
+    const result: Record<string, string[]> = {};
+    Object.entries(attrs).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        result[key] = value.map(String);
+      }
+    });
+    return result;
+  }
+  return {};
 }
 
 export default function AdminProductsPage() {
@@ -124,7 +158,8 @@ export default function AdminProductsPage() {
     specifications: [{ key: '', value: '' }],
     shipping: "",
     images: [],
-    featuredImage: ""
+    featuredImage: "",
+    attributes: {}
   });
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -357,7 +392,8 @@ export default function AdminProductsPage() {
           featuredImage: formData.featuredImage,
           images: formData.images,
           specifications: Object.fromEntries(formData.specifications.filter(s => s.key).map(s => [s.key, s.value])),
-          shipping: formData.shipping
+          shipping: formData.shipping,
+          attributes: formData.attributes
         })
       });
       if (!res.ok) throw new Error('Failed to add product');
@@ -393,7 +429,8 @@ export default function AdminProductsPage() {
         specifications: [{ key: '', value: '' }],
         shipping: "",
         images: [],
-        featuredImage: ""
+        featuredImage: "",
+        attributes: {}
       });
       toast.success('Product added successfully');
     } catch (err) {
@@ -424,7 +461,8 @@ export default function AdminProductsPage() {
           featured_image: formData.featuredImage, // Use snake_case for backend
           images: formData.images,
           specifications: Object.fromEntries(formData.specifications.filter(s => s.key).map(s => [s.key, s.value])),
-          shipping: formData.shipping
+          shipping: formData.shipping,
+          attributes: formData.attributes
         })
       });
       if (!res.ok) throw new Error('Failed to update product');
@@ -470,7 +508,8 @@ export default function AdminProductsPage() {
         specifications: [{ key: '', value: '' }],
         shipping: "",
         images: [],
-        featuredImage: ""
+        featuredImage: "",
+        attributes: {}
       });
       toast.success('Product updated successfully');
     } catch (err) {
@@ -566,7 +605,8 @@ export default function AdminProductsPage() {
               specifications: [{ key: '', value: '' }],
               shipping: "",
               images: [],
-              featuredImage: ""
+              featuredImage: "",
+              attributes: {}
             });
             setIsAddModalOpen(true);
           }}>
@@ -629,7 +669,8 @@ export default function AdminProductsPage() {
                             specifications: parseSpecifications(fullProduct.specifications),
                             shipping: fullProduct.shipping || '',
                             images: fullProduct.images || [],
-                            featuredImage: fullProduct.featured_image || ''
+                            featuredImage: fullProduct.featured_image || '',
+                            attributes: parseAttributes(fullProduct.attributes)
                           });
                         } else {
                           // Fallback to basic product data
@@ -645,7 +686,8 @@ export default function AdminProductsPage() {
                             specifications: parseSpecifications(product.specifications),
                             shipping: product.shipping || '',
                             images: [],
-                            featuredImage: product.image
+                            featuredImage: product.image,
+                            attributes: {}
                           });
                         }
                       } catch (error) {
@@ -663,7 +705,8 @@ export default function AdminProductsPage() {
                           specifications: parseSpecifications(product.specifications),
                           shipping: product.shipping || '',
                           images: [],
-                          featuredImage: product.image
+                          featuredImage: product.image,
+                          attributes: {}
                         });
                       }
                     }}>
@@ -698,7 +741,8 @@ export default function AdminProductsPage() {
               specifications: [{ key: '', value: '' }],
               shipping: "",
               images: [],
-              featuredImage: ""
+              featuredImage: "",
+              attributes: {}
             });
           }
         }}>
@@ -934,6 +978,59 @@ export default function AdminProductsPage() {
                 ))}
                 <Button type="button" variant="secondary" onClick={() => setFormData({ ...formData, specifications: [...formData.specifications, { key: '', value: '' }] })}>
                   Add Specification
+                </Button>
+              </div>
+              <div>
+                <Label>Product Variants (e.g., Color, Size)</Label>
+                <p className="text-xs text-gray-500 mb-2">Define available variants for this product. Format: variant name and comma-separated values.</p>
+                {Object.entries(formData.attributes).map(([variantName, values]) => (
+                  <div key={variantName} className="mb-3 p-3 border rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Input
+                        placeholder="Variant name (e.g., Color, Size)"
+                        value={variantName}
+                        onChange={e => {
+                          const newAttrs = { ...formData.attributes };
+                          delete newAttrs[variantName];
+                          newAttrs[e.target.value] = values;
+                          setFormData({ ...formData, attributes: newAttrs });
+                        }}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newAttrs = { ...formData.attributes };
+                          delete newAttrs[variantName];
+                          setFormData({ ...formData, attributes: newAttrs });
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <Input
+                      placeholder="Comma-separated values (e.g., Red, Blue, Green or S, M, L)"
+                      value={values.join(', ')}
+                      onChange={e => {
+                        const newAttrs = { ...formData.attributes };
+                        newAttrs[variantName] = e.target.value.split(',').map(v => v.trim()).filter(v => v);
+                        setFormData({ ...formData, attributes: newAttrs });
+                      }}
+                    />
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    const newAttrs = { ...formData.attributes };
+                    newAttrs[`variant_${Object.keys(newAttrs).length + 1}`] = [];
+                    setFormData({ ...formData, attributes: newAttrs });
+                  }}
+                >
+                  Add Variant Type
                 </Button>
               </div>
               <div>
@@ -1186,6 +1283,59 @@ export default function AdminProductsPage() {
                 ))}
                 <Button type="button" variant="secondary" onClick={() => setFormData({ ...formData, specifications: [...formData.specifications, { key: '', value: '' }] })}>
                   Add Specification
+                </Button>
+              </div>
+              <div>
+                <Label>Product Variants (e.g., Color, Size)</Label>
+                <p className="text-xs text-gray-500 mb-2">Define available variants for this product. Format: variant name and comma-separated values.</p>
+                {Object.entries(formData.attributes).map(([variantName, values]) => (
+                  <div key={variantName} className="mb-3 p-3 border rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Input
+                        placeholder="Variant name (e.g., Color, Size)"
+                        value={variantName}
+                        onChange={e => {
+                          const newAttrs = { ...formData.attributes };
+                          delete newAttrs[variantName];
+                          newAttrs[e.target.value] = values;
+                          setFormData({ ...formData, attributes: newAttrs });
+                        }}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newAttrs = { ...formData.attributes };
+                          delete newAttrs[variantName];
+                          setFormData({ ...formData, attributes: newAttrs });
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <Input
+                      placeholder="Comma-separated values (e.g., Red, Blue, Green or S, M, L)"
+                      value={values.join(', ')}
+                      onChange={e => {
+                        const newAttrs = { ...formData.attributes };
+                        newAttrs[variantName] = e.target.value.split(',').map(v => v.trim()).filter(v => v);
+                        setFormData({ ...formData, attributes: newAttrs });
+                      }}
+                    />
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    const newAttrs = { ...formData.attributes };
+                    newAttrs[`variant_${Object.keys(newAttrs).length + 1}`] = [];
+                    setFormData({ ...formData, attributes: newAttrs });
+                  }}
+                >
+                  Add Variant Type
                 </Button>
               </div>
               <div>

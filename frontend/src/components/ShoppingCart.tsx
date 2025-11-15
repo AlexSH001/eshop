@@ -73,6 +73,15 @@ export default function ShoppingCartSheet({ children }: ShoppingCartSheetProps) 
                     />
                     <div className="flex-1 min-w-0 mr-4">
                       <h3 className="font-medium text-sm leading-tight mb-2 break-words">{item.name}</h3>
+                      {item.variant && Object.keys(item.variant).length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {Object.entries(item.variant).map(([key, value]) => (
+                            <Badge key={key} variant="outline" className="text-xs">
+                              {key}: {value}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 mb-2">
                         <PriceDisplay price={item.price} className="font-bold text-purple-600" />
                         {item.originalPrice && (

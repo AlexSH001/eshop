@@ -13,6 +13,7 @@ export interface CartItem {
   image: string;
   category: string;
   quantity: number;
+  variant?: Record<string, string>; // Variant information (e.g., { color: "red", size: "large" })
 }
 
 interface CartState {
@@ -98,7 +99,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
 interface CartContextType {
   state: CartState;
-  addItem: (item: Omit<CartItem, 'quantity' | 'id' | 'productId'> & { id: number }) => void;
+  addItem: (item: Omit<CartItem, 'quantity' | 'id' | 'productId'> & { id: number; variant?: Record<string, string> }) => void;
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
   clearCart: () => void;
@@ -145,6 +146,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             image: item.image as string,
             category: item.category as string || 'Unknown',
             quantity: item.quantity as number,
+            variant: item.variant || undefined, // Variant info from backend (if stored)
           })) || [];
 
           dispatch({ type: 'SET_CART', payload: items });
@@ -186,15 +188,26 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
-  const addItem = async (product: Omit<CartItem, 'quantity' | 'id' | 'productId'> & { id: number }) => {
+  const addItem = async (product: Omit<CartItem, 'quantity' | 'id' | 'productId'> & { id: number; variant?: Record<string, string> }) => {
     try {
       const sessionId = localStorage.getItem('session_id');
       const token = localStorage.getItem('auth_token');
 
-      // Check if item is already in cart to prevent duplicate requests
-      const existingItem = state.items.find(item => item.productId === product.id);
+      // Check if item with same product ID and variant is already in cart
+      const existingItem = state.items.find(item => {
+        if (item.productId !== product.id) return false;
+        // Compare variants - if both have variants, they must match exactly
+        const itemVariant = item.variant || {};
+        const productVariant = product.variant || {};
+        const itemVariantKeys = Object.keys(itemVariant).sort();
+        const productVariantKeys = Object.keys(productVariant).sort();
+        
+        if (itemVariantKeys.length !== productVariantKeys.length) return false;
+        return itemVariantKeys.every(key => itemVariant[key] === productVariant[key]);
+      });
+      
       if (existingItem) {
-        // If item exists, update quantity instead of adding
+        // If item exists with same variant, update quantity instead of adding
         await updateQuantity(existingItem.id, existingItem.quantity + 1);
         return;
       }
@@ -227,6 +240,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           image: product.image,
           category: product.category,
           quantity: backendItem.quantity,
+          variant: product.variant,
         };
 
         dispatch({ type: 'ADD_ITEM', payload: fullNewItem });
