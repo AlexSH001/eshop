@@ -51,6 +51,23 @@ interface Product {
   shipping?: string;
 }
 
+type VariantValue = {
+  name: string;
+  image?: string;
+  price?: number;
+};
+
+type VariantData = {
+  values: VariantValue[];
+};
+
+type VariantCombination = {
+  combination: Record<string, string>; // e.g., { color: "red", size: "M" }
+  price?: number;
+  stock?: number;
+  sku?: string;
+};
+
 type ProductFormData = {
   name: string;
   price: string;
@@ -64,7 +81,8 @@ type ProductFormData = {
   shipping: string;
   images: string[]; // Multiple images
   featuredImage: string; // Featured image URL
-  attributes: Record<string, string[]>; // Variants: { color: ["red", "blue"], size: ["S", "M", "L"] }
+  attributes: Record<string, VariantData>; // Variants: { color: { values: [{ name: "red", image: "...", price: 10 }] } }
+  variantCombinations: VariantCombination[]; // Prices for specific combinations
 };
 
 // Helper to robustly parse specifications
@@ -84,7 +102,7 @@ function parseSpecifications(spec: any) {
 }
 
 // Helper to parse attributes/variants
-function parseAttributes(attrs: any): Record<string, string[]> {
+function parseAttributes(attrs: any): Record<string, VariantData> {
   if (!attrs) return {};
   if (typeof attrs === 'string') {
     try {
@@ -94,26 +112,67 @@ function parseAttributes(attrs: any): Record<string, string[]> {
     }
   }
   if (typeof attrs === 'object' && !Array.isArray(attrs)) {
-    // Check if it's in the format { variants: { color: [...], size: [...] } }
-    if (attrs.variants && typeof attrs.variants === 'object') {
-      const result: Record<string, string[]> = {};
-      Object.entries(attrs.variants).forEach(([key, value]) => {
-        if (Array.isArray(value)) {
-          result[key] = value.map(String);
-        }
-      });
-      return result;
-    }
-    // Direct format: { color: [...], size: [...] }
-    const result: Record<string, string[]> = {};
+    const result: Record<string, VariantData> = {};
+    
+    // Check if it's the new format with VariantData
     Object.entries(attrs).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        result[key] = value.map(String);
+      if (value && typeof value === 'object' && 'values' in value && Array.isArray(value.values)) {
+        // New format: { color: { values: [{ name: "red", image: "...", price: 10 }] } }
+        result[key] = {
+          values: (value.values as any[]).map(v => ({
+            name: typeof v === 'string' ? v : (v.name || String(v)),
+            image: typeof v === 'object' ? v.image : undefined,
+            price: typeof v === 'object' ? v.price : undefined
+          }))
+        };
+      } else if (Array.isArray(value)) {
+        // Old format: { color: ["red", "blue"] } - convert to new format
+        result[key] = {
+          values: value.map(v => ({
+            name: String(v),
+            image: undefined,
+            price: undefined
+          }))
+        };
       }
     });
     return result;
   }
   return {};
+}
+
+// Helper to generate all variant combinations
+function generateVariantCombinations(attributes: Record<string, VariantData>): Record<string, string>[] {
+  const variantNames = Object.keys(attributes);
+  if (variantNames.length === 0) return [];
+
+  const combinations: Record<string, string>[] = [];
+  
+  function generate(index: number, current: Record<string, string>) {
+    if (index === variantNames.length) {
+      combinations.push({ ...current });
+      return;
+    }
+    
+    const variantName = variantNames[index];
+    const variantData = attributes[variantName];
+    
+    variantData.values.forEach(value => {
+      current[variantName] = value.name;
+      generate(index + 1, current);
+    });
+  }
+  
+  generate(0, {});
+  return combinations;
+}
+
+// Helper to create combination key
+function createCombinationKey(combination: Record<string, string>): string {
+  return Object.entries(combination)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}:${value}`)
+    .join('|');
 }
 
 export default function AdminProductsPage() {
@@ -159,8 +218,12 @@ export default function AdminProductsPage() {
     shipping: "",
     images: [],
     featuredImage: "",
-    attributes: {}
+    attributes: {},
+    variantCombinations: []
   });
+  
+  // Track variant input values separately to avoid cursor issues
+  const [variantInputValues, setVariantInputValues] = useState<Record<string, string>>({});
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -393,7 +456,8 @@ export default function AdminProductsPage() {
           images: formData.images,
           specifications: Object.fromEntries(formData.specifications.filter(s => s.key).map(s => [s.key, s.value])),
           shipping: formData.shipping,
-          attributes: formData.attributes
+          attributes: formData.attributes,
+          variantCombinations: formData.variantCombinations
         })
       });
       if (!res.ok) throw new Error('Failed to add product');
@@ -430,8 +494,10 @@ export default function AdminProductsPage() {
         shipping: "",
         images: [],
         featuredImage: "",
-        attributes: {}
+        attributes: {},
+        variantCombinations: []
       });
+      setVariantInputValues({});
       toast.success('Product added successfully');
     } catch (err) {
       setError((err as Error).message || 'Unknown error');
@@ -462,7 +528,8 @@ export default function AdminProductsPage() {
           images: formData.images,
           specifications: Object.fromEntries(formData.specifications.filter(s => s.key).map(s => [s.key, s.value])),
           shipping: formData.shipping,
-          attributes: formData.attributes
+          attributes: formData.attributes,
+          variantCombinations: formData.variantCombinations
         })
       });
       if (!res.ok) throw new Error('Failed to update product');
@@ -509,8 +576,10 @@ export default function AdminProductsPage() {
         shipping: "",
         images: [],
         featuredImage: "",
-        attributes: {}
+        attributes: {},
+        variantCombinations: []
       });
+      setVariantInputValues({});
       toast.success('Product updated successfully');
     } catch (err) {
       setError((err as Error).message || 'Unknown error');
@@ -606,8 +675,10 @@ export default function AdminProductsPage() {
               shipping: "",
               images: [],
               featuredImage: "",
-              attributes: {}
+              attributes: {},
+              variantCombinations: []
             });
+            setVariantInputValues({});
             setIsAddModalOpen(true);
           }}>
             <Plus className="h-4 w-4 mr-2" /> Add Product
@@ -670,8 +741,15 @@ export default function AdminProductsPage() {
                             shipping: fullProduct.shipping || '',
                             images: fullProduct.images || [],
                             featuredImage: fullProduct.featured_image || '',
-                            attributes: parseAttributes(fullProduct.attributes)
+                            attributes: parseAttributes(fullProduct.attributes),
+                            variantCombinations: fullProduct.variant_combinations || []
                           });
+                          // Initialize variant input values
+                          const inputValues: Record<string, string> = {};
+                          Object.entries(parseAttributes(fullProduct.attributes)).forEach(([variantName, variantData]) => {
+                            inputValues[variantName] = variantData.values.map(v => v.name).join(', ');
+                          });
+                          setVariantInputValues(inputValues);
                         } else {
                           // Fallback to basic product data
                           setFormData({
@@ -687,8 +765,10 @@ export default function AdminProductsPage() {
                             shipping: product.shipping || '',
                             images: [],
                             featuredImage: product.image,
-                            attributes: {}
+                            attributes: {},
+                            variantCombinations: []
                           });
+                          setVariantInputValues({});
                         }
                       } catch (error) {
                         console.error('Error fetching product details:', error);
@@ -706,8 +786,10 @@ export default function AdminProductsPage() {
                           shipping: product.shipping || '',
                           images: [],
                           featuredImage: product.image,
-                          attributes: {}
+                          attributes: {},
+                          variantCombinations: []
                         });
+                        setVariantInputValues({});
                       }
                     }}>
                       <Edit className="h-4 w-4" />
@@ -742,8 +824,10 @@ export default function AdminProductsPage() {
               shipping: "",
               images: [],
               featuredImage: "",
-              attributes: {}
+              attributes: {},
+              variantCombinations: []
             });
+            setVariantInputValues({});
           }
         }}>
           <DialogContent className="max-w-md bg-white max-h-[90vh] overflow-y-auto">
@@ -982,56 +1066,176 @@ export default function AdminProductsPage() {
               </div>
               <div>
                 <Label>Product Variants (e.g., Color, Size)</Label>
-                <p className="text-xs text-gray-500 mb-2">Define available variants for this product. Format: variant name and comma-separated values.</p>
-                {Object.entries(formData.attributes).map(([variantName, values]) => (
-                  <div key={variantName} className="mb-3 p-3 border rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Input
-                        placeholder="Variant name (e.g., Color, Size)"
-                        value={variantName}
-                        onChange={e => {
-                          const newAttrs = { ...formData.attributes };
-                          delete newAttrs[variantName];
-                          newAttrs[e.target.value] = values;
-                          setFormData({ ...formData, attributes: newAttrs });
-                        }}
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const newAttrs = { ...formData.attributes };
-                          delete newAttrs[variantName];
-                          setFormData({ ...formData, attributes: newAttrs });
-                        }}
-                      >
-                        Remove
-                      </Button>
+                <p className="text-xs text-gray-500 mb-2">Define available variants. Each variant value can have its own image and price.</p>
+                {Object.entries(formData.attributes).map(([variantName, variantData], variantIndex) => {
+                  const variantId = `variant_${variantIndex}`;
+                  const inputValue = variantInputValues[variantId] ?? variantData.values.map(v => v.name).join(', ');
+                  
+                  return (
+                    <div key={variantId} className="mb-4 p-4 border rounded-lg space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          placeholder="Variant name (e.g., Color, Size)"
+                          value={variantName}
+                          onChange={e => {
+                            const newAttrs = { ...formData.attributes };
+                            const oldData = newAttrs[variantName];
+                            delete newAttrs[variantName];
+                            newAttrs[e.target.value] = oldData;
+                            setFormData({ ...formData, attributes: newAttrs });
+                            // Update input value key
+                            const newInputValues = { ...variantInputValues };
+                            newInputValues[`variant_${variantIndex}`] = newInputValues[variantId] || '';
+                            if (variantId !== `variant_${variantIndex}`) {
+                              delete newInputValues[variantId];
+                            }
+                            setVariantInputValues(newInputValues);
+                          }}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newAttrs = { ...formData.attributes };
+                            delete newAttrs[variantName];
+                            setFormData({ ...formData, attributes: newAttrs });
+                            const newInputValues = { ...variantInputValues };
+                            delete newInputValues[variantId];
+                            setVariantInputValues(newInputValues);
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm">Values (comma-separated)</Label>
+                        <Input
+                          placeholder="Red, Blue, Green or S, M, L"
+                          value={inputValue}
+                          onChange={e => {
+                            // Store raw input value to allow commas
+                            setVariantInputValues({ ...variantInputValues, [variantId]: e.target.value });
+                            // Parse values on blur or when user finishes typing
+                            const values = e.target.value.split(',').map(v => v.trim()).filter(v => v);
+                            const newAttrs = { ...formData.attributes };
+                            newAttrs[variantName] = {
+                              values: values.map(name => {
+                                // Preserve existing value data if it exists
+                                const existing = variantData.values.find(v => v.name === name);
+                                return existing || { name, image: undefined, price: undefined };
+                              })
+                            };
+                            setFormData({ ...formData, attributes: newAttrs });
+                          }}
+                          onBlur={() => {
+                            // Sync input value with parsed values
+                            const values = inputValue.split(',').map(v => v.trim()).filter(v => v);
+                            setVariantInputValues({ ...variantInputValues, [variantId]: values.join(', ') });
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Variant Values with Images and Prices */}
+                      {variantData.values.length > 0 && (
+                        <div className="space-y-2 mt-3">
+                          <Label className="text-sm">Configure each value:</Label>
+                          {variantData.values.map((value, valueIndex) => (
+                            <div key={valueIndex} className="p-2 border rounded bg-gray-50 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium w-20">{value.name}:</span>
+                                <Input
+                                  type="text"
+                                  placeholder="Image URL (optional)"
+                                  value={value.image || ''}
+                                  onChange={e => {
+                                    const newAttrs = { ...formData.attributes };
+                                    newAttrs[variantName].values[valueIndex].image = e.target.value || undefined;
+                                    setFormData({ ...formData, attributes: newAttrs });
+                                  }}
+                                  className="flex-1 text-sm"
+                                />
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="Price override"
+                                  value={value.price?.toString() || ''}
+                                  onChange={e => {
+                                    const newAttrs = { ...formData.attributes };
+                                    newAttrs[variantName].values[valueIndex].price = e.target.value ? parseFloat(e.target.value) : undefined;
+                                    setFormData({ ...formData, attributes: newAttrs });
+                                  }}
+                                  className="w-24 text-sm"
+                                />
+                              </div>
+                              {value.image && (
+                                <img src={normalizeImageUrl(value.image)} alt={value.name} className="h-16 w-16 object-cover rounded border" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <Input
-                      placeholder="Comma-separated values (e.g., Red, Blue, Green or S, M, L)"
-                      value={values.join(', ')}
-                      onChange={e => {
-                        const newAttrs = { ...formData.attributes };
-                        newAttrs[variantName] = e.target.value.split(',').map(v => v.trim()).filter(v => v);
-                        setFormData({ ...formData, attributes: newAttrs });
-                      }}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
                 <Button
                   type="button"
                   variant="secondary"
                   onClick={() => {
                     const newAttrs = { ...formData.attributes };
-                    newAttrs[`variant_${Object.keys(newAttrs).length + 1}`] = [];
+                    const newVariantName = `variant_${Object.keys(newAttrs).length + 1}`;
+                    newAttrs[newVariantName] = { values: [] };
                     setFormData({ ...formData, attributes: newAttrs });
+                    const newInputValues = { ...variantInputValues };
+                    newInputValues[`variant_${Object.keys(newAttrs).length - 1}`] = '';
+                    setVariantInputValues(newInputValues);
                   }}
                 >
                   Add Variant Type
                 </Button>
+                
+                {/* Variant Combination Prices */}
+                {Object.keys(formData.attributes).length > 0 && generateVariantCombinations(formData.attributes).length > 0 && (
+                  <div className="mt-4 p-4 border rounded-lg bg-blue-50">
+                    <Label className="text-sm font-semibold mb-2 block">Variant Combination Prices (Optional)</Label>
+                    <p className="text-xs text-gray-600 mb-3">Set custom prices for specific variant combinations. Leave empty to use base price or variant value price.</p>
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {generateVariantCombinations(formData.attributes).map((combination, idx) => {
+                        const comboKey = createCombinationKey(combination);
+                        const existingCombo = formData.variantCombinations.find(c => createCombinationKey(c.combination) === comboKey);
+                        const comboDisplay = Object.entries(combination).map(([k, v]) => `${k}: ${v}`).join(', ');
+                        
+                        return (
+                          <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded border">
+                            <span className="text-xs flex-1">{comboDisplay}</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="Price"
+                              value={existingCombo?.price?.toString() || ''}
+                              onChange={e => {
+                                const newCombos = [...formData.variantCombinations];
+                                const existingIndex = newCombos.findIndex(c => createCombinationKey(c.combination) === comboKey);
+                                if (existingIndex >= 0) {
+                                  newCombos[existingIndex].price = e.target.value ? parseFloat(e.target.value) : undefined;
+                                } else {
+                                  newCombos.push({
+                                    combination,
+                                    price: e.target.value ? parseFloat(e.target.value) : undefined
+                                  });
+                                }
+                                setFormData({ ...formData, variantCombinations: newCombos });
+                              }}
+                              className="w-24 text-sm"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <Label htmlFor="shipping">Shipping Info</Label>
@@ -1287,56 +1491,176 @@ export default function AdminProductsPage() {
               </div>
               <div>
                 <Label>Product Variants (e.g., Color, Size)</Label>
-                <p className="text-xs text-gray-500 mb-2">Define available variants for this product. Format: variant name and comma-separated values.</p>
-                {Object.entries(formData.attributes).map(([variantName, values]) => (
-                  <div key={variantName} className="mb-3 p-3 border rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Input
-                        placeholder="Variant name (e.g., Color, Size)"
-                        value={variantName}
-                        onChange={e => {
-                          const newAttrs = { ...formData.attributes };
-                          delete newAttrs[variantName];
-                          newAttrs[e.target.value] = values;
-                          setFormData({ ...formData, attributes: newAttrs });
-                        }}
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const newAttrs = { ...formData.attributes };
-                          delete newAttrs[variantName];
-                          setFormData({ ...formData, attributes: newAttrs });
-                        }}
-                      >
-                        Remove
-                      </Button>
+                <p className="text-xs text-gray-500 mb-2">Define available variants. Each variant value can have its own image and price.</p>
+                {Object.entries(formData.attributes).map(([variantName, variantData], variantIndex) => {
+                  const variantId = `variant_${variantIndex}`;
+                  const inputValue = variantInputValues[variantId] ?? variantData.values.map(v => v.name).join(', ');
+                  
+                  return (
+                    <div key={variantId} className="mb-4 p-4 border rounded-lg space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          placeholder="Variant name (e.g., Color, Size)"
+                          value={variantName}
+                          onChange={e => {
+                            const newAttrs = { ...formData.attributes };
+                            const oldData = newAttrs[variantName];
+                            delete newAttrs[variantName];
+                            newAttrs[e.target.value] = oldData;
+                            setFormData({ ...formData, attributes: newAttrs });
+                            // Update input value key
+                            const newInputValues = { ...variantInputValues };
+                            newInputValues[`variant_${variantIndex}`] = newInputValues[variantId] || '';
+                            if (variantId !== `variant_${variantIndex}`) {
+                              delete newInputValues[variantId];
+                            }
+                            setVariantInputValues(newInputValues);
+                          }}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newAttrs = { ...formData.attributes };
+                            delete newAttrs[variantName];
+                            setFormData({ ...formData, attributes: newAttrs });
+                            const newInputValues = { ...variantInputValues };
+                            delete newInputValues[variantId];
+                            setVariantInputValues(newInputValues);
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm">Values (comma-separated)</Label>
+                        <Input
+                          placeholder="Red, Blue, Green or S, M, L"
+                          value={inputValue}
+                          onChange={e => {
+                            // Store raw input value to allow commas
+                            setVariantInputValues({ ...variantInputValues, [variantId]: e.target.value });
+                            // Parse values on blur or when user finishes typing
+                            const values = e.target.value.split(',').map(v => v.trim()).filter(v => v);
+                            const newAttrs = { ...formData.attributes };
+                            newAttrs[variantName] = {
+                              values: values.map(name => {
+                                // Preserve existing value data if it exists
+                                const existing = variantData.values.find(v => v.name === name);
+                                return existing || { name, image: undefined, price: undefined };
+                              })
+                            };
+                            setFormData({ ...formData, attributes: newAttrs });
+                          }}
+                          onBlur={() => {
+                            // Sync input value with parsed values
+                            const values = inputValue.split(',').map(v => v.trim()).filter(v => v);
+                            setVariantInputValues({ ...variantInputValues, [variantId]: values.join(', ') });
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Variant Values with Images and Prices */}
+                      {variantData.values.length > 0 && (
+                        <div className="space-y-2 mt-3">
+                          <Label className="text-sm">Configure each value:</Label>
+                          {variantData.values.map((value, valueIndex) => (
+                            <div key={valueIndex} className="p-2 border rounded bg-gray-50 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium w-20">{value.name}:</span>
+                                <Input
+                                  type="text"
+                                  placeholder="Image URL (optional)"
+                                  value={value.image || ''}
+                                  onChange={e => {
+                                    const newAttrs = { ...formData.attributes };
+                                    newAttrs[variantName].values[valueIndex].image = e.target.value || undefined;
+                                    setFormData({ ...formData, attributes: newAttrs });
+                                  }}
+                                  className="flex-1 text-sm"
+                                />
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="Price override"
+                                  value={value.price?.toString() || ''}
+                                  onChange={e => {
+                                    const newAttrs = { ...formData.attributes };
+                                    newAttrs[variantName].values[valueIndex].price = e.target.value ? parseFloat(e.target.value) : undefined;
+                                    setFormData({ ...formData, attributes: newAttrs });
+                                  }}
+                                  className="w-24 text-sm"
+                                />
+                              </div>
+                              {value.image && (
+                                <img src={normalizeImageUrl(value.image)} alt={value.name} className="h-16 w-16 object-cover rounded border" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <Input
-                      placeholder="Comma-separated values (e.g., Red, Blue, Green or S, M, L)"
-                      value={values.join(', ')}
-                      onChange={e => {
-                        const newAttrs = { ...formData.attributes };
-                        newAttrs[variantName] = e.target.value.split(',').map(v => v.trim()).filter(v => v);
-                        setFormData({ ...formData, attributes: newAttrs });
-                      }}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
                 <Button
                   type="button"
                   variant="secondary"
                   onClick={() => {
                     const newAttrs = { ...formData.attributes };
-                    newAttrs[`variant_${Object.keys(newAttrs).length + 1}`] = [];
+                    const newVariantName = `variant_${Object.keys(newAttrs).length + 1}`;
+                    newAttrs[newVariantName] = { values: [] };
                     setFormData({ ...formData, attributes: newAttrs });
+                    const newInputValues = { ...variantInputValues };
+                    newInputValues[`variant_${Object.keys(newAttrs).length - 1}`] = '';
+                    setVariantInputValues(newInputValues);
                   }}
                 >
                   Add Variant Type
                 </Button>
+                
+                {/* Variant Combination Prices */}
+                {Object.keys(formData.attributes).length > 0 && generateVariantCombinations(formData.attributes).length > 0 && (
+                  <div className="mt-4 p-4 border rounded-lg bg-blue-50">
+                    <Label className="text-sm font-semibold mb-2 block">Variant Combination Prices (Optional)</Label>
+                    <p className="text-xs text-gray-600 mb-3">Set custom prices for specific variant combinations. Leave empty to use base price or variant value price.</p>
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {generateVariantCombinations(formData.attributes).map((combination, idx) => {
+                        const comboKey = createCombinationKey(combination);
+                        const existingCombo = formData.variantCombinations.find(c => createCombinationKey(c.combination) === comboKey);
+                        const comboDisplay = Object.entries(combination).map(([k, v]) => `${k}: ${v}`).join(', ');
+                        
+                        return (
+                          <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded border">
+                            <span className="text-xs flex-1">{comboDisplay}</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="Price"
+                              value={existingCombo?.price?.toString() || ''}
+                              onChange={e => {
+                                const newCombos = [...formData.variantCombinations];
+                                const existingIndex = newCombos.findIndex(c => createCombinationKey(c.combination) === comboKey);
+                                if (existingIndex >= 0) {
+                                  newCombos[existingIndex].price = e.target.value ? parseFloat(e.target.value) : undefined;
+                                } else {
+                                  newCombos.push({
+                                    combination,
+                                    price: e.target.value ? parseFloat(e.target.value) : undefined
+                                  });
+                                }
+                                setFormData({ ...formData, variantCombinations: newCombos });
+                              }}
+                              className="w-24 text-sm"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <Label htmlFor="shipping">Shipping Info</Label>
