@@ -290,32 +290,50 @@ export default function AdminProductsPage() {
   const handleImageUpload = async (files: FileList) => {
     setUploadingImages(true);
     try {
-      const uploadFormData = new FormData();
-      Array.from(files).forEach(file => {
-        uploadFormData.append('images', file);
-      });
-
-      // Add categoryId and productName to form data
-      console.log('Form data:', { categoryId: formData.categoryId, name: formData.name });
-      
-      if (formData.categoryId) {
-        uploadFormData.append('categoryId', formData.categoryId);
-        console.log('Added categoryId to form:', formData.categoryId);
-      } else {
+      // Validate required fields first
+      if (!formData.categoryId) {
         toast.error('Please select a category before uploading images');
         setUploadingImages(false);
         return;
       }
-      if (formData.name) {
-        uploadFormData.append('productName', formData.name);
-        console.log('Added productName to form:', formData.name);
-      } else {
+      if (!formData.name || formData.name.trim() === '') {
         toast.error('Please enter a product name before uploading images');
         setUploadingImages(false);
         return;
       }
 
-      console.log('Uploading images...', Array.from(files).map(f => f.name));
+      const uploadFormData = new FormData();
+      
+      // Append files
+      Array.from(files).forEach(file => {
+        uploadFormData.append('images', file);
+        console.log('Added file to FormData:', file.name, 'Size:', file.size, 'Type:', file.type);
+      });
+
+      // Add categoryId and productName to form data
+      // Ensure categoryId is a string (it should be from the Select component)
+      const categoryId = String(formData.categoryId).trim();
+      const productName = formData.name.trim();
+      
+      uploadFormData.append('categoryId', categoryId);
+      uploadFormData.append('productName', productName);
+      
+      console.log('Form data being sent:', { 
+        categoryId, 
+        productName, 
+        fileCount: files.length,
+        fileNames: Array.from(files).map(f => f.name)
+      });
+
+      // Log FormData contents (for debugging)
+      console.log('FormData entries:');
+      for (const [key, value] of uploadFormData.entries()) {
+        if (value instanceof File) {
+          console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+        } else {
+          console.log(`  ${key}: ${value}`);
+        }
+      }
 
       const res = await makeAuthenticatedRequest(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/upload/product-images`, {
         method: 'POST',
@@ -325,15 +343,28 @@ export default function AdminProductsPage() {
       });
 
       console.log('Upload response status:', res.status);
+      console.log('Upload response headers:', Object.fromEntries(res.headers.entries()));
       
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
+        let errorData;
+        try {
+          const text = await res.text();
+          console.error('Upload error response text:', text);
+          errorData = JSON.parse(text);
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          errorData = { error: `Server error: ${res.status} ${res.statusText}` };
+        }
         console.error('Upload error response:', errorData);
         throw new Error(`Upload failed: ${res.status} ${res.statusText} - ${errorData.error || 'Unknown error'}`);
       }
       
       const data = await res.json();
       console.log('Upload success:', data);
+      
+      if (!data.files || !Array.isArray(data.files)) {
+        throw new Error('Invalid response format from server');
+      }
       
       const newImageUrls = data.files.map((file: any) => file.url);
       setFormData(prev => ({
@@ -345,7 +376,13 @@ export default function AdminProductsPage() {
       toast.success(`${data.files.length} images uploaded successfully`);
     } catch (err) {
       console.error('Upload error:', err);
-      toast.error(`Failed to upload images: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.error('Full error details:', {
+        message: errorMessage,
+        stack: err instanceof Error ? err.stack : undefined,
+        error: err
+      });
+      toast.error(`Failed to upload images: ${errorMessage}`);
     } finally {
       setUploadingImages(false);
     }

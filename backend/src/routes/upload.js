@@ -179,10 +179,20 @@ router.post('/product-images', authenticateAdmin, (req, res) => {
     try {
       // Get category name from database
       const { db } = require('../database');
-      const category = await db.get('SELECT name FROM categories WHERE id = $1', [categoryId]);
+      console.log('Upload request - categoryId:', categoryId, 'type:', typeof categoryId);
+      console.log('Upload request - productName:', productName);
+      console.log('Upload request - files count:', req.files ? req.files.length : 0);
+      
+      // Ensure categoryId is a number
+      const categoryIdNum = parseInt(categoryId, 10);
+      if (isNaN(categoryIdNum)) {
+        return res.status(400).json({ error: `Invalid category ID: ${categoryId}` });
+      }
+      
+      const category = await db.get('SELECT name FROM categories WHERE id = $1', [categoryIdNum]);
       
       if (!category) {
-        return res.status(404).json({ error: 'Category not found' });
+        return res.status(404).json({ error: `Category not found with ID: ${categoryIdNum}` });
       }
 
       // Create category folder name (sanitize: remove spaces and special characters, keep only alphanumeric and hyphens)
@@ -192,9 +202,17 @@ router.post('/product-images', authenticateAdmin, (req, res) => {
         .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
       const categoryDir = path.join(productImagesDir, categoryFolderName);
       
+      console.log('Category directory:', categoryDir);
+      
       // Create category directory if it doesn't exist
-      if (!fs.existsSync(categoryDir)) {
-        fs.mkdirSync(categoryDir, { recursive: true });
+      try {
+        if (!fs.existsSync(categoryDir)) {
+          fs.mkdirSync(categoryDir, { recursive: true });
+          console.log('Created category directory:', categoryDir);
+        }
+      } catch (mkdirError) {
+        console.error('Error creating directory:', mkdirError);
+        return res.status(500).json({ error: `Failed to create directory: ${mkdirError.message}` });
       }
 
       // Now save the files to the correct location
@@ -210,8 +228,16 @@ router.post('/product-images', authenticateAdmin, (req, res) => {
         
         const filePath = path.join(categoryDir, filename);
         
-        // Write file to disk
-        fs.writeFileSync(filePath, file.buffer);
+        console.log('Writing file:', filePath, 'Size:', file.size);
+        
+        try {
+          // Write file to disk
+          fs.writeFileSync(filePath, file.buffer);
+          console.log('File written successfully:', filename);
+        } catch (writeError) {
+          console.error('Error writing file:', writeError);
+          return res.status(500).json({ error: `Failed to write file ${filename}: ${writeError.message}` });
+        }
         
         uploadedFiles.push({
           originalName: file.originalname,
@@ -228,7 +254,11 @@ router.post('/product-images', authenticateAdmin, (req, res) => {
       });
     } catch (error) {
       console.error('Upload error:', error);
-      res.status(500).json({ error: 'Failed to process upload' });
+      console.error('Error stack:', error.stack);
+      res.status(500).json({ 
+        error: 'Failed to process upload',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   });
 });
