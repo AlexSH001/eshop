@@ -31,7 +31,7 @@ services:
       NEXT_TELEMETRY_DISABLED: 1
       
     volumes:
-      - eshop-uploads-data:/app/uploads:rw
+      - eshop-uploads-data:/app/uploads:ro
       - ./static:/app/static
       # Optional: Mount for development (uncomment for hot reload)
       # - .:/app
