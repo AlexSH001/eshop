@@ -7,17 +7,30 @@ const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
 
-// Ensure upload directories exist
+// Ensure upload directories exist with proper permissions
 const uploadDir = path.join(__dirname, '../../uploads');
 const productImagesDir = path.join(uploadDir, 'products');
 const avatarsDir = path.join(uploadDir, 'avatars');
 const miscDir = path.join(uploadDir, 'misc');
 const categoriesDir = path.join(uploadDir, 'categories');
 
-[uploadDir, productImagesDir, avatarsDir, miscDir, categoriesDir].forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+// Function to ensure directory exists with proper permissions
+function ensureDirectoryExists(dirPath) {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true, mode: 0o755 });
+    console.log(`Created directory: ${dirPath}`);
+  } else {
+    // Try to fix permissions if directory exists but might have wrong permissions
+    try {
+      fs.chmodSync(dirPath, 0o755);
+    } catch (err) {
+      console.warn(`Could not set permissions for ${dirPath}:`, err.message);
+    }
   }
+}
+
+[uploadDir, productImagesDir, avatarsDir, miscDir, categoriesDir].forEach(dir => {
+  ensureDirectoryExists(dir);
 });
 
 // File filter function
@@ -204,15 +217,25 @@ router.post('/product-images', authenticateAdmin, (req, res) => {
       
       console.log('Category directory:', categoryDir);
       
-      // Create category directory if it doesn't exist
+      // Create category directory if it doesn't exist with proper permissions
       try {
         if (!fs.existsSync(categoryDir)) {
-          fs.mkdirSync(categoryDir, { recursive: true });
+          fs.mkdirSync(categoryDir, { recursive: true, mode: 0o755 });
           console.log('Created category directory:', categoryDir);
+        } else {
+          // Try to ensure directory has write permissions
+          try {
+            fs.chmodSync(categoryDir, 0o755);
+          } catch (chmodError) {
+            console.warn(`Could not set permissions for ${categoryDir}:`, chmodError.message);
+          }
         }
       } catch (mkdirError) {
         console.error('Error creating directory:', mkdirError);
-        return res.status(500).json({ error: `Failed to create directory: ${mkdirError.message}` });
+        return res.status(500).json({ 
+          error: `Failed to create directory: ${mkdirError.message}`,
+          suggestion: 'Please check file system permissions for the uploads directory'
+        });
       }
 
       // Now save the files to the correct location
@@ -231,12 +254,33 @@ router.post('/product-images', authenticateAdmin, (req, res) => {
         console.log('Writing file:', filePath, 'Size:', file.size);
         
         try {
-          // Write file to disk
-          fs.writeFileSync(filePath, file.buffer);
+          // Write file to disk with proper permissions
+          fs.writeFileSync(filePath, file.buffer, { mode: 0o644 });
           console.log('File written successfully:', filename);
         } catch (writeError) {
           console.error('Error writing file:', writeError);
-          return res.status(500).json({ error: `Failed to write file ${filename}: ${writeError.message}` });
+          console.error('File path:', filePath);
+          console.error('Directory exists:', fs.existsSync(categoryDir));
+          console.error('Directory writable:', fs.accessSync ? (() => {
+            try {
+              fs.accessSync(categoryDir, fs.constants.W_OK);
+              return true;
+            } catch {
+              return false;
+            }
+          })() : 'unknown');
+          
+          // Provide helpful error message
+          let errorMessage = `Failed to write file ${filename}: ${writeError.message}`;
+          if (writeError.code === 'EACCES') {
+            errorMessage += '. Permission denied - please check file system permissions for the uploads directory.';
+          }
+          
+          return res.status(500).json({ 
+            error: errorMessage,
+            path: filePath,
+            code: writeError.code
+          });
         }
         
         uploadedFiles.push({
