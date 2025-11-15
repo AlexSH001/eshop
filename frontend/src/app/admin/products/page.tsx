@@ -238,12 +238,21 @@ export default function AdminProductsPage() {
       throw new Error('Admin authentication required. Please login again.');
     }
 
+    // Check if body is FormData - if so, don't set Content-Type header
+    const isFormData = options.body instanceof FormData;
+    const headers: HeadersInit = {};
+    
+    // Only set Authorization header, let browser set Content-Type for FormData
+    headers['Authorization'] = `Bearer ${adminToken}`;
+    
+    // Only merge other headers if not FormData (to avoid Content-Type conflicts)
+    if (!isFormData && options.headers) {
+      Object.assign(headers, options.headers);
+    }
+
     const response = await fetch(url, {
       ...options,
-      headers: {
-        ...options.headers,
-        'Authorization': `Bearer ${adminToken}`,
-      },
+      headers,
     });
 
     console.log('Response status:', response.status);
@@ -255,12 +264,13 @@ export default function AdminProductsPage() {
       if (refreshed) {
         const newToken = localStorage.getItem('admin_token');
         console.log('Token refreshed, retrying request...');
+        const retryHeaders: HeadersInit = { 'Authorization': `Bearer ${newToken}` };
+        if (!isFormData && options.headers) {
+          Object.assign(retryHeaders, options.headers);
+        }
         return fetch(url, {
           ...options,
-          headers: {
-            ...options.headers,
-            'Authorization': `Bearer ${newToken}`,
-          },
+          headers: retryHeaders,
         });
       } else {
         throw new Error('Session expired. Please login again.');
