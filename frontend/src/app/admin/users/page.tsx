@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,7 @@ export default function AdminUsersPage() {
     password: ""
   });
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const fetchingRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -72,7 +73,13 @@ export default function AdminUsersPage() {
   }, [isAuthenticated, isLoading, router]);
 
   // Fetch users from backend
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
+    // Prevent concurrent duplicate requests
+    if (fetchingRef.current) {
+      return;
+    }
+    
+    fetchingRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -86,12 +93,15 @@ export default function AdminUsersPage() {
       }
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
-  };
+  }, [router]);
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (isAuthenticated && !isLoading) {
+      fetchUsers();
+    }
+  }, [isAuthenticated, isLoading, fetchUsers]);
 
   const handleAddUser = async () => {
     setLoading(true);

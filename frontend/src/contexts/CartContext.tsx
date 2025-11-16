@@ -13,7 +13,7 @@ export interface CartItem {
   image: string;
   category: string;
   quantity: number;
-  variant?: Record<string, string>; // Variant information (e.g., { color: "red", size: "large" })
+  specifications?: Record<string, string>; // itemName -> selected value name
 }
 
 interface CartState {
@@ -29,10 +29,27 @@ type CartAction =
   | { type: 'CLEAR_CART' }
   | { type: 'SET_CART'; payload: CartItem[] };
 
+// Helper function to compare specifications
+const specsEqual = (specs1?: Record<string, string>, specs2?: Record<string, string>): boolean => {
+  if (!specs1 && !specs2) return true;
+  if (!specs1 || !specs2) return false;
+  
+  const keys1 = Object.keys(specs1).sort();
+  const keys2 = Object.keys(specs2).sort();
+  
+  if (keys1.length !== keys2.length) return false;
+  
+  return keys1.every(key => specs1[key] === specs2[key]);
+};
+
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case 'ADD_ITEM': {
-      const existingItem = state.items.find(item => item.productId === action.payload.productId);
+      // Find existing item with same productId AND same specifications
+      const existingItem = state.items.find(item => 
+        item.productId === action.payload.productId && 
+        specsEqual(item.specifications, action.payload.specifications)
+      );
 
       if (existingItem) {
         // This case might be hit if the user clicks "add to cart" multiple times quickly
@@ -99,7 +116,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
 interface CartContextType {
   state: CartState;
-  addItem: (item: Omit<CartItem, 'quantity' | 'id' | 'productId'> & { id: number; variant?: Record<string, string> }) => void;
+  addItem: (item: Omit<CartItem, 'quantity' | 'id' | 'productId'> & { id: number }) => void;
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
   clearCart: () => void;
@@ -146,7 +163,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             image: item.image as string,
             category: item.category as string || 'Unknown',
             quantity: item.quantity as number,
-            variant: item.variant || undefined, // Variant info from backend (if stored)
+            specifications: item.specifications || undefined,
           })) || [];
 
           dispatch({ type: 'SET_CART', payload: items });
@@ -188,26 +205,18 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
-  const addItem = async (product: Omit<CartItem, 'quantity' | 'id' | 'productId'> & { id: number; variant?: Record<string, string> }) => {
+  const addItem = async (product: Omit<CartItem, 'quantity' | 'id' | 'productId'> & { id: number }) => {
     try {
       const sessionId = localStorage.getItem('session_id');
       const token = localStorage.getItem('auth_token');
 
-      // Check if item with same product ID and variant is already in cart
-      const existingItem = state.items.find(item => {
-        if (item.productId !== product.id) return false;
-        // Compare variants - if both have variants, they must match exactly
-        const itemVariant = item.variant || {};
-        const productVariant = product.variant || {};
-        const itemVariantKeys = Object.keys(itemVariant).sort();
-        const productVariantKeys = Object.keys(productVariant).sort();
-        
-        if (itemVariantKeys.length !== productVariantKeys.length) return false;
-        return itemVariantKeys.every(key => itemVariant[key] === productVariant[key]);
-      });
-      
+      // Check if item is already in cart with same specifications to prevent duplicate requests
+      const existingItem = state.items.find(item => 
+        item.productId === product.id && 
+        specsEqual(item.specifications, product.specifications)
+      );
       if (existingItem) {
-        // If item exists with same variant, update quantity instead of adding
+        // If item exists with same specs, update quantity instead of adding
         await updateQuantity(existingItem.id, existingItem.quantity + 1);
         return;
       }
@@ -222,6 +231,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         body: JSON.stringify({
           productId: product.id,
           quantity: 1,
+          specifications: product.specifications || null,
         }),
       });
 
@@ -240,7 +250,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           image: product.image,
           category: product.category,
           quantity: backendItem.quantity,
-          variant: product.variant,
+          specifications: product.specifications,
         };
 
         dispatch({ type: 'ADD_ITEM', payload: fullNewItem });

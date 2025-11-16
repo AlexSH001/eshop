@@ -141,7 +141,7 @@ export function useCategoryProducts(categoryName: string, fallbackProducts: Prod
               }
             }
             
-            const resolvedImage = resolveProductImage(product.featured_image, dbImages, product.id);
+            const resolvedImage = resolveProductImage(product.featured_image, dbImages, product.id, product.specifications);
             
             return {
               id: product.id,

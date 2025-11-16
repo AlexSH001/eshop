@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -232,21 +232,34 @@ export default function AdminProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   // Add state for categories
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const fetchingCategoriesRef = useRef<boolean>(false);
+  const fetchingProductsRef = useRef<boolean>(false);
 
   // Fetch categories from backend
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/categories`);
-        if (!res.ok) throw new Error('Failed to fetch categories');
-        const data = await res.json();
-        setCategories(data.categories.map((c: { id: number; name: string }) => ({ id: c.id, name: c.name })));
-      } catch (err) {
-        setCategories([]);
-      }
-    };
-    fetchCategories();
+  const fetchCategories = useCallback(async () => {
+    // Prevent concurrent duplicate requests
+    if (fetchingCategoriesRef.current) {
+      return;
+    }
+    
+    fetchingCategoriesRef.current = true;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/categories`);
+      if (!res.ok) throw new Error('Failed to fetch categories');
+      const data = await res.json();
+      setCategories(data.categories.map((c: { id: number; name: string }) => ({ id: c.id, name: c.name })));
+    } catch (err) {
+      setCategories([]);
+    } finally {
+      fetchingCategoriesRef.current = false;
+    }
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      fetchCategories();
+    }
+  }, [isAuthenticated, isLoading, fetchCategories]);
 
   // Update formData to use categoryId instead of category name
   const [formData, setFormData] = useState<ProductFormData>({
@@ -533,46 +546,57 @@ export default function AdminProductsPage() {
   }, [isAuthenticated, isLoading, router]);
 
   // Fetch products from backend
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Fetch all products including inactive ones
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/products?status=all`);
-        if (!res.ok) throw new Error('Failed to fetch products');
-        const data = await res.json();
-        const mappedProducts: Product[] = data.products.map((p: Record<string, unknown>) => {
-          const images = p.images as unknown;
-          const featuredImage = (p as any).featured_image as string | null | undefined;
-          const dbImages = Array.isArray(images) ? images : undefined;
-          const resolvedImage = resolveProductImage(featuredImage, dbImages, p.id as number);
+  const fetchProducts = useCallback(async () => {
+    // Prevent concurrent duplicate requests
+    if (fetchingProductsRef.current) {
+      return;
+    }
+    
+    fetchingProductsRef.current = true;
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch all products including inactive ones
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/products?status=all`);
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const data = await res.json();
+      const mappedProducts: Product[] = data.products.map((p: Record<string, unknown>) => {
+        const images = p.images as unknown;
+        const featuredImage = (p as any).featured_image as string | null | undefined;
+        const dbImages = Array.isArray(images) ? images : undefined;
+        const specifications = (p as any).specifications;
+        const resolvedImage = resolveProductImage(featuredImage, dbImages, p.id as number, specifications);
 
-          return {
-            id: p.id as number,
-            name: p.name as string,
-            price: p.price as number,
-            originalPrice: p.original_price as number | undefined,
-            category: (p.category_name as string) || '',
-            stock: p.stock as number,
-            description: p.description as string,
-            image: resolvedImage,
-            status: p.status as 'active' | 'inactive',
-            createdAt: p.created_at as string,
-            sales: (p.sales_count as number) || 0,
-            specifications: p.specifications as Record<string, string> | undefined,
-            shipping: p.shipping as string | undefined
-          };
-        });
-        setProducts(mappedProducts);
-      } catch (err) {
-        setError((err as Error).message || 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProducts();
+        return {
+          id: p.id as number,
+          name: p.name as string,
+          price: p.price as number,
+          originalPrice: p.original_price as number | undefined,
+          category: (p.category_name as string) || '',
+          stock: p.stock as number,
+          description: p.description as string,
+          image: resolvedImage,
+          status: p.status as 'active' | 'inactive',
+          createdAt: p.created_at as string,
+          sales: (p.sales_count as number) || 0,
+          specifications: p.specifications as Record<string, string> | undefined,
+          shipping: p.shipping as string | undefined
+        };
+      });
+      setProducts(mappedProducts);
+    } catch (err) {
+      setError((err as Error).message || 'Unknown error');
+    } finally {
+      setLoading(false);
+      fetchingProductsRef.current = false;
+    }
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      fetchProducts();
+    }
+  }, [isAuthenticated, isLoading, fetchProducts]);
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -629,7 +653,7 @@ export default function AdminProductsPage() {
           category: categories.find(cat => cat.id === Number(formData.categoryId))?.name || '',
           stock: product.stock,
           description: product.description,
-          image: resolveProductImage(product.featured_image, product.images, product.id),
+          image: resolveProductImage(product.featured_image, product.images, product.id, product.specifications),
           status: product.status,
           createdAt: product.created_at,
           sales: product.sales_count || 0,
@@ -727,7 +751,7 @@ export default function AdminProductsPage() {
               category: categories.find(cat => cat.id === Number(formData.categoryId))?.name || '',
               stock: product.stock,
               description: product.description,
-              image: resolveProductImage(product.featured_image, product.images, product.id),
+              image: resolveProductImage(product.featured_image, product.images, product.id, product.specifications),
               status: product.status,
               createdAt: product.created_at,
               sales: product.sales_count || 0,

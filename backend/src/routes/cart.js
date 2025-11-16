@@ -74,6 +74,18 @@ router.get('/', optionalAuth, async (req, res) => {
     subtotal += itemTotal;
     itemCount += item.quantity;
 
+    // Parse specifications if they exist
+    let specifications = null;
+    if (item.specifications) {
+      try {
+        specifications = typeof item.specifications === 'string' 
+          ? JSON.parse(item.specifications) 
+          : item.specifications;
+      } catch (e) {
+        console.warn('Failed to parse specifications for cart item:', item.id, e);
+      }
+    }
+
     return {
       id: item.id,
       productId: item.product_id,
@@ -87,7 +99,8 @@ router.get('/', optionalAuth, async (req, res) => {
       total: itemTotal,
       stock: item.stock,
       status: item.status,
-      addedAt: item.created_at
+      addedAt: item.created_at,
+      specifications: specifications
     };
   });
 
@@ -102,9 +115,29 @@ router.get('/', optionalAuth, async (req, res) => {
   });
 });
 
+// Helper function to compare specifications
+const specsEqual = (specs1, specs2) => {
+  if (!specs1 && !specs2) return true;
+  if (!specs1 || !specs2) return false;
+  
+  try {
+    const s1 = typeof specs1 === 'string' ? JSON.parse(specs1) : specs1;
+    const s2 = typeof specs2 === 'string' ? JSON.parse(specs2) : specs2;
+    
+    const keys1 = Object.keys(s1 || {}).sort();
+    const keys2 = Object.keys(s2 || {}).sort();
+    
+    if (keys1.length !== keys2.length) return false;
+    
+    return keys1.every(key => s1[key] === s2[key]);
+  } catch {
+    return false;
+  }
+};
+
 // Add item to cart
 router.post('/items', optionalAuth, addToCartValidation, async (req, res) => {
-  const { productId, quantity } = req.body;
+  const { productId, quantity, specifications } = req.body;
   const { userId, sessionId } = getCartIdentifier(req);
 
   // Check if product exists and is available
@@ -124,23 +157,32 @@ router.post('/items', optionalAuth, addToCartValidation, async (req, res) => {
     });
   }
 
+  // Serialize specifications for storage (defined outside try block for catch block access)
+  const specsJson = specifications ? JSON.stringify(specifications) : null;
+
   try {
-    // Check if item already exists in cart
-    let existingItem;
+    
+    // Check if item already exists in cart with same productId AND same specifications
+    let existingItems;
     if (userId) {
-      existingItem = await database.get(
+      existingItems = await database.query(
         'SELECT * FROM cart_items WHERE user_id = $1 AND product_id = $2',
         [userId, productId]
       );
     } else {
-      existingItem = await database.get(
+      existingItems = await database.query(
         'SELECT * FROM cart_items WHERE session_id = $1 AND product_id = $2',
         [sessionId, productId]
       );
     }
 
+    // Find item with matching specifications
+    const existingItem = existingItems.find(item => 
+      specsEqual(item.specifications, specsJson)
+    );
+
     if (existingItem) {
-      // Update quantity
+      // Update quantity for item with same specifications
       const newQuantity = existingItem.quantity + quantity;
 
       if (product.stock < newQuantity) {
@@ -152,10 +194,21 @@ router.post('/items', optionalAuth, addToCartValidation, async (req, res) => {
         });
       }
 
-      await database.execute(
-        'UPDATE cart_items SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-        [newQuantity, existingItem.id]
-      );
+      // Update specifications in case they weren't set before
+      const dbType = database.getType() || process.env.DB_CLIENT || 'sqlite3';
+      const isPostgres = dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql';
+      
+      if (isPostgres) {
+        await database.execute(
+          'UPDATE cart_items SET quantity = $1, specifications = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+          [newQuantity, specsJson, existingItem.id]
+        );
+      } else {
+        await database.execute(
+          'UPDATE cart_items SET quantity = $1, specifications = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+          [newQuantity, specsJson, existingItem.id]
+        );
+      }
 
       res.json({
         message: 'Cart item updated successfully',
@@ -167,11 +220,25 @@ router.post('/items', optionalAuth, addToCartValidation, async (req, res) => {
         }
       });
     } else {
-      // Add new item
-      const result = await database.execute(
-        'INSERT INTO cart_items (user_id, session_id, product_id, quantity, price) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-        [userId, sessionId, productId, quantity, product.price]
-      );
+      // Add new item with specifications
+      const dbType = database.getType() || process.env.DB_CLIENT || 'sqlite3';
+      const isPostgres = dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql';
+      
+      let result;
+      if (isPostgres) {
+        result = await database.execute(
+          'INSERT INTO cart_items (user_id, session_id, product_id, quantity, price, specifications) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+          [userId, sessionId, productId, quantity, product.price, specsJson]
+        );
+      } else {
+        result = await database.execute(
+          'INSERT INTO cart_items (user_id, session_id, product_id, quantity, price, specifications) VALUES ($1, $2, $3, $4, $5, $6)',
+          [userId, sessionId, productId, quantity, product.price, specsJson]
+        );
+        // For SQLite, get the last insert ID
+        const lastRow = await database.get('SELECT last_insert_rowid() as id');
+        result = { id: lastRow.id };
+      }
 
       res.status(201).json({
         message: 'Item added to cart successfully',
@@ -184,8 +251,79 @@ router.post('/items', optionalAuth, addToCartValidation, async (req, res) => {
       });
     }
   } catch (error) {
-    if (error.code === '23505') { // SQLITE_CONSTRAINT_UNIQUE
-      return res.status(409).json({ error: 'Item already in cart' });
+    // Check if it's a unique constraint violation
+    // This might happen if UNIQUE constraints still exist in the database
+    if (error.code === '23505' || error.code === 'SQLITE_CONSTRAINT_UNIQUE' || 
+        error.message?.includes('UNIQUE constraint') || error.message?.includes('duplicate key')) {
+      // If we get here, it means the UNIQUE constraint still exists
+      // Try to find existing items and check if any match
+      console.warn('UNIQUE constraint violation detected. This may indicate constraints need to be removed.');
+      
+      // Query for all existing items (consistent with main logic)
+      let existingItems;
+      if (userId) {
+        existingItems = await database.query(
+          'SELECT * FROM cart_items WHERE user_id = $1 AND product_id = $2',
+          [userId, productId]
+        );
+      } else {
+        existingItems = await database.query(
+          'SELECT * FROM cart_items WHERE session_id = $1 AND product_id = $2',
+          [sessionId, productId]
+        );
+      }
+      
+      // Find item with matching specifications
+      const existingItem = existingItems.find(item => 
+        specsEqual(item.specifications, specsJson)
+      );
+      
+      if (existingItem) {
+        // Same specifications, update quantity
+        const newQuantity = existingItem.quantity + quantity;
+        if (product.stock < newQuantity) {
+          return res.status(400).json({
+            error: 'Insufficient stock for requested quantity',
+            currentQuantity: existingItem.quantity,
+            requestedQuantity: quantity,
+            availableStock: product.stock
+          });
+        }
+        
+        const dbType = database.getType() || process.env.DB_CLIENT || 'sqlite3';
+        const isPostgres = dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql';
+        
+        if (isPostgres) {
+          await database.execute(
+            'UPDATE cart_items SET quantity = $1, specifications = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+            [newQuantity, specsJson, existingItem.id]
+          );
+        } else {
+          await database.execute(
+            'UPDATE cart_items SET quantity = $1, specifications = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+            [newQuantity, specsJson, existingItem.id]
+          );
+        }
+        
+        return res.json({
+          message: 'Cart item updated successfully',
+          sessionId: sessionId || undefined,
+          item: {
+            id: existingItem.id,
+            productId,
+            quantity: newQuantity
+          }
+        });
+      } else {
+        // Different specifications but UNIQUE constraint prevents adding
+        // This means the database still has UNIQUE constraints that need to be removed
+        console.error('UNIQUE constraint prevents adding product with different specifications. Database migration required.');
+        return res.status(409).json({ 
+          error: 'Cannot add product with different specifications. A database UNIQUE constraint is preventing this operation.',
+          hint: 'Please run the migration script to remove UNIQUE constraints: node backend/src/database/migrations/add-cart-specifications.js',
+          details: 'The cart_items table has a UNIQUE constraint on (user_id, product_id) or (session_id, product_id) that prevents adding the same product with different specifications.'
+        });
+      }
     }
     throw error;
   }
@@ -309,15 +447,20 @@ router.post('/merge', authenticateUser, async (req, res) => {
         const guestItems = guestItemsResult.rows;
 
         for (const item of guestItems) {
-          // Check if user already has this product in cart
-          const existingUserItemResult = await client.query(
+          // Check if user already has this product in cart with same specifications
+          const existingUserItemsResult = await client.query(
             'SELECT * FROM cart_items WHERE user_id = $1 AND product_id = $2',
             [userId, item.product_id]
           );
-          const existingUserItem = existingUserItemResult.rows[0];
+          const existingUserItems = existingUserItemsResult.rows;
+          
+          // Find item with matching specifications
+          const existingUserItem = existingUserItems.find(userItem => 
+            specsEqual(userItem.specifications, item.specifications)
+          );
 
           if (existingUserItem) {
-            // Update quantity (take the maximum)
+            // Update quantity (take the maximum) for item with same specifications
             const maxQuantity = Math.max(existingUserItem.quantity, item.quantity);
             await client.query(
               'UPDATE cart_items SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
@@ -356,14 +499,19 @@ router.post('/merge', authenticateUser, async (req, res) => {
         );
 
         for (const item of guestItems) {
-          // Check if user already has this product in cart
-          const existingUserItem = await database.get(
+          // Check if user already has this product in cart with same specifications
+          const existingUserItems = await database.query(
             'SELECT * FROM cart_items WHERE user_id = $1 AND product_id = $2',
             [userId, item.product_id]
           );
+          
+          // Find item with matching specifications
+          const existingUserItem = existingUserItems.find(userItem => 
+            specsEqual(userItem.specifications, item.specifications)
+          );
 
           if (existingUserItem) {
-            // Update quantity (take the maximum)
+            // Update quantity (take the maximum) for item with same specifications
             const maxQuantity = Math.max(existingUserItem.quantity, item.quantity);
             await database.execute(
               'UPDATE cart_items SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',

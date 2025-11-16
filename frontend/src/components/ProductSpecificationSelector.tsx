@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export interface SpecificationItem {
@@ -11,7 +9,6 @@ export interface SpecificationItem {
   values: Array<{
     name: string;
     priceChange?: number;
-    originalPriceChange?: number;
   }>;
 }
 
@@ -26,18 +23,17 @@ interface ProductSpecificationSelectorProps {
   selectedSpecs: SelectedSpecifications;
   onSpecChange: (specs: SelectedSpecifications) => void;
   basePrice: number;
-  baseOriginalPrice?: number;
 }
 
 export default function ProductSpecificationSelector({
   specifications,
   selectedSpecs,
   onSpecChange,
-  basePrice,
-  baseOriginalPrice
+  basePrice
 }: ProductSpecificationSelectorProps) {
-  const [calculatedPrice, setCalculatedPrice] = useState(basePrice);
-  const [calculatedOriginalPrice, setCalculatedOriginalPrice] = useState(baseOriginalPrice);
+  // Ensure basePrice is a number
+  const numericBasePrice = typeof basePrice === 'number' ? basePrice : (typeof basePrice === 'string' ? parseFloat(basePrice) : 0);
+  const [calculatedPrice, setCalculatedPrice] = useState(numericBasePrice || 0);
 
   const items = specifications.items || [];
 
@@ -57,24 +53,21 @@ export default function ProductSpecificationSelector({
   // Calculate price based on selected specifications
   useEffect(() => {
     let priceChange = 0;
-    let originalPriceChange = 0;
 
     items.forEach(item => {
       const selectedValue = selectedSpecs[item.name];
       if (selectedValue) {
         const value = item.values.find(v => v.name === selectedValue);
         if (value) {
-          priceChange += value.priceChange || 0;
-          originalPriceChange += value.originalPriceChange || 0;
+          const change = typeof value.priceChange === 'number' ? value.priceChange : (typeof value.priceChange === 'string' ? parseFloat(value.priceChange) : 0);
+          priceChange += isNaN(change) ? 0 : change;
         }
       }
     });
 
-    setCalculatedPrice(basePrice + priceChange);
-    if (baseOriginalPrice !== undefined) {
-      setCalculatedOriginalPrice(baseOriginalPrice + originalPriceChange);
-    }
-  }, [selectedSpecs, items, basePrice, baseOriginalPrice]);
+    const finalPrice = (numericBasePrice || 0) + priceChange;
+    setCalculatedPrice(isNaN(finalPrice) ? 0 : finalPrice);
+  }, [selectedSpecs, items, numericBasePrice]);
 
   const handleSpecChange = (itemName: string, valueName: string) => {
     const newSpecs = { ...selectedSpecs, [itemName]: valueName };
@@ -102,9 +95,10 @@ export default function ProductSpecificationSelector({
             </SelectTrigger>
             <SelectContent>
               {item.values.map((value, valueIndex) => {
-                const priceChange = value.priceChange || 0;
-                const priceChangeText = priceChange !== 0 
-                  ? ` (${priceChange > 0 ? '+' : ''}${priceChange.toFixed(2)})`
+                const priceChange = typeof value.priceChange === 'number' ? value.priceChange : (typeof value.priceChange === 'string' ? parseFloat(value.priceChange) : 0);
+                const numericPriceChange = isNaN(priceChange) ? 0 : priceChange;
+                const priceChangeText = numericPriceChange !== 0 
+                  ? ` (${numericPriceChange > 0 ? '+' : ''}$${numericPriceChange.toFixed(2)})`
                   : '';
                 return (
                   <SelectItem key={valueIndex} value={value.name}>
@@ -117,24 +111,14 @@ export default function ProductSpecificationSelector({
         </div>
       ))}
       
-      {/* Display calculated prices */}
-      <div className="pt-2 border-t space-y-1">
+      {/* Display calculated price */}
+      <div className="pt-2 border-t">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Price:</span>
           <span className="text-lg font-bold">
-            ${calculatedPrice.toFixed(2)}
+            ${(typeof calculatedPrice === 'number' && !isNaN(calculatedPrice) ? calculatedPrice : 0).toFixed(2)}
           </span>
         </div>
-        {calculatedOriginalPrice !== undefined && calculatedOriginalPrice > calculatedPrice && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500 line-through">
-              ${calculatedOriginalPrice.toFixed(2)}
-            </span>
-            <Badge className="bg-red-500">
-              {Math.round(((calculatedOriginalPrice - calculatedPrice) / calculatedOriginalPrice) * 100)}% OFF
-            </Badge>
-          </div>
-        )}
       </div>
     </div>
   );

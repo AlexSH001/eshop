@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,7 @@ export default function AdminCategoriesPage() {
   });
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const fetchingRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -72,7 +73,13 @@ export default function AdminCategoriesPage() {
   }, [isAuthenticated, isLoading, router]);
 
   // Fetch categories from backend
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
+    // Prevent concurrent duplicate requests
+    if (fetchingRef.current) {
+      return;
+    }
+    
+    fetchingRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -86,12 +93,15 @@ export default function AdminCategoriesPage() {
       }
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
-  };
+  }, [router]);
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    if (isAuthenticated && !isLoading) {
+      fetchCategories();
+    }
+  }, [isAuthenticated, isLoading, fetchCategories]);
 
   // Helper function to make authenticated file upload requests
   const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {

@@ -110,12 +110,12 @@ CREATE TABLE IF NOT EXISTS cart_items (
   product_id INTEGER NOT NULL,
   quantity INTEGER NOT NULL DEFAULT 1,
   price DECIMAL(10,2) NOT NULL,
+  specifications TEXT, -- JSON: selected specifications for this cart item
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-  UNIQUE(user_id, product_id),
-  UNIQUE(session_id, product_id)
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+  -- Note: Removed UNIQUE constraints to allow same product with different specifications
 );
 
 -- Wishlist table

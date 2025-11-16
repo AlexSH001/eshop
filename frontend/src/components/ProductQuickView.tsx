@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { resolveProductImage, normalizeImageUrl } from "@/lib/utils";
-import ProductVariantSelector, { ProductVariant } from "@/components/ProductVariantSelector";
 import ProductSpecificationSelector, { SelectedSpecifications } from "@/components/ProductSpecificationSelector";
 
 interface ProductQuickViewProps {
@@ -32,7 +31,6 @@ interface ProductQuickViewProps {
     id: number;
     name: string;
     price: number;
-    originalPrice?: number;
     image: string;
     category: string;
   };
@@ -43,7 +41,6 @@ interface ProductDetails {
   id: number;
   name: string;
   price: number;
-  originalPrice?: number;
   image: string;
   category: string;
   description?: string;
@@ -59,13 +56,10 @@ interface ProductDetails {
       values: Array<{
         name: string;
         priceChange?: number;
-        originalPriceChange?: number;
       }>;
     }>;
     specImages?: Record<string, Record<string, string[]>>;
   };
-  specImages?: Record<string, Record<string, string[]>>;
-  attributes?: Record<string, any>;
 }
 
 export default function ProductQuickView({ product, children }: ProductQuickViewProps) {
@@ -79,11 +73,13 @@ export default function ProductQuickView({ product, children }: ProductQuickView
   // State for additional product details
   const [details, setDetails] = useState<ProductDetails | null>(null);
   const [images, setImages] = useState<string[]>([product.image]);
+  const [allSpecImages, setAllSpecImages] = useState<string[]>([]); // All images from all values of required spec
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant>({});
   const [selectedSpecs, setSelectedSpecs] = useState<SelectedSpecifications>({});
-  const [calculatedPrice, setCalculatedPrice] = useState(product.price);
-  const [calculatedOriginalPrice, setCalculatedOriginalPrice] = useState(product.originalPrice);
+  const basePrice = typeof product.price === 'number' ? product.price : (typeof product.price === 'string' ? parseFloat(product.price) : 0);
+  const [calculatedPrice, setCalculatedPrice] = useState(isNaN(basePrice) ? 0 : basePrice);
+  // Remove hasFetched state
+  // const [hasFetched, setHasFetched] = useState(false);
 
   // Only fetch details when modal is opened and hasn't been fetched before
   useEffect(() => {
@@ -95,28 +91,6 @@ export default function ProductQuickView({ product, children }: ProductQuickView
           if (!res.ok) throw new Error('Failed to fetch product details');
           const data = await res.json();
           setDetails(data.product);
-          const rawImages = data.product.images;
-          const featuredImage = data.product.featured_image;
-          
-          // Use the same resolution logic as other components
-          const primaryImage = resolveProductImage(featuredImage, rawImages, product.id);
-          
-          // Normalize all images for the gallery
-          const normalized: string[] = Array.isArray(rawImages)
-            ? rawImages.map((img: unknown) => {
-                if (typeof img === 'string') return normalizeImageUrl(img);
-                if (img && typeof img === 'object') {
-                  const anyImg = img as Record<string, unknown>;
-                  const url = (anyImg.image || anyImg.url || anyImg.src) as string | undefined;
-                  if (url && url.trim().length > 0) return normalizeImageUrl(url);
-                }
-                return '';
-              }).filter((u: string) => u && u.trim().length > 0)
-            : [];
-          
-          // Use primary image first, then other images
-          const allImages = [primaryImage, ...normalized.filter(img => img !== primaryImage)];
-          setImages(allImages.length > 0 ? allImages : [product.image]);
           
           // Initialize selected specifications with first value of each item
           if (data.product.specifications?.items && data.product.specifications.items.length > 0) {
@@ -127,6 +101,93 @@ export default function ProductQuickView({ product, children }: ProductQuickView
               }
             });
             setSelectedSpecs(initialSpecs);
+            
+            // Set initial images based on first specification selection (required spec)
+            const firstItem = data.product.specifications.items[0];
+            const firstValue = initialSpecs[firstItem.name];
+            const specImages = data.product.specifications.specImages || {};
+            
+            // Collect all images from all values of the required specification - maintain order based on value order
+            const allValueImages: string[] = [];
+            if (specImages[firstItem.name] && firstItem.values) {
+              // Iterate through values in the order they appear in the specification
+              firstItem.values.forEach((value: any) => {
+                const valueName = typeof value === 'string' ? value : value.name;
+                if (valueName && specImages[firstItem.name][valueName]) {
+                  const valueImages = specImages[firstItem.name][valueName];
+                  if (Array.isArray(valueImages)) {
+                    valueImages.forEach((img: string) => {
+                      const normalized = normalizeImageUrl(img);
+                      if (normalized && !allValueImages.includes(normalized)) {
+                        allValueImages.push(normalized);
+                      }
+                    });
+                  }
+                }
+              });
+            }
+            setAllSpecImages(allValueImages);
+            
+            if (firstValue && specImages[firstItem.name] && specImages[firstItem.name][firstValue]) {
+              const valueImages = specImages[firstItem.name][firstValue];
+              if (valueImages.length > 0) {
+                setImages(valueImages.map((img: string) => normalizeImageUrl(img)));
+              } else {
+                // Fallback to default images if no spec images
+                const rawImages = data.product.images;
+                const featuredImage = data.product.featured_image;
+                const primaryImage = resolveProductImage(featuredImage, rawImages, product.id);
+                const normalized: string[] = Array.isArray(rawImages)
+                  ? rawImages.map((img: unknown) => {
+                      if (typeof img === 'string') return normalizeImageUrl(img);
+                      if (img && typeof img === 'object') {
+                        const anyImg = img as Record<string, unknown>;
+                        const url = (anyImg.image || anyImg.url || anyImg.src) as string | undefined;
+                        if (url && url.trim().length > 0) return normalizeImageUrl(url);
+                      }
+                      return '';
+                    }).filter((u: string) => u && u.trim().length > 0)
+                  : [];
+                const allImages = [primaryImage, ...normalized.filter(img => img !== primaryImage)];
+                setImages(allImages.length > 0 ? allImages : [product.image]);
+              }
+            } else {
+              // Fallback to default images
+              const rawImages = data.product.images;
+              const featuredImage = data.product.featured_image;
+              const primaryImage = resolveProductImage(featuredImage, rawImages, product.id);
+              const normalized: string[] = Array.isArray(rawImages)
+                ? rawImages.map((img: unknown) => {
+                    if (typeof img === 'string') return normalizeImageUrl(img);
+                    if (img && typeof img === 'object') {
+                      const anyImg = img as Record<string, unknown>;
+                      const url = (anyImg.image || anyImg.url || anyImg.src) as string | undefined;
+                      if (url && url.trim().length > 0) return normalizeImageUrl(url);
+                    }
+                    return '';
+                  }).filter((u: string) => u && u.trim().length > 0)
+                : [];
+              const allImages = [primaryImage, ...normalized.filter(img => img !== primaryImage)];
+              setImages(allImages.length > 0 ? allImages : [product.image]);
+            }
+          } else {
+            // No specifications, use default images
+            const rawImages = data.product.images;
+            const featuredImage = data.product.featured_image;
+            const primaryImage = resolveProductImage(featuredImage, rawImages, product.id);
+            const normalized: string[] = Array.isArray(rawImages)
+              ? rawImages.map((img: unknown) => {
+                  if (typeof img === 'string') return normalizeImageUrl(img);
+                  if (img && typeof img === 'object') {
+                    const anyImg = img as Record<string, unknown>;
+                    const url = (anyImg.image || anyImg.url || anyImg.src) as string | undefined;
+                    if (url && url.trim().length > 0) return normalizeImageUrl(url);
+                  }
+                  return '';
+                }).filter((u: string) => u && u.trim().length > 0)
+              : [];
+            const allImages = [primaryImage, ...normalized.filter(img => img !== primaryImage)];
+            setImages(allImages.length > 0 ? allImages : [product.image]);
           }
         } catch (error: unknown) {
           if (error instanceof Error) {
@@ -142,17 +203,39 @@ export default function ProductQuickView({ product, children }: ProductQuickView
     }
   }, [isOpen, product.id, product.image]);
   
-  // Update images when first specification changes
+  // Update images when first specification (required spec) changes
   useEffect(() => {
     if (details?.specifications?.items && details.specifications.items.length > 0) {
-      const firstItem = details.specifications.items[0];
+      const firstItem = details.specifications.items[0]; // Required specification
       const selectedValue = selectedSpecs[firstItem.name];
-      const specImages = details.specImages || details.specifications.specImages || {};
+      const specImages = details.specifications.specImages || {};
+      
+      // Update all spec images collection - maintain order based on value order in specification
+      const allValueImages: string[] = [];
+      if (specImages[firstItem.name] && firstItem.values) {
+        // Iterate through values in the order they appear in the specification
+        firstItem.values.forEach((value: any) => {
+          const valueName = typeof value === 'string' ? value : value.name;
+          if (valueName && specImages[firstItem.name][valueName]) {
+            const valueImages = specImages[firstItem.name][valueName];
+            if (Array.isArray(valueImages)) {
+              valueImages.forEach((img: string) => {
+                const normalized = normalizeImageUrl(img);
+                if (normalized && !allValueImages.includes(normalized)) {
+                  allValueImages.push(normalized);
+                }
+              });
+            }
+          }
+        });
+      }
+      setAllSpecImages(allValueImages);
       
       if (selectedValue && specImages[firstItem.name] && specImages[firstItem.name][selectedValue]) {
         const valueImages = specImages[firstItem.name][selectedValue];
         if (valueImages.length > 0) {
           setImages(valueImages.map((img: string) => normalizeImageUrl(img)));
+          setSelectedImage(0); // Reset to first image
           return;
         }
       }
@@ -165,35 +248,34 @@ export default function ProductQuickView({ product, children }: ProductQuickView
     } else {
       setImages([product.image]);
     }
+    setSelectedImage(0); // Reset to first image
   }, [selectedSpecs, details, product.image]);
   
   // Calculate price based on selected specifications
   useEffect(() => {
+    const basePrice = typeof product.price === 'number' ? product.price : (typeof product.price === 'string' ? parseFloat(product.price) : 0);
+    const numericBasePrice = isNaN(basePrice) ? 0 : basePrice;
+    
     if (!details?.specifications?.items) {
-      setCalculatedPrice(product.price);
-      setCalculatedOriginalPrice(product.originalPrice);
+      setCalculatedPrice(numericBasePrice);
       return;
     }
     
     let priceChange = 0;
-    let originalPriceChange = 0;
-    
-    details.specifications.items.forEach((item) => {
+    details.specifications.items.forEach((item: any) => {
       const selectedValue = selectedSpecs[item.name];
       if (selectedValue) {
-        const value = item.values.find(v => v.name === selectedValue);
+        const value = item.values.find((v: any) => v.name === selectedValue);
         if (value) {
-          priceChange += value.priceChange || 0;
-          originalPriceChange += value.originalPriceChange || 0;
+          const change = typeof value.priceChange === 'number' ? value.priceChange : (typeof value.priceChange === 'string' ? parseFloat(value.priceChange) : 0);
+          priceChange += isNaN(change) ? 0 : change;
         }
       }
     });
     
-    setCalculatedPrice(product.price + priceChange);
-    if (product.originalPrice !== undefined) {
-      setCalculatedOriginalPrice(product.originalPrice + originalPriceChange);
-    }
-  }, [selectedSpecs, details, product.price, product.originalPrice]);
+    const finalPrice = numericBasePrice + priceChange;
+    setCalculatedPrice(isNaN(finalPrice) ? numericBasePrice : finalPrice);
+  }, [selectedSpecs, details, product.price]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isZoomed) return;
@@ -206,31 +288,57 @@ export default function ProductQuickView({ product, children }: ProductQuickView
   };
 
   const handleAddToCart = () => {
-    // Build product name with variant and spec info
-    const variantString = Object.keys(selectedVariant).length > 0
-      ? ` (${Object.entries(selectedVariant).map(([key, value]) => `${key}: ${value}`).join(', ')})`
-      : '';
+    // Build product name with spec info
     const specString = Object.keys(selectedSpecs).length > 0
       ? ` (${Object.entries(selectedSpecs).map(([key, value]) => `${key}: ${value}`).join(', ')})`
       : '';
-    const productNameWithOptions = `${product.name}${variantString}${specString}`;
-
+    const productNameWithSpecs = `${product.name}${specString}`;
+    
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id,
-        name: productNameWithOptions,
+        name: productNameWithSpecs,
         price: calculatedPrice,
-        originalPrice: calculatedOriginalPrice,
         image: images[0] || product.image,
         category: product.category,
-        variant: selectedVariant
+        specifications: selectedSpecs
       });
     }
   };
 
-  const discountPercentage = calculatedOriginalPrice && calculatedOriginalPrice > calculatedPrice
-    ? Math.round(((calculatedOriginalPrice - calculatedPrice) / calculatedOriginalPrice) * 100)
-    : 0;
+  // Handle clicking on an image to change the first specification value
+  const handleImageClick = (imageIndex: number) => {
+    if (!details?.specifications?.items || details.specifications.items.length === 0) {
+      setSelectedImage(imageIndex);
+      return;
+    }
+
+    const firstItem = details.specifications.items[0]; // Required specification
+    const specImages = details.specifications.specImages || {};
+    const firstItemImages = specImages[firstItem.name] || {};
+    
+    // Use allSpecImages if available, otherwise use images
+    const imageToFind = allSpecImages.length > 0 ? allSpecImages[imageIndex] : images[imageIndex];
+
+    // Find which value this image belongs to
+    for (const [valueName, valueImages] of Object.entries(firstItemImages)) {
+      const normalizedValueImages = (valueImages as string[]).map((img: string) => normalizeImageUrl(img));
+      if (normalizedValueImages.includes(imageToFind)) {
+        // This image belongs to this value, update the selection
+        setSelectedSpecs(prev => ({
+          ...prev,
+          [firstItem.name]: valueName
+        }));
+        // The images will update via useEffect, and we'll find the correct index
+        return;
+      }
+    }
+
+    // If image doesn't belong to any spec value, just select it (shouldn't happen normally)
+    if (images.includes(imageToFind)) {
+      setSelectedImage(images.indexOf(imageToFind));
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -298,23 +406,35 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                   )}
                 </div>
 
-                {/* Thumbnail Images */}
+                {/* Thumbnail Images - Display all images from all values of required spec, clicking changes spec selection */}
                 <div className="flex space-x-2 overflow-x-auto">
-                  {images.map((image: string, index: number) => (
-                    <button
-                      key={index}
-                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
-                        selectedImage === index ? 'border-black' : 'border-gray-200'
-                      }`}
-                      onClick={() => setSelectedImage(index)}
-                    >
-                      <img
-                        src={image}
-                        alt={`${product.name} ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
+                  {(allSpecImages.length > 0 ? allSpecImages : images).map((image: string, index: number) => {
+                    // Check if this image is in the currently selected value's images
+                    const isInCurrentSelection = images.includes(image);
+                    const imageIndex = images.indexOf(image);
+                    const displayIndex = allSpecImages.length > 0 ? allSpecImages.indexOf(image) : index;
+                    
+                    return (
+                      <button
+                        key={displayIndex}
+                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
+                          isInCurrentSelection && imageIndex === selectedImage 
+                            ? 'border-black border-2' 
+                            : isInCurrentSelection
+                            ? 'border-blue-500 border-2'
+                            : 'border-gray-200 hover:border-gray-400 opacity-60'
+                        }`}
+                        onClick={() => handleImageClick(displayIndex)}
+                        title={isInCurrentSelection ? 'Currently selected' : 'Click to select this variant'}
+                      >
+                        <img
+                          src={image}
+                          alt={`${product.name} ${displayIndex + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -354,14 +474,6 @@ export default function ProductQuickView({ product, children }: ProductQuickView
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
                   <PriceDisplay price={calculatedPrice} className="text-3xl font-bold text-gray-900" />
-                  {calculatedOriginalPrice && calculatedOriginalPrice > calculatedPrice && (
-                    <>
-                      <PriceDisplay price={calculatedOriginalPrice} className="text-lg text-gray-500 line-through" />
-                      <Badge className="bg-red-500">
-                        {discountPercentage}% OFF
-                      </Badge>
-                    </>
-                  )}
                 </div>
                 {details?.inStock ? (
                   <p className="text-green-600 text-sm font-medium">
@@ -376,27 +488,17 @@ export default function ProductQuickView({ product, children }: ProductQuickView
 
               <Separator />
 
-              {/* Specification Selector */}
+              {/* Specifications Selector */}
               {details?.specifications?.items && details.specifications.items.length > 0 && (
                 <ProductSpecificationSelector
                   specifications={details.specifications}
                   selectedSpecs={selectedSpecs}
                   onSpecChange={setSelectedSpecs}
                   basePrice={product.price}
-                  baseOriginalPrice={product.originalPrice}
                 />
               )}
 
               <Separator />
-
-              {/* Variant Selector */}
-              {details?.attributes && Object.keys(details.attributes).length > 0 && (
-                <ProductVariantSelector
-                  attributes={details.attributes}
-                  selectedVariant={selectedVariant}
-                  onVariantChange={setSelectedVariant}
-                />
-              )}
 
               {/* Quantity and Add to Cart */}
               <div className="space-y-4">
@@ -427,7 +529,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                     onClick={handleAddToCart}
                     disabled={!details?.inStock}
                   >
-                    Add to Cart - ${(calculatedPrice * quantity).toFixed(2)}
+                    Add to Cart - ${((typeof calculatedPrice === 'number' && !isNaN(calculatedPrice) ? calculatedPrice : 0) * quantity).toFixed(2)}
                   </Button>
                   <Button variant="outline" size="icon">
                     <Heart className="h-4 w-4" />
@@ -440,9 +542,8 @@ export default function ProductQuickView({ product, children }: ProductQuickView
 
               {/* Product Info Tabs */}
               <Tabs defaultValue="details" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="specs">Specifications</TabsTrigger>
                   <TabsTrigger value="shipping">Shipping</TabsTrigger>
                 </TabsList>
 
@@ -468,15 +569,6 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                   )}
                 </TabsContent>
 
-                <TabsContent value="specs" className="space-y-2">
-                  {Object.entries(details?.specifications ?? {}).map(([key, value]) => (
-                    <div key={key} className="flex justify-between py-2 border-b border-gray-100 last:border-0">
-                      <span className="text-sm font-medium text-gray-600">{key}:</span>
-                      <span className="text-sm text-gray-900">{value as string}</span>
-                    </div>
-                  ))}
-                </TabsContent>
-
                 <TabsContent value="shipping" className="space-y-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
@@ -493,26 +585,14 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                         <p className="text-xs text-gray-600">Easy returns and exchanges</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Shield className="h-5 w-5 text-purple-600" />
-                      <div>
-                        <p className="font-medium text-sm">Secure Payment</p>
-                        <p className="text-xs text-gray-600">256-bit SSL encryption</p>
+                    {details?.shipping && (
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-600">{details.shipping}</p>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </TabsContent>
               </Tabs>
-
-              {/* Trust Indicators */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="grid grid-cols-4 gap-2 text-center">
-                  <Badge variant="outline" className="text-xs">Alipay</Badge>
-                  <Badge variant="outline" className="text-xs">WeChat Pay</Badge>
-                  <Badge variant="outline" className="text-xs">PayPal</Badge>
-                  <Badge variant="outline" className="text-xs">Cards</Badge>
-                </div>
-              </div>
             </div>
           </div>
         )}
