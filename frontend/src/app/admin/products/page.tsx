@@ -51,35 +51,94 @@ interface Product {
   shipping?: string;
 }
 
+type PrimarySpecValue = {
+  name: string;
+  priceChange: number;
+  images: string[];
+};
+
+type AdditionalSpecItem = {
+  name: string;
+  values: Array<{
+    name: string;
+    priceChange: number;
+  }>;
+};
+
 type ProductFormData = {
   name: string;
   price: string;
-  originalPrice: string;
   categoryId: string;
   stock: string;
   description: string;
-  image: string;
   status: string;
-  specifications: Array<{ key: string; value: string }>;
+  primarySpecification: {
+    name: string; // Defaults to product name, editable
+    values: PrimarySpecValue[];
+  };
+  additionalSpecifications: AdditionalSpecItem[];
   shipping: string;
-  images: string[]; // Multiple images
-  featuredImage: string; // Featured image URL
 };
 
-// Helper to robustly parse specifications
-function parseSpecifications(spec: any) {
-  if (!spec) return [{ key: '', value: '' }];
+// Helper to parse specifications from backend
+function parseSpecifications(spec: any, productName: string = '') {
+  if (!spec) {
+    return {
+      primarySpecification: {
+        name: productName,
+        values: [{ name: '', priceChange: 0, images: [] }]
+      },
+      additionalSpecifications: []
+    };
+  }
+  
   if (typeof spec === 'string') {
     try {
       spec = JSON.parse(spec);
     } catch {
-      return [{ key: '', value: '' }];
+      return {
+        primarySpecification: {
+          name: productName,
+          values: [{ name: '', priceChange: 0, images: [] }]
+        },
+        additionalSpecifications: []
+      };
     }
   }
-  if (typeof spec === 'object' && !Array.isArray(spec)) {
-    return Object.entries(spec).map(([key, value]) => ({ key, value: String(value) }));
+  
+  // Check if it's the new format with items array
+  if (spec.items && Array.isArray(spec.items) && spec.items.length > 0) {
+    const primarySpec = spec.items[0];
+    const specImages = spec.specImages || {};
+    const primaryImages = specImages[primarySpec.name] || {};
+    
+    return {
+      primarySpecification: {
+        name: primarySpec.name || productName,
+        values: (primarySpec.values || []).map((v: any) => ({
+          name: typeof v === 'string' ? v : (v.name || ''),
+          priceChange: typeof v === 'object' ? (v.priceChange || 0) : 0,
+          images: primaryImages[typeof v === 'string' ? v : (v.name || '')] || []
+        }))
+      },
+      additionalSpecifications: spec.items.slice(1).map((item: any) => ({
+        name: item.name || '',
+        values: (item.values || []).map((v: any) => ({
+          name: typeof v === 'string' ? v : (v.name || ''),
+          priceChange: typeof v === 'object' ? (v.priceChange || 0) : 0
+        }))
+      }))
+    };
   }
-  return [{ key: '', value: '' }];
+  
+  // Legacy format - convert to new format
+  return {
+    primarySpecification: {
+      name: productName,
+      values: [{ name: '', priceChange: 0, images: [] }]
+    },
+    additionalSpecifications: []
+  };
 }
 
 export default function AdminProductsPage() {
@@ -115,20 +174,33 @@ export default function AdminProductsPage() {
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
     price: "",
-    originalPrice: "",
     categoryId: "",
     stock: "",
     description: "",
-    image: "",
     status: "active",
-    specifications: [{ key: '', value: '' }],
-    shipping: "",
-    images: [],
-    featuredImage: ""
+    primarySpecification: {
+      name: "",
+      values: [{ name: '', priceChange: 0, images: [] }]
+    },
+    additionalSpecifications: [],
+    shipping: ""
   });
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
+  const [uploadingForValue, setUploadingForValue] = useState<{ valueIndex: number } | null>(null);
+  
+  // Sync primary specification name with product name
+  useEffect(() => {
+    if (formData.primarySpecification.name !== formData.name) {
+      setFormData(prev => ({
+        ...prev,
+        primarySpecification: {
+          ...prev.primarySpecification,
+          name: prev.name
+        }
+      }));
+    }
+  }, [formData.name]);
 
   // Helper function to make authenticated API calls with automatic token refresh
   const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
@@ -178,61 +250,67 @@ export default function AdminProductsPage() {
     return category ? category.id.toString() : '';
   };
 
-  // Image upload functions
-  const handleImageUpload = async (files: FileList) => {
+  // Image upload function for primary specification values
+  const handleImageUpload = async (files: FileList, valueIndex: number) => {
+    if (!formData.primarySpecification.values[valueIndex]?.name) {
+      toast.error('Please enter a value name before uploading images');
+      return;
+    }
+    
     setUploadingImages(true);
+    setUploadingForValue({ valueIndex });
     try {
       const uploadFormData = new FormData();
       Array.from(files).forEach(file => {
         uploadFormData.append('images', file);
       });
 
-      // Add categoryId and productName to form data
-      console.log('Form data:', { categoryId: formData.categoryId, name: formData.name });
-      
-      if (formData.categoryId) {
-        uploadFormData.append('categoryId', formData.categoryId);
-        console.log('Added categoryId to form:', formData.categoryId);
-      } else {
+      if (!formData.categoryId) {
         toast.error('Please select a category before uploading images');
         setUploadingImages(false);
+        setUploadingForValue(null);
         return;
       }
-      if (formData.name) {
-        uploadFormData.append('productName', formData.name);
-        console.log('Added productName to form:', formData.name);
-      } else {
+      if (!formData.name) {
         toast.error('Please enter a product name before uploading images');
         setUploadingImages(false);
+        setUploadingForValue(null);
         return;
       }
 
-      console.log('Uploading images...', Array.from(files).map(f => f.name));
+      uploadFormData.append('categoryId', formData.categoryId);
+      uploadFormData.append('productName', formData.name);
+      uploadFormData.append('specItemName', formData.primarySpecification.name);
+      uploadFormData.append('specValue', formData.primarySpecification.values[valueIndex].name);
 
       const res = await makeAuthenticatedRequest(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/upload/product-images`, {
         method: 'POST',
         credentials: 'include',
-        // Don't set Content-Type, let browser set it with boundary for FormData
         body: uploadFormData
       });
-
-      console.log('Upload response status:', res.status);
       
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        console.error('Upload error response:', errorData);
-        throw new Error(`Upload failed: ${res.status} ${res.statusText} - ${errorData.error || 'Unknown error'}`);
+        throw new Error(`Upload failed: ${errorData.error || 'Unknown error'}`);
       }
       
       const data = await res.json();
-      console.log('Upload success:', data);
-      
       const newImageUrls = data.files.map((file: any) => file.url);
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, ...newImageUrls],
-        featuredImage: prev.featuredImage || newImageUrls[0] // Set first as featured if none selected
-      }));
+      
+      setFormData(prev => {
+        const newValues = [...prev.primarySpecification.values];
+        newValues[valueIndex] = {
+          ...newValues[valueIndex],
+          images: [...newValues[valueIndex].images, ...newImageUrls]
+        };
+        return {
+          ...prev,
+          primarySpecification: {
+            ...prev.primarySpecification,
+            values: newValues
+          }
+        };
+      });
       
       toast.success(`${data.files.length} images uploaded successfully`);
     } catch (err) {
@@ -240,12 +318,12 @@ export default function AdminProductsPage() {
       toast.error(`Failed to upload images: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setUploadingImages(false);
+      setUploadingForValue(null);
     }
   };
 
-  const removeImage = async (imageUrl: string) => {
+  const removeImage = async (imageUrl: string, valueIndex: number) => {
     try {
-      // Call backend to delete the image file
       const res = await makeAuthenticatedRequest(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/upload/product-image`, {
         method: 'DELETE',
         headers: {
@@ -260,25 +338,26 @@ export default function AdminProductsPage() {
         throw new Error(`Failed to delete image: ${errorData.error || 'Unknown error'}`);
       }
 
-      // Update form data to remove the image
-      setFormData(prev => ({
-        ...prev,
-        images: prev.images.filter(img => img !== imageUrl),
-        featuredImage: prev.featuredImage === imageUrl ? '' : prev.featuredImage
-      }));
+      setFormData(prev => {
+        const newValues = [...prev.primarySpecification.values];
+        newValues[valueIndex] = {
+          ...newValues[valueIndex],
+          images: newValues[valueIndex].images.filter(img => img !== imageUrl)
+        };
+        return {
+          ...prev,
+          primarySpecification: {
+            ...prev.primarySpecification,
+            values: newValues
+          }
+        };
+      });
 
       toast.success('Image deleted successfully');
     } catch (error) {
       console.error('Error deleting image:', error);
       toast.error(`Failed to delete image: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  };
-
-  const setFeaturedImage = (imageUrl: string) => {
-    setFormData(prev => ({
-      ...prev,
-      featuredImage: imageUrl
-    }));
   };
 
   // Redirect if not authenticated
@@ -342,6 +421,35 @@ export default function AdminProductsPage() {
     setLoading(true);
     setError(null);
     try {
+      // Build specifications object
+      const specItems = [
+        {
+          name: formData.primarySpecification.name || formData.name,
+          values: formData.primarySpecification.values.map(v => ({
+            name: v.name,
+            priceChange: v.priceChange || 0
+          }))
+        },
+        ...formData.additionalSpecifications.map(item => ({
+          name: item.name,
+          values: item.values.map(v => ({
+            name: v.name,
+            priceChange: v.priceChange || 0
+          }))
+        }))
+      ];
+      
+      // Build specImages object for primary specification
+      const specImages: Record<string, Record<string, string[]>> = {};
+      if (formData.primarySpecification.name) {
+        specImages[formData.primarySpecification.name] = {};
+        formData.primarySpecification.values.forEach(v => {
+          if (v.name && v.images.length > 0) {
+            specImages[formData.primarySpecification.name][v.name] = v.images;
+          }
+        });
+      }
+      
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -350,13 +458,13 @@ export default function AdminProductsPage() {
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
-          originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
           categoryId: formData.categoryId,
           stock: parseInt(formData.stock),
           status: formData.status,
-          featuredImage: formData.featuredImage,
-          images: formData.images,
-          specifications: Object.fromEntries(formData.specifications.filter(s => s.key).map(s => [s.key, s.value])),
+          specifications: {
+            items: specItems,
+            specImages: specImages
+          },
           shipping: formData.shipping
         })
       });
@@ -367,7 +475,6 @@ export default function AdminProductsPage() {
           id: product.id,
           name: product.name,
           price: product.price,
-          originalPrice: product.original_price,
           category: categories.find(cat => cat.id === Number(formData.categoryId))?.name || '',
           stock: product.stock,
           description: product.description,
@@ -384,16 +491,16 @@ export default function AdminProductsPage() {
       setFormData({
         name: "",
         price: "",
-        originalPrice: "",
         categoryId: "",
         stock: "",
         description: "",
-        image: "",
         status: "active",
-        specifications: [{ key: '', value: '' }],
-        shipping: "",
-        images: [],
-        featuredImage: ""
+        primarySpecification: {
+          name: "",
+          values: [{ name: '', priceChange: 0, images: [] }]
+        },
+        additionalSpecifications: [],
+        shipping: ""
       });
       toast.success('Product added successfully');
     } catch (err) {
@@ -409,6 +516,35 @@ export default function AdminProductsPage() {
     setLoading(true);
     setError(null);
     try {
+      // Build specifications object
+      const specItems = [
+        {
+          name: formData.primarySpecification.name || formData.name,
+          values: formData.primarySpecification.values.map(v => ({
+            name: v.name,
+            priceChange: v.priceChange || 0
+          }))
+        },
+        ...formData.additionalSpecifications.map(item => ({
+          name: item.name,
+          values: item.values.map(v => ({
+            name: v.name,
+            priceChange: v.priceChange || 0
+          }))
+        }))
+      ];
+      
+      // Build specImages object for primary specification
+      const specImages: Record<string, Record<string, string[]>> = {};
+      if (formData.primarySpecification.name) {
+        specImages[formData.primarySpecification.name] = {};
+        formData.primarySpecification.values.forEach(v => {
+          if (v.name && v.images.length > 0) {
+            specImages[formData.primarySpecification.name][v.name] = v.images;
+          }
+        });
+      }
+      
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/products/${editingProduct.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -417,13 +553,13 @@ export default function AdminProductsPage() {
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
-          originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
           categoryId: formData.categoryId,
           stock: parseInt(formData.stock),
           status: formData.status,
-          featured_image: formData.featuredImage, // Use snake_case for backend
-          images: formData.images,
-          specifications: Object.fromEntries(formData.specifications.filter(s => s.key).map(s => [s.key, s.value])),
+          specifications: {
+            items: specItems,
+            specImages: specImages
+          },
           shipping: formData.shipping
         })
       });
@@ -443,8 +579,6 @@ export default function AdminProductsPage() {
               id: product.id,
               name: product.name,
               price: product.price,
-              originalPrice: product.original_price,
-              // Use categories state to get the category name by categoryId
               category: categories.find(cat => cat.id === Number(formData.categoryId))?.name || '',
               stock: product.stock,
               description: product.description,
@@ -461,16 +595,16 @@ export default function AdminProductsPage() {
       setFormData({
         name: "",
         price: "",
-        originalPrice: "",
         categoryId: "",
         stock: "",
         description: "",
-        image: "",
         status: "active",
-        specifications: [{ key: '', value: '' }],
-        shipping: "",
-        images: [],
-        featuredImage: ""
+        primarySpecification: {
+          name: "",
+          values: [{ name: '', priceChange: 0, images: [] }]
+        },
+        additionalSpecifications: [],
+        shipping: ""
       });
       toast.success('Product updated successfully');
     } catch (err) {
@@ -557,16 +691,16 @@ export default function AdminProductsPage() {
             setFormData({
               name: "",
               price: "",
-              originalPrice: "",
               categoryId: "",
               stock: "",
               description: "",
-              image: "",
               status: "active",
-              specifications: [{ key: '', value: '' }],
-              shipping: "",
-              images: [],
-              featuredImage: ""
+              primarySpecification: {
+                name: "",
+                values: [{ name: '', priceChange: 0, images: [] }]
+              },
+              additionalSpecifications: [],
+              shipping: ""
             });
             setIsAddModalOpen(true);
           }}>
@@ -617,53 +751,47 @@ export default function AdminProductsPage() {
                         });
                         if (res.ok) {
                           const { product: fullProduct } = await res.json();
+                          const parsedSpecs = parseSpecifications(fullProduct.specifications, fullProduct.name);
                           setFormData({
                             name: fullProduct.name,
                             price: fullProduct.price.toString(),
-                            originalPrice: fullProduct.original_price?.toString() || '',
                             categoryId: fullProduct.category_id?.toString() || getCategoryIdByName(product.category),
                             stock: fullProduct.stock.toString(),
                             description: fullProduct.description,
-                            image: product.image,
                             status: fullProduct.status,
-                            specifications: parseSpecifications(fullProduct.specifications),
-                            shipping: fullProduct.shipping || '',
-                            images: fullProduct.images || [],
-                            featuredImage: fullProduct.featured_image || ''
+                            primarySpecification: parsedSpecs.primarySpecification,
+                            additionalSpecifications: parsedSpecs.additionalSpecifications,
+                            shipping: fullProduct.shipping || ''
                           });
                         } else {
                           // Fallback to basic product data
+                          const parsedSpecs = parseSpecifications(product.specifications, product.name);
                           setFormData({
                             name: product.name,
                             price: product.price.toString(),
-                            originalPrice: product.originalPrice?.toString() || '',
                             categoryId: getCategoryIdByName(product.category),
                             stock: product.stock.toString(),
                             description: product.description,
-                            image: product.image,
                             status: product.status,
-                            specifications: parseSpecifications(product.specifications),
-                            shipping: product.shipping || '',
-                            images: [],
-                            featuredImage: product.image
+                            primarySpecification: parsedSpecs.primarySpecification,
+                            additionalSpecifications: parsedSpecs.additionalSpecifications,
+                            shipping: product.shipping || ''
                           });
                         }
                       } catch (error) {
                         console.error('Error fetching product details:', error);
                         // Fallback to basic product data
+                        const parsedSpecs = parseSpecifications(product.specifications, product.name);
                         setFormData({
                           name: product.name,
                           price: product.price.toString(),
-                          originalPrice: product.originalPrice?.toString() || '',
                           categoryId: getCategoryIdByName(product.category),
                           stock: product.stock.toString(),
                           description: product.description,
-                          image: product.image,
                           status: product.status,
-                          specifications: parseSpecifications(product.specifications),
-                          shipping: product.shipping || '',
-                          images: [],
-                          featuredImage: product.image
+                          primarySpecification: parsedSpecs.primarySpecification,
+                          additionalSpecifications: parsedSpecs.additionalSpecifications,
+                          shipping: product.shipping || ''
                         });
                       }
                     }}>
@@ -689,16 +817,16 @@ export default function AdminProductsPage() {
             setFormData({
               name: "",
               price: "",
-              originalPrice: "",
               categoryId: "",
               stock: "",
               description: "",
-              image: "",
               status: "active",
-              specifications: [{ key: '', value: '' }],
-              shipping: "",
-              images: [],
-              featuredImage: ""
+              primarySpecification: {
+                name: "",
+                values: [{ name: '', priceChange: 0, images: [] }]
+              },
+              additionalSpecifications: [],
+              shipping: ""
             });
           }
         }}>
@@ -730,28 +858,16 @@ export default function AdminProductsPage() {
                   onChange={e => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="price">Price</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={e => setFormData({ ...formData, price: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="originalPrice">Original Price</Label>
-                  <Input
-                    id="originalPrice"
-                    type="number"
-                    step="0.01"
-                    value={formData.originalPrice}
-                    onChange={e => setFormData({ ...formData, originalPrice: e.target.value })}
-                  />
-                </div>
+              <div>
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={e => setFormData({ ...formData, price: e.target.value })}
+                  required
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -780,119 +896,161 @@ export default function AdminProductsPage() {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-4">
+              
+              {/* Primary Specification */}
+              <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
+                <Label className="text-base font-semibold">Specification (Required)</Label>
+                <p className="text-xs text-gray-600 mb-2">The first specification item. Each value can have images uploaded.</p>
+                
                 <div>
-                  <Label>Product Images</Label>
-                  <div 
-                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                      isDragOver 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDragOver(true);
-                    }}
-                    onDragEnter={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDragOver(true);
-                    }}
-                    onDragLeave={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDragOver(false);
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDragOver(false);
-                      const files = e.dataTransfer.files;
-                      if (files && files.length > 0) {
-                        handleImageUpload(files);
+                  <Label className="text-sm">Specification Name</Label>
+                  <Input
+                    placeholder="Product Name (default)"
+                    value={formData.primarySpecification.name}
+                    onChange={e => setFormData({
+                      ...formData,
+                      primarySpecification: {
+                        ...formData.primarySpecification,
+                        name: e.target.value
                       }
+                    })}
+                  />
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2 text-xs font-medium text-gray-600 border-b pb-1">
+                    <span>Value</span>
+                    <span>Price Change</span>
+                  </div>
+                  {formData.primarySpecification.values.map((value, valueIdx) => (
+                    <div key={valueIdx} className="p-3 bg-white rounded border space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Value name"
+                          value={value.name}
+                          onChange={e => {
+                            const newValues = [...formData.primarySpecification.values];
+                            newValues[valueIdx].name = e.target.value;
+                            setFormData({
+                              ...formData,
+                              primarySpecification: {
+                                ...formData.primarySpecification,
+                                values: newValues
+                              }
+                            });
+                          }}
+                          className="text-sm"
+                        />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={value.priceChange || 0}
+                          onChange={e => {
+                            const newValues = [...formData.primarySpecification.values];
+                            newValues[valueIdx].priceChange = parseFloat(e.target.value) || 0;
+                            setFormData({
+                              ...formData,
+                              primarySpecification: {
+                                ...formData.primarySpecification,
+                                values: newValues
+                              }
+                            });
+                          }}
+                          className="text-sm"
+                        />
+                      </div>
+                      
+                      {/* Image Upload for this value */}
+                      <div className="space-y-2">
+                        <Label className="text-xs">Images for this value:</Label>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              handleImageUpload(e.target.files, valueIdx);
+                            }
+                          }}
+                          className="hidden"
+                          id={`image-upload-add-${valueIdx}`}
+                          disabled={uploadingImages && uploadingForValue?.valueIndex === valueIdx}
+                        />
+                        <label
+                          htmlFor={`image-upload-add-${valueIdx}`}
+                          className={`flex items-center justify-center border-2 border-dashed rounded p-2 text-sm cursor-pointer ${
+                            uploadingImages && uploadingForValue?.valueIndex === valueIdx
+                              ? 'opacity-50 cursor-not-allowed border-gray-300'
+                              : 'hover:border-blue-500 border-gray-300'
+                          }`}
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          {uploadingImages && uploadingForValue?.valueIndex === valueIdx ? 'Uploading...' : 'Upload Images'}
+                        </label>
+                        
+                        {/* Display uploaded images */}
+                        {value.images.length > 0 && (
+                          <div className="grid grid-cols-4 gap-2 mt-2">
+                            {value.images.map((imgUrl, imgIdx) => (
+                              <div key={imgIdx} className="relative group">
+                                <img src={normalizeImageUrl(imgUrl)} alt={`${value.name} ${imgIdx + 1}`} className="w-full h-20 object-cover rounded border" />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="destructive"
+                                  className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                                  onClick={() => removeImage(imgUrl, valueIdx)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {formData.primarySpecification.values.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newValues = formData.primarySpecification.values.filter((_, i) => i !== valueIdx);
+                            setFormData({
+                              ...formData,
+                              primarySpecification: {
+                                ...formData.primarySpecification,
+                                values: newValues
+                              }
+                            });
+                          }}
+                        >
+                          Remove Value
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        primarySpecification: {
+                          ...formData.primarySpecification,
+                          values: [...formData.primarySpecification.values, { name: '', priceChange: 0, images: [] }]
+                        }
+                      });
                     }}
                   >
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
-                      className="hidden"
-                      id="image-upload"
-                      disabled={uploadingImages}
-                    />
-                    <label htmlFor="image-upload" className="cursor-pointer">
-                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                      <p className="mt-2 text-sm text-gray-600">
-                        {uploadingImages ? 'Uploading...' : 'Click to upload images or drag and drop'}
-                      </p>
-                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB each</p>
-                      <p className="text-xs text-blue-600 font-medium mt-1">Recommended: 1:1 aspect ratio (square, e.g., 1000×1000)</p>
-                    </label>
-                  </div>
+                    Add Value
+                  </Button>
                 </div>
-
-                {/* Image Preview Grid */}
-                {formData.images.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Uploaded Images</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {formData.images.map((imageUrl, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={normalizeImageUrl(imageUrl)}
-                            alt={`Product image ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg border"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
-                            <div className="opacity-0 group-hover:opacity-100 flex space-x-1">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setFeaturedImage(imageUrl);
-                                }}
-                                className={`h-8 w-8 p-0 ${
-                                  formData.featuredImage === imageUrl 
-                                    ? 'bg-blue-500 text-white' 
-                                    : 'bg-white text-gray-700'
-                                }`}
-                                title={formData.featuredImage === imageUrl ? 'Featured Image' : 'Set as Featured'}
-                              >
-                                <ImageIcon className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="destructive"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  removeImage(imageUrl);
-                                }}
-                                className="h-8 w-8 p-0"
-                                title="Remove Image"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          {formData.featuredImage === imageUrl && (
-                            <div className="absolute top-1 left-1">
-                              <Badge className="bg-blue-500 text-white text-xs">Featured</Badge>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
+              
               <div>
                 <Label htmlFor="status">Status</Label>
                 <Select value={formData.status} onValueChange={value => setFormData({ ...formData, status: value as 'active' | 'inactive' })}>
@@ -905,37 +1063,117 @@ export default function AdminProductsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Specifications</Label>
-                {formData.specifications.map((spec, idx) => (
-                  <div key={idx} className="flex gap-2 mb-2">
-                    <Input
-                      placeholder="Key"
-                      value={spec.key}
-                      onChange={e => {
-                        const newSpecs = [...formData.specifications];
-                        newSpecs[idx].key = e.target.value;
-                        setFormData({ ...formData, specifications: newSpecs });
-                      }}
-                    />
-                    <Input
-                      placeholder="Value"
-                      value={spec.value}
-                      onChange={e => {
-                        const newSpecs = [...formData.specifications];
-                        newSpecs[idx].value = e.target.value;
-                        setFormData({ ...formData, specifications: newSpecs });
-                      }}
-                    />
-                    <Button type="button" variant="outline" onClick={() => {
-                      setFormData({ ...formData, specifications: formData.specifications.filter((_, i) => i !== idx) });
-                    }}>Remove</Button>
+              {/* Additional Product Specifications */}
+              <div className="space-y-4 p-4 border rounded-lg">
+                <Label className="text-base font-semibold">Additional Product Specifications</Label>
+                <p className="text-xs text-gray-600 mb-2">Optional specifications that can be added. No image uploads.</p>
+                
+                {formData.additionalSpecifications.map((item, itemIdx) => (
+                  <div key={itemIdx} className="p-3 bg-gray-50 rounded border space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder="Specification name"
+                        value={item.name}
+                        onChange={e => {
+                          const newSpecs = [...formData.additionalSpecifications];
+                          newSpecs[itemIdx].name = e.target.value;
+                          setFormData({ ...formData, additionalSpecifications: newSpecs });
+                        }}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newSpecs = formData.additionalSpecifications.filter((_, i) => i !== itemIdx);
+                          setFormData({ ...formData, additionalSpecifications: newSpecs });
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2 text-xs font-medium text-gray-600 border-b pb-1">
+                        <span>Value</span>
+                        <span>Price Change</span>
+                      </div>
+                      {item.values.map((value, valueIdx) => (
+                        <div key={valueIdx} className="grid grid-cols-2 gap-2">
+                          <Input
+                            placeholder="Value name"
+                            value={value.name}
+                            onChange={e => {
+                              const newSpecs = [...formData.additionalSpecifications];
+                              newSpecs[itemIdx].values[valueIdx].name = e.target.value;
+                              setFormData({ ...formData, additionalSpecifications: newSpecs });
+                            }}
+                            className="text-sm"
+                          />
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={value.priceChange || 0}
+                              onChange={e => {
+                                const newSpecs = [...formData.additionalSpecifications];
+                                newSpecs[itemIdx].values[valueIdx].priceChange = parseFloat(e.target.value) || 0;
+                                setFormData({ ...formData, additionalSpecifications: newSpecs });
+                              }}
+                              className="text-sm"
+                            />
+                            {item.values.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const newSpecs = [...formData.additionalSpecifications];
+                                  newSpecs[itemIdx].values = newSpecs[itemIdx].values.filter((_, i) => i !== valueIdx);
+                                  setFormData({ ...formData, additionalSpecifications: newSpecs });
+                                }}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          const newSpecs = [...formData.additionalSpecifications];
+                          newSpecs[itemIdx].values.push({ name: '', priceChange: 0 });
+                          setFormData({ ...formData, additionalSpecifications: newSpecs });
+                        }}
+                      >
+                        Add Value
+                      </Button>
+                    </div>
                   </div>
                 ))}
-                <Button type="button" variant="secondary" onClick={() => setFormData({ ...formData, specifications: [...formData.specifications, { key: '', value: '' }] })}>
-                  Add Specification
+                
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      additionalSpecifications: [...formData.additionalSpecifications, {
+                        name: '',
+                        values: [{ name: '', priceChange: 0 }]
+                      }]
+                    });
+                  }}
+                >
+                  Add Specification Item
                 </Button>
               </div>
+              
               <div>
                 <Label htmlFor="shipping">Shipping Info</Label>
                 <Textarea
@@ -982,28 +1220,16 @@ export default function AdminProductsPage() {
                   onChange={e => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="price">Price</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={e => setFormData({ ...formData, price: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="originalPrice">Original Price</Label>
-                  <Input
-                    id="originalPrice"
-                    type="number"
-                    step="0.01"
-                    value={formData.originalPrice}
-                    onChange={e => setFormData({ ...formData, originalPrice: e.target.value })}
-                  />
-                </div>
+              <div>
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={e => setFormData({ ...formData, price: e.target.value })}
+                  required
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1032,119 +1258,161 @@ export default function AdminProductsPage() {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-4">
+              
+              {/* Primary Specification */}
+              <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
+                <Label className="text-base font-semibold">Specification (Required)</Label>
+                <p className="text-xs text-gray-600 mb-2">The first specification item. Each value can have images uploaded.</p>
+                
                 <div>
-                  <Label>Product Images</Label>
-                  <div 
-                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                      isDragOver 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDragOver(true);
-                    }}
-                    onDragEnter={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDragOver(true);
-                    }}
-                    onDragLeave={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDragOver(false);
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsDragOver(false);
-                      const files = e.dataTransfer.files;
-                      if (files && files.length > 0) {
-                        handleImageUpload(files);
+                  <Label className="text-sm">Specification Name</Label>
+                  <Input
+                    placeholder="Product Name (default)"
+                    value={formData.primarySpecification.name}
+                    onChange={e => setFormData({
+                      ...formData,
+                      primarySpecification: {
+                        ...formData.primarySpecification,
+                        name: e.target.value
                       }
+                    })}
+                  />
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2 text-xs font-medium text-gray-600 border-b pb-1">
+                    <span>Value</span>
+                    <span>Price Change</span>
+                  </div>
+                  {formData.primarySpecification.values.map((value, valueIdx) => (
+                    <div key={valueIdx} className="p-3 bg-white rounded border space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Value name"
+                          value={value.name}
+                          onChange={e => {
+                            const newValues = [...formData.primarySpecification.values];
+                            newValues[valueIdx].name = e.target.value;
+                            setFormData({
+                              ...formData,
+                              primarySpecification: {
+                                ...formData.primarySpecification,
+                                values: newValues
+                              }
+                            });
+                          }}
+                          className="text-sm"
+                        />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={value.priceChange || 0}
+                          onChange={e => {
+                            const newValues = [...formData.primarySpecification.values];
+                            newValues[valueIdx].priceChange = parseFloat(e.target.value) || 0;
+                            setFormData({
+                              ...formData,
+                              primarySpecification: {
+                                ...formData.primarySpecification,
+                                values: newValues
+                              }
+                            });
+                          }}
+                          className="text-sm"
+                        />
+                      </div>
+                      
+                      {/* Image Upload for this value */}
+                      <div className="space-y-2">
+                        <Label className="text-xs">Images for this value:</Label>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              handleImageUpload(e.target.files, valueIdx);
+                            }
+                          }}
+                          className="hidden"
+                          id={`image-upload-edit-${valueIdx}`}
+                          disabled={uploadingImages && uploadingForValue?.valueIndex === valueIdx}
+                        />
+                        <label
+                          htmlFor={`image-upload-edit-${valueIdx}`}
+                          className={`flex items-center justify-center border-2 border-dashed rounded p-2 text-sm cursor-pointer ${
+                            uploadingImages && uploadingForValue?.valueIndex === valueIdx
+                              ? 'opacity-50 cursor-not-allowed border-gray-300'
+                              : 'hover:border-blue-500 border-gray-300'
+                          }`}
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          {uploadingImages && uploadingForValue?.valueIndex === valueIdx ? 'Uploading...' : 'Upload Images'}
+                        </label>
+                        
+                        {/* Display uploaded images */}
+                        {value.images.length > 0 && (
+                          <div className="grid grid-cols-4 gap-2 mt-2">
+                            {value.images.map((imgUrl, imgIdx) => (
+                              <div key={imgIdx} className="relative group">
+                                <img src={normalizeImageUrl(imgUrl)} alt={`${value.name} ${imgIdx + 1}`} className="w-full h-20 object-cover rounded border" />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="destructive"
+                                  className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                                  onClick={() => removeImage(imgUrl, valueIdx)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {formData.primarySpecification.values.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newValues = formData.primarySpecification.values.filter((_, i) => i !== valueIdx);
+                            setFormData({
+                              ...formData,
+                              primarySpecification: {
+                                ...formData.primarySpecification,
+                                values: newValues
+                              }
+                            });
+                          }}
+                        >
+                          Remove Value
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        primarySpecification: {
+                          ...formData.primarySpecification,
+                          values: [...formData.primarySpecification.values, { name: '', priceChange: 0, images: [] }]
+                        }
+                      });
                     }}
                   >
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
-                      className="hidden"
-                      id="image-upload"
-                      disabled={uploadingImages}
-                    />
-                    <label htmlFor="image-upload" className="cursor-pointer">
-                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                      <p className="mt-2 text-sm text-gray-600">
-                        {uploadingImages ? 'Uploading...' : 'Click to upload images or drag and drop'}
-                      </p>
-                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB each</p>
-                      <p className="text-xs text-blue-600 font-medium mt-1">Recommended: 1:1 aspect ratio (square, e.g., 1000×1000)</p>
-                    </label>
-                  </div>
+                    Add Value
+                  </Button>
                 </div>
-
-                {/* Image Preview Grid */}
-                {formData.images.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Uploaded Images</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {formData.images.map((imageUrl, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={normalizeImageUrl(imageUrl)}
-                            alt={`Product image ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg border"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
-                            <div className="opacity-0 group-hover:opacity-100 flex space-x-1">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setFeaturedImage(imageUrl);
-                                }}
-                                className={`h-8 w-8 p-0 ${
-                                  formData.featuredImage === imageUrl 
-                                    ? 'bg-blue-500 text-white' 
-                                    : 'bg-white text-gray-700'
-                                }`}
-                                title={formData.featuredImage === imageUrl ? 'Featured Image' : 'Set as Featured'}
-                              >
-                                <ImageIcon className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="destructive"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  removeImage(imageUrl);
-                                }}
-                                className="h-8 w-8 p-0"
-                                title="Remove Image"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          {formData.featuredImage === imageUrl && (
-                            <div className="absolute top-1 left-1">
-                              <Badge className="bg-blue-500 text-white text-xs">Featured</Badge>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
+              
               <div>
                 <Label htmlFor="status">Status</Label>
                 <Select value={formData.status} onValueChange={value => setFormData({ ...formData, status: value as 'active' | 'inactive' })}>
@@ -1157,35 +1425,115 @@ export default function AdminProductsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Specifications</Label>
-                {formData.specifications.map((spec, idx) => (
-                  <div key={idx} className="flex gap-2 mb-2">
-                    <Input
-                      placeholder="Key"
-                      value={spec.key}
-                      onChange={e => {
-                        const newSpecs = [...formData.specifications];
-                        newSpecs[idx].key = e.target.value;
-                        setFormData({ ...formData, specifications: newSpecs });
-                      }}
-                    />
-                    <Input
-                      placeholder="Value"
-                      value={spec.value}
-                      onChange={e => {
-                        const newSpecs = [...formData.specifications];
-                        newSpecs[idx].value = e.target.value;
-                        setFormData({ ...formData, specifications: newSpecs });
-                      }}
-                    />
-                    <Button type="button" variant="outline" onClick={() => {
-                      setFormData({ ...formData, specifications: formData.specifications.filter((_, i) => i !== idx) });
-                    }}>Remove</Button>
+              
+              {/* Additional Product Specifications */}
+              <div className="space-y-4 p-4 border rounded-lg">
+                <Label className="text-base font-semibold">Additional Product Specifications</Label>
+                <p className="text-xs text-gray-600 mb-2">Optional specifications that can be added. No image uploads.</p>
+                
+                {formData.additionalSpecifications.map((item, itemIdx) => (
+                  <div key={itemIdx} className="p-3 bg-gray-50 rounded border space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder="Specification name"
+                        value={item.name}
+                        onChange={e => {
+                          const newSpecs = [...formData.additionalSpecifications];
+                          newSpecs[itemIdx].name = e.target.value;
+                          setFormData({ ...formData, additionalSpecifications: newSpecs });
+                        }}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newSpecs = formData.additionalSpecifications.filter((_, i) => i !== itemIdx);
+                          setFormData({ ...formData, additionalSpecifications: newSpecs });
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2 text-xs font-medium text-gray-600 border-b pb-1">
+                        <span>Value</span>
+                        <span>Price Change</span>
+                      </div>
+                      {item.values.map((value, valueIdx) => (
+                        <div key={valueIdx} className="grid grid-cols-2 gap-2">
+                          <Input
+                            placeholder="Value name"
+                            value={value.name}
+                            onChange={e => {
+                              const newSpecs = [...formData.additionalSpecifications];
+                              newSpecs[itemIdx].values[valueIdx].name = e.target.value;
+                              setFormData({ ...formData, additionalSpecifications: newSpecs });
+                            }}
+                            className="text-sm"
+                          />
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={value.priceChange || 0}
+                              onChange={e => {
+                                const newSpecs = [...formData.additionalSpecifications];
+                                newSpecs[itemIdx].values[valueIdx].priceChange = parseFloat(e.target.value) || 0;
+                                setFormData({ ...formData, additionalSpecifications: newSpecs });
+                              }}
+                              className="text-sm"
+                            />
+                            {item.values.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const newSpecs = [...formData.additionalSpecifications];
+                                  newSpecs[itemIdx].values = newSpecs[itemIdx].values.filter((_, i) => i !== valueIdx);
+                                  setFormData({ ...formData, additionalSpecifications: newSpecs });
+                                }}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          const newSpecs = [...formData.additionalSpecifications];
+                          newSpecs[itemIdx].values.push({ name: '', priceChange: 0 });
+                          setFormData({ ...formData, additionalSpecifications: newSpecs });
+                        }}
+                      >
+                        Add Value
+                      </Button>
+                    </div>
                   </div>
                 ))}
-                <Button type="button" variant="secondary" onClick={() => setFormData({ ...formData, specifications: [...formData.specifications, { key: '', value: '' }] })}>
-                  Add Specification
+                
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      additionalSpecifications: [...formData.additionalSpecifications, {
+                        name: '',
+                        values: [{ name: '', priceChange: 0 }]
+                      }]
+                    });
+                  }}
+                >
+                  Add Specification Item
                 </Button>
               </div>
               <div>

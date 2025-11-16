@@ -24,13 +24,13 @@ import {
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { resolveProductImage, normalizeImageUrl } from "@/lib/utils";
+import ProductSpecificationSelector, { SelectedSpecifications } from "@/components/ProductSpecificationSelector";
 
 interface ProductQuickViewProps {
   product: {
     id: number;
     name: string;
     price: number;
-    originalPrice?: number;
     image: string;
     category: string;
   };
@@ -41,7 +41,6 @@ interface ProductDetails {
   id: number;
   name: string;
   price: number;
-  originalPrice?: number;
   image: string;
   category: string;
   description?: string;
@@ -51,7 +50,16 @@ interface ProductDetails {
   reviews?: Array<{ user: string; comment: string; rating: number }>;
   inStock?: boolean;
   stockCount?: number;
-  specifications?: Record<string, string>;
+  specifications?: {
+    items?: Array<{
+      name: string;
+      values: Array<{
+        name: string;
+        priceChange?: number;
+      }>;
+    }>;
+    specImages?: Record<string, Record<string, string[]>>;
+  };
 }
 
 export default function ProductQuickView({ product, children }: ProductQuickViewProps) {
@@ -66,6 +74,8 @@ export default function ProductQuickView({ product, children }: ProductQuickView
   const [details, setDetails] = useState<ProductDetails | null>(null);
   const [images, setImages] = useState<string[]>([product.image]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedSpecs, setSelectedSpecs] = useState<SelectedSpecifications>({});
+  const [calculatedPrice, setCalculatedPrice] = useState(product.price);
   // Remove hasFetched state
   // const [hasFetched, setHasFetched] = useState(false);
 
@@ -101,6 +111,28 @@ export default function ProductQuickView({ product, children }: ProductQuickView
           // Use primary image first, then other images
           const allImages = [primaryImage, ...normalized.filter(img => img !== primaryImage)];
           setImages(allImages.length > 0 ? allImages : [product.image]);
+          
+          // Initialize selected specifications with first value of each item
+          if (data.product.specifications?.items && data.product.specifications.items.length > 0) {
+            const initialSpecs: SelectedSpecifications = {};
+            data.product.specifications.items.forEach((item: any) => {
+              if (item.values && item.values.length > 0) {
+                initialSpecs[item.name] = item.values[0].name;
+              }
+            });
+            setSelectedSpecs(initialSpecs);
+            
+            // Set initial images based on first specification selection
+            const firstItem = data.product.specifications.items[0];
+            const firstValue = initialSpecs[firstItem.name];
+            const specImages = data.product.specifications.specImages || {};
+            if (firstValue && specImages[firstItem.name] && specImages[firstItem.name][firstValue]) {
+              const valueImages = specImages[firstItem.name][firstValue];
+              if (valueImages.length > 0) {
+                setImages(valueImages.map((img: string) => normalizeImageUrl(img)));
+              }
+            }
+          }
         } catch (error: unknown) {
           if (error instanceof Error) {
             console.error("Failed to fetch product details:", error.message);
@@ -114,6 +146,52 @@ export default function ProductQuickView({ product, children }: ProductQuickView
       fetchDetails();
     }
   }, [isOpen, product.id, product.image]);
+  
+  // Update images when first specification changes
+  useEffect(() => {
+    if (details?.specifications?.items && details.specifications.items.length > 0) {
+      const firstItem = details.specifications.items[0];
+      const selectedValue = selectedSpecs[firstItem.name];
+      const specImages = details.specifications.specImages || {};
+      
+      if (selectedValue && specImages[firstItem.name] && specImages[firstItem.name][selectedValue]) {
+        const valueImages = specImages[firstItem.name][selectedValue];
+        if (valueImages.length > 0) {
+          setImages(valueImages.map((img: string) => normalizeImageUrl(img)));
+          return;
+        }
+      }
+    }
+    
+    // Fallback to default images
+    if (details?.images && details.images.length > 0) {
+      const normalized = details.images.map((img: string) => normalizeImageUrl(img));
+      setImages(normalized);
+    } else {
+      setImages([product.image]);
+    }
+  }, [selectedSpecs, details, product.image]);
+  
+  // Calculate price based on selected specifications
+  useEffect(() => {
+    if (!details?.specifications?.items) {
+      setCalculatedPrice(product.price);
+      return;
+    }
+    
+    let priceChange = 0;
+    details.specifications.items.forEach((item: any) => {
+      const selectedValue = selectedSpecs[item.name];
+      if (selectedValue) {
+        const value = item.values.find((v: any) => v.name === selectedValue);
+        if (value) {
+          priceChange += value.priceChange || 0;
+        }
+      }
+    });
+    
+    setCalculatedPrice(product.price + priceChange);
+  }, [selectedSpecs, details, product.price]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isZoomed) return;
@@ -126,21 +204,22 @@ export default function ProductQuickView({ product, children }: ProductQuickView
   };
 
   const handleAddToCart = () => {
+    // Build product name with spec info
+    const specString = Object.keys(selectedSpecs).length > 0
+      ? ` (${Object.entries(selectedSpecs).map(([key, value]) => `${key}: ${value}`).join(', ')})`
+      : '';
+    const productNameWithSpecs = `${product.name}${specString}`;
+    
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id,
-        name: product.name,
-        price: product.price,
-        originalPrice: product.originalPrice,
-        image: product.image,
+        name: productNameWithSpecs,
+        price: calculatedPrice,
+        image: images[0] || product.image,
         category: product.category
       });
     }
   };
-
-  const discountPercentage = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-    : 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -263,15 +342,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
               {/* Price */}
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
-                  <PriceDisplay price={product.price} className="text-3xl font-bold text-gray-900" />
-                  {product.originalPrice && (
-                    <>
-                      <PriceDisplay price={product.originalPrice} className="text-lg text-gray-500 line-through" />
-                      <Badge className="bg-red-500">
-                        {discountPercentage}% OFF
-                      </Badge>
-                    </>
-                  )}
+                  <PriceDisplay price={calculatedPrice} className="text-3xl font-bold text-gray-900" />
                 </div>
                 {details?.inStock ? (
                   <p className="text-green-600 text-sm font-medium">
@@ -283,6 +354,18 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                   </p>
                 )}
               </div>
+
+              <Separator />
+
+              {/* Specifications Selector */}
+              {details?.specifications?.items && details.specifications.items.length > 0 && (
+                <ProductSpecificationSelector
+                  specifications={details.specifications}
+                  selectedSpecs={selectedSpecs}
+                  onSpecChange={setSelectedSpecs}
+                  basePrice={product.price}
+                />
+              )}
 
               <Separator />
 
@@ -315,7 +398,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                     onClick={handleAddToCart}
                     disabled={!details?.inStock}
                   >
-                    Add to Cart - ${(product.price * quantity).toFixed(2)}
+                    Add to Cart - ${(calculatedPrice * quantity).toFixed(2)}
                   </Button>
                   <Button variant="outline" size="icon">
                     <Heart className="h-4 w-4" />
@@ -381,26 +464,9 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                         <p className="text-xs text-gray-600">Easy returns and exchanges</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Shield className="h-5 w-5 text-purple-600" />
-                      <div>
-                        <p className="font-medium text-sm">Secure Payment</p>
-                        <p className="text-xs text-gray-600">256-bit SSL encryption</p>
-                      </div>
-                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
-
-              {/* Trust Indicators */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="grid grid-cols-4 gap-2 text-center">
-                  <Badge variant="outline" className="text-xs">Alipay</Badge>
-                  <Badge variant="outline" className="text-xs">WeChat Pay</Badge>
-                  <Badge variant="outline" className="text-xs">PayPal</Badge>
-                  <Badge variant="outline" className="text-xs">Cards</Badge>
-                </div>
-              </div>
             </div>
           </div>
         )}
