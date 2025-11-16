@@ -25,6 +25,7 @@ import {
 import { useCart } from "@/contexts/CartContext";
 import { resolveProductImage, normalizeImageUrl } from "@/lib/utils";
 import ProductVariantSelector, { ProductVariant } from "@/components/ProductVariantSelector";
+import ProductSpecificationSelector, { SelectedSpecifications } from "@/components/ProductSpecificationSelector";
 
 interface ProductQuickViewProps {
   product: {
@@ -52,7 +53,18 @@ interface ProductDetails {
   reviews?: Array<{ user: string; comment: string; rating: number }>;
   inStock?: boolean;
   stockCount?: number;
-  specifications?: Record<string, string>;
+  specifications?: {
+    items?: Array<{
+      name: string;
+      values: Array<{
+        name: string;
+        priceChange?: number;
+        originalPriceChange?: number;
+      }>;
+    }>;
+    specImages?: Record<string, Record<string, string[]>>;
+  };
+  specImages?: Record<string, Record<string, string[]>>;
   attributes?: Record<string, any>;
 }
 
@@ -69,8 +81,9 @@ export default function ProductQuickView({ product, children }: ProductQuickView
   const [images, setImages] = useState<string[]>([product.image]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant>({});
-  // Remove hasFetched state
-  // const [hasFetched, setHasFetched] = useState(false);
+  const [selectedSpecs, setSelectedSpecs] = useState<SelectedSpecifications>({});
+  const [calculatedPrice, setCalculatedPrice] = useState(product.price);
+  const [calculatedOriginalPrice, setCalculatedOriginalPrice] = useState(product.originalPrice);
 
   // Only fetch details when modal is opened and hasn't been fetched before
   useEffect(() => {
@@ -104,6 +117,17 @@ export default function ProductQuickView({ product, children }: ProductQuickView
           // Use primary image first, then other images
           const allImages = [primaryImage, ...normalized.filter(img => img !== primaryImage)];
           setImages(allImages.length > 0 ? allImages : [product.image]);
+          
+          // Initialize selected specifications with first value of each item
+          if (data.product.specifications?.items && data.product.specifications.items.length > 0) {
+            const initialSpecs: SelectedSpecifications = {};
+            data.product.specifications.items.forEach((item: any) => {
+              if (item.values && item.values.length > 0) {
+                initialSpecs[item.name] = item.values[0].name;
+              }
+            });
+            setSelectedSpecs(initialSpecs);
+          }
         } catch (error: unknown) {
           if (error instanceof Error) {
             console.error("Failed to fetch product details:", error.message);
@@ -117,6 +141,59 @@ export default function ProductQuickView({ product, children }: ProductQuickView
       fetchDetails();
     }
   }, [isOpen, product.id, product.image]);
+  
+  // Update images when first specification changes
+  useEffect(() => {
+    if (details?.specifications?.items && details.specifications.items.length > 0) {
+      const firstItem = details.specifications.items[0];
+      const selectedValue = selectedSpecs[firstItem.name];
+      const specImages = details.specImages || details.specifications.specImages || {};
+      
+      if (selectedValue && specImages[firstItem.name] && specImages[firstItem.name][selectedValue]) {
+        const valueImages = specImages[firstItem.name][selectedValue];
+        if (valueImages.length > 0) {
+          setImages(valueImages.map((img: string) => normalizeImageUrl(img)));
+          return;
+        }
+      }
+    }
+    
+    // Fallback to default images
+    if (details?.images && details.images.length > 0) {
+      const normalized = details.images.map((img: string) => normalizeImageUrl(img));
+      setImages(normalized);
+    } else {
+      setImages([product.image]);
+    }
+  }, [selectedSpecs, details, product.image]);
+  
+  // Calculate price based on selected specifications
+  useEffect(() => {
+    if (!details?.specifications?.items) {
+      setCalculatedPrice(product.price);
+      setCalculatedOriginalPrice(product.originalPrice);
+      return;
+    }
+    
+    let priceChange = 0;
+    let originalPriceChange = 0;
+    
+    details.specifications.items.forEach((item) => {
+      const selectedValue = selectedSpecs[item.name];
+      if (selectedValue) {
+        const value = item.values.find(v => v.name === selectedValue);
+        if (value) {
+          priceChange += value.priceChange || 0;
+          originalPriceChange += value.originalPriceChange || 0;
+        }
+      }
+    });
+    
+    setCalculatedPrice(product.price + priceChange);
+    if (product.originalPrice !== undefined) {
+      setCalculatedOriginalPrice(product.originalPrice + originalPriceChange);
+    }
+  }, [selectedSpecs, details, product.price, product.originalPrice]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isZoomed) return;
@@ -129,27 +206,30 @@ export default function ProductQuickView({ product, children }: ProductQuickView
   };
 
   const handleAddToCart = () => {
-    // Build product name with variant info
+    // Build product name with variant and spec info
     const variantString = Object.keys(selectedVariant).length > 0
       ? ` (${Object.entries(selectedVariant).map(([key, value]) => `${key}: ${value}`).join(', ')})`
       : '';
-    const productNameWithVariant = `${product.name}${variantString}`;
+    const specString = Object.keys(selectedSpecs).length > 0
+      ? ` (${Object.entries(selectedSpecs).map(([key, value]) => `${key}: ${value}`).join(', ')})`
+      : '';
+    const productNameWithOptions = `${product.name}${variantString}${specString}`;
 
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id,
-        name: productNameWithVariant,
-        price: product.price,
-        originalPrice: product.originalPrice,
-        image: product.image,
+        name: productNameWithOptions,
+        price: calculatedPrice,
+        originalPrice: calculatedOriginalPrice,
+        image: images[0] || product.image,
         category: product.category,
         variant: selectedVariant
       });
     }
   };
 
-  const discountPercentage = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const discountPercentage = calculatedOriginalPrice && calculatedOriginalPrice > calculatedPrice
+    ? Math.round(((calculatedOriginalPrice - calculatedPrice) / calculatedOriginalPrice) * 100)
     : 0;
 
   return (
@@ -273,10 +353,10 @@ export default function ProductQuickView({ product, children }: ProductQuickView
               {/* Price */}
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
-                  <PriceDisplay price={product.price} className="text-3xl font-bold text-gray-900" />
-                  {product.originalPrice && (
+                  <PriceDisplay price={calculatedPrice} className="text-3xl font-bold text-gray-900" />
+                  {calculatedOriginalPrice && calculatedOriginalPrice > calculatedPrice && (
                     <>
-                      <PriceDisplay price={product.originalPrice} className="text-lg text-gray-500 line-through" />
+                      <PriceDisplay price={calculatedOriginalPrice} className="text-lg text-gray-500 line-through" />
                       <Badge className="bg-red-500">
                         {discountPercentage}% OFF
                       </Badge>
@@ -293,6 +373,19 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                   </p>
                 )}
               </div>
+
+              <Separator />
+
+              {/* Specification Selector */}
+              {details?.specifications?.items && details.specifications.items.length > 0 && (
+                <ProductSpecificationSelector
+                  specifications={details.specifications}
+                  selectedSpecs={selectedSpecs}
+                  onSpecChange={setSelectedSpecs}
+                  basePrice={product.price}
+                  baseOriginalPrice={product.originalPrice}
+                />
+              )}
 
               <Separator />
 
@@ -334,7 +427,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                     onClick={handleAddToCart}
                     disabled={!details?.inStock}
                   >
-                    Add to Cart - ${(product.price * quantity).toFixed(2)}
+                    Add to Cart - ${(calculatedPrice * quantity).toFixed(2)}
                   </Button>
                   <Button variant="outline" size="icon">
                     <Heart className="h-4 w-4" />

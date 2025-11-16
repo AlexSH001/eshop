@@ -191,13 +191,18 @@ router.get('/', paginationValidation, async (req, res) => {
   const [{ total }] = await db.query(countQuery, params);
 
   // Format product data
-  const formattedProducts = products.map(product => ({
-    ...product,
-    images: product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [],
-    tags: product.tags ? (typeof product.tags === 'string' ? JSON.parse(product.tags) : product.tags) : [],
-    attributes: product.attributes ? (typeof product.attributes === 'string' ? JSON.parse(product.attributes) : product.attributes) : {},
-    dimensions: product.dimensions ? (typeof product.dimensions === 'string' ? JSON.parse(product.dimensions) : product.dimensions) : null
-  }));
+  const formattedProducts = products.map(product => {
+    const parsedSpecs = product.specifications ? (typeof product.specifications === 'string' ? JSON.parse(product.specifications) : product.specifications) : {};
+    return {
+      ...product,
+      images: product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [],
+      tags: product.tags ? (typeof product.tags === 'string' ? JSON.parse(product.tags) : product.tags) : [],
+      attributes: product.attributes ? (typeof product.attributes === 'string' ? JSON.parse(product.attributes) : product.attributes) : {},
+      dimensions: product.dimensions ? (typeof product.dimensions === 'string' ? JSON.parse(product.dimensions) : product.dimensions) : null,
+      specifications: parsedSpecs,
+      specImages: parsedSpecs.specImages || {}
+    };
+  });
 
   res.json({
     products: formattedProducts,
@@ -235,15 +240,20 @@ router.get('/:id', idValidation, optionalAuth, async (req, res) => {
   }
 
   // Format product data
+  const parsedSpecs = product.specifications ? (typeof product.specifications === 'string' ? JSON.parse(product.specifications) : product.specifications) : {};
+  const parsedImages = product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [];
+  const parsedSpecImages = parsedSpecs.specImages || {};
+  
   const formattedProduct = {
     ...product,
-    images: product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [],
+    images: parsedImages,
     tags: product.tags ? (typeof product.tags === 'string' ? JSON.parse(product.tags) : product.tags) : [],
     attributes: product.attributes ? (typeof product.attributes === 'string' ? JSON.parse(product.attributes) : product.attributes) : {},
     dimensions: product.dimensions ? (typeof product.dimensions === 'string' ? JSON.parse(product.dimensions) : product.dimensions) : null,
     inStock: product.stock > 0,
     stockCount: product.stock,
-    specifications: product.specifications ? (typeof product.specifications === 'string' ? JSON.parse(product.specifications) : product.specifications) : {},
+    specifications: parsedSpecs,
+    specImages: parsedSpecImages,
     shipping: product.shipping || ''
   };
 
@@ -310,12 +320,17 @@ router.get('/category/:categoryId', paginationValidation, async (req, res) => {
   );
 
   // Format products
-  const formattedProducts = products.map(product => ({
-    ...product,
-    images: product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [],
-    tags: product.tags ? (typeof product.tags === 'string' ? JSON.parse(product.tags) : product.tags) : [],
-    attributes: product.attributes ? (typeof product.attributes === 'string' ? JSON.parse(product.attributes) : product.attributes) : {}
-  }));
+  const formattedProducts = products.map(product => {
+    const parsedSpecs = product.specifications ? (typeof product.specifications === 'string' ? JSON.parse(product.specifications) : product.specifications) : {};
+    return {
+      ...product,
+      images: product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [],
+      tags: product.tags ? (typeof product.tags === 'string' ? JSON.parse(product.tags) : product.tags) : [],
+      attributes: product.attributes ? (typeof product.attributes === 'string' ? JSON.parse(product.attributes) : product.attributes) : {},
+      specifications: parsedSpecs,
+      specImages: parsedSpecs.specImages || {}
+    };
+  });
 
   res.json({
     products: formattedProducts,
@@ -344,12 +359,17 @@ router.get('/featured/list', async (req, res) => {
     LIMIT $1
   `, [parseInt(limit)]);
 
-  const formattedProducts = products.map(product => ({
-    ...product,
-    images: product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [],
-    tags: product.tags ? (typeof product.tags === 'string' ? JSON.parse(product.tags) : product.tags) : [],
-    attributes: product.attributes ? (typeof product.attributes === 'string' ? JSON.parse(product.attributes) : product.attributes) : {}
-  }));
+  const formattedProducts = products.map(product => {
+    const parsedSpecs = product.specifications ? (typeof product.specifications === 'string' ? JSON.parse(product.specifications) : product.specifications) : {};
+    return {
+      ...product,
+      images: product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [],
+      tags: product.tags ? (typeof product.tags === 'string' ? JSON.parse(product.tags) : product.tags) : [],
+      attributes: product.attributes ? (typeof product.attributes === 'string' ? JSON.parse(product.attributes) : product.attributes) : {},
+      specifications: parsedSpecs,
+      specImages: parsedSpecs.specImages || {}
+    };
+  });
 
   res.json({
     products: formattedProducts
@@ -431,6 +451,7 @@ router.post('/', createProductValidation, async (req, res) => {
   const insertedId = result.id || (result.rows && result.rows[0] && result.rows[0].id);
   const product = await db.get('SELECT * FROM products WHERE id = $1', [insertedId]);
 
+  const parsedSpecs = safeParseJSON(product.specifications, {});
   res.status(201).json({
     message: 'Product created successfully',
     product: {
@@ -439,7 +460,8 @@ router.post('/', createProductValidation, async (req, res) => {
       tags: safeParseJSON(product.tags, []),
       attributes: safeParseJSON(product.attributes, {}),
       dimensions: safeParseJSON(product.dimensions, null),
-      specifications: safeParseJSON(product.specifications, {}),
+      specifications: parsedSpecs,
+      specImages: parsedSpecs.specImages || {},
       shipping: product.shipping || ''
     }
   });
@@ -516,6 +538,7 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
   const insertedId = result.id || (result.rows && result.rows[0] && result.rows[0].id);
   const product = await db.get('SELECT * FROM products WHERE id = $1', [insertedId]);
 
+  const parsedSpecs = safeParseJSON(product.specifications, {});
   res.status(201).json({
     message: 'Product created successfully',
     product: {
@@ -524,7 +547,8 @@ router.post('/authenticated', authenticateAdmin, createProductValidation, async 
       tags: safeParseJSON(product.tags, []),
       attributes: safeParseJSON(product.attributes, {}),
       dimensions: safeParseJSON(product.dimensions, null),
-      specifications: safeParseJSON(product.specifications, {}),
+      specifications: parsedSpecs,
+      specImages: parsedSpecs.specImages || {},
       shipping: product.shipping || ''
     }
   });
@@ -605,6 +629,7 @@ router.put('/:id', updateProductValidation, async (req, res) => {
 
   const updatedProduct = await db.get('SELECT * FROM products WHERE id = $1', [productId]);
 
+  const parsedSpecs = safeParseJSON(updatedProduct.specifications, {});
   res.json({
     message: 'Product updated successfully',
     product: {
@@ -613,7 +638,8 @@ router.put('/:id', updateProductValidation, async (req, res) => {
       tags: safeParseJSON(updatedProduct.tags, []),
       attributes: safeParseJSON(updatedProduct.attributes, {}),
       dimensions: safeParseJSON(updatedProduct.dimensions, null),
-      specifications: safeParseJSON(updatedProduct.specifications, {}),
+      specifications: parsedSpecs,
+      specImages: parsedSpecs.specImages || {},
       shipping: updatedProduct.shipping || ''
     }
   });
@@ -686,6 +712,7 @@ router.get('/:id', idValidation, async (req, res) => {
     throw new NotFoundError('Product not found');
   }
 
+  const parsedSpecs = product.specifications ? JSON.parse(product.specifications) : {};
   res.json({
     product: {
       ...product,
@@ -693,7 +720,8 @@ router.get('/:id', idValidation, async (req, res) => {
       tags: product.tags ? JSON.parse(product.tags) : [],
       attributes: product.attributes ? JSON.parse(product.attributes) : {},
       dimensions: product.dimensions ? JSON.parse(product.dimensions) : null,
-      specifications: product.specifications ? JSON.parse(product.specifications) : {},
+      specifications: parsedSpecs,
+      specImages: parsedSpecs.specImages || {},
       shipping: product.shipping || ''
     }
   });

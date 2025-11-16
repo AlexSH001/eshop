@@ -183,11 +183,13 @@ router.post('/product-images', authenticateAdmin, (req, res) => {
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
-    const { categoryId, productName } = req.body;
+    const { categoryId, productName, specItemName, specValue } = req.body;
     
     if (!categoryId) {
       return res.status(400).json({ error: 'Category ID is required. Please select a category before uploading images.' });
     }
+    
+    // specItemName and specValue are optional - if provided, images are for a specific specification value
 
     try {
       // Get category name from database
@@ -241,6 +243,16 @@ router.post('/product-images', authenticateAdmin, (req, res) => {
       // Now save the files to the correct location
       const uploadedFiles = [];
       
+      // If uploading for a specific specification value, create a subdirectory
+      let finalDir = categoryDir;
+      if (specItemName && specValue) {
+        const specDirName = `${specItemName}-${specValue}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        finalDir = path.join(categoryDir, specDirName);
+        if (!fs.existsSync(finalDir)) {
+          fs.mkdirSync(finalDir, { recursive: true, mode: 0o755 });
+        }
+      }
+      
       for (const file of req.files) {
         // Generate filename: product_name-yyyymmdd-xxxxx.ext
         const productNameSlug = (productName || 'product').toLowerCase().replace(/\s+/g, '-');
@@ -249,7 +261,7 @@ router.post('/product-images', authenticateAdmin, (req, res) => {
         const extension = path.extname(file.originalname);
         const filename = `${productNameSlug}-${date}-${randomNum}${extension}`;
         
-        const filePath = path.join(categoryDir, filename);
+        const filePath = path.join(finalDir, filename);
         
         console.log('Writing file:', filePath, 'Size:', file.size);
         
@@ -283,12 +295,23 @@ router.post('/product-images', authenticateAdmin, (req, res) => {
           });
         }
         
+        // Build URL based on whether it's in a spec subdirectory
+        let imageUrl;
+        if (specItemName && specValue) {
+          const specDirName = `${specItemName}-${specValue}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+          imageUrl = `/uploads/products/${categoryFolderName}/${specDirName}/${filename}`;
+        } else {
+          imageUrl = `/uploads/products/${categoryFolderName}/${filename}`;
+        }
+        
         uploadedFiles.push({
           originalName: file.originalname,
           filename: filename,
           size: file.size,
-          url: `/uploads/products/${categoryFolderName}/${filename}`,
-          path: filePath
+          url: imageUrl,
+          path: filePath,
+          specItemName: specItemName || null,
+          specValue: specValue || null
         });
       }
 
