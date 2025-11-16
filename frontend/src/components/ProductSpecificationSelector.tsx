@@ -31,7 +31,9 @@ export default function ProductSpecificationSelector({
   onSpecChange,
   basePrice
 }: ProductSpecificationSelectorProps) {
-  const [calculatedPrice, setCalculatedPrice] = useState(basePrice);
+  // Ensure basePrice is a number
+  const numericBasePrice = typeof basePrice === 'number' ? basePrice : (typeof basePrice === 'string' ? parseFloat(basePrice) : 0);
+  const [calculatedPrice, setCalculatedPrice] = useState(numericBasePrice || 0);
 
   const items = specifications.items || [];
 
@@ -57,13 +59,15 @@ export default function ProductSpecificationSelector({
       if (selectedValue) {
         const value = item.values.find(v => v.name === selectedValue);
         if (value) {
-          priceChange += value.priceChange || 0;
+          const change = typeof value.priceChange === 'number' ? value.priceChange : (typeof value.priceChange === 'string' ? parseFloat(value.priceChange) : 0);
+          priceChange += isNaN(change) ? 0 : change;
         }
       }
     });
 
-    setCalculatedPrice(basePrice + priceChange);
-  }, [selectedSpecs, items, basePrice]);
+    const finalPrice = (numericBasePrice || 0) + priceChange;
+    setCalculatedPrice(isNaN(finalPrice) ? 0 : finalPrice);
+  }, [selectedSpecs, items, numericBasePrice]);
 
   const handleSpecChange = (itemName: string, valueName: string) => {
     const newSpecs = { ...selectedSpecs, [itemName]: valueName };
@@ -91,9 +95,10 @@ export default function ProductSpecificationSelector({
             </SelectTrigger>
             <SelectContent>
               {item.values.map((value, valueIndex) => {
-                const priceChange = value.priceChange || 0;
-                const priceChangeText = priceChange !== 0 
-                  ? ` (${priceChange > 0 ? '+' : ''}$${priceChange.toFixed(2)})`
+                const priceChange = typeof value.priceChange === 'number' ? value.priceChange : (typeof value.priceChange === 'string' ? parseFloat(value.priceChange) : 0);
+                const numericPriceChange = isNaN(priceChange) ? 0 : priceChange;
+                const priceChangeText = numericPriceChange !== 0 
+                  ? ` (${numericPriceChange > 0 ? '+' : ''}$${numericPriceChange.toFixed(2)})`
                   : '';
                 return (
                   <SelectItem key={valueIndex} value={value.name}>
@@ -111,7 +116,7 @@ export default function ProductSpecificationSelector({
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Price:</span>
           <span className="text-lg font-bold">
-            ${calculatedPrice.toFixed(2)}
+            ${(typeof calculatedPrice === 'number' && !isNaN(calculatedPrice) ? calculatedPrice : 0).toFixed(2)}
           </span>
         </div>
       </div>

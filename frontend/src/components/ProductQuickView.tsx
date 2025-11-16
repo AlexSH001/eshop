@@ -75,7 +75,8 @@ export default function ProductQuickView({ product, children }: ProductQuickView
   const [images, setImages] = useState<string[]>([product.image]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedSpecs, setSelectedSpecs] = useState<SelectedSpecifications>({});
-  const [calculatedPrice, setCalculatedPrice] = useState(product.price);
+  const basePrice = typeof product.price === 'number' ? product.price : (typeof product.price === 'string' ? parseFloat(product.price) : 0);
+  const [calculatedPrice, setCalculatedPrice] = useState(isNaN(basePrice) ? 0 : basePrice);
   // Remove hasFetched state
   // const [hasFetched, setHasFetched] = useState(false);
 
@@ -174,8 +175,11 @@ export default function ProductQuickView({ product, children }: ProductQuickView
   
   // Calculate price based on selected specifications
   useEffect(() => {
+    const basePrice = typeof product.price === 'number' ? product.price : (typeof product.price === 'string' ? parseFloat(product.price) : 0);
+    const numericBasePrice = isNaN(basePrice) ? 0 : basePrice;
+    
     if (!details?.specifications?.items) {
-      setCalculatedPrice(product.price);
+      setCalculatedPrice(numericBasePrice);
       return;
     }
     
@@ -185,12 +189,14 @@ export default function ProductQuickView({ product, children }: ProductQuickView
       if (selectedValue) {
         const value = item.values.find((v: any) => v.name === selectedValue);
         if (value) {
-          priceChange += value.priceChange || 0;
+          const change = typeof value.priceChange === 'number' ? value.priceChange : (typeof value.priceChange === 'string' ? parseFloat(value.priceChange) : 0);
+          priceChange += isNaN(change) ? 0 : change;
         }
       }
     });
     
-    setCalculatedPrice(product.price + priceChange);
+    const finalPrice = numericBasePrice + priceChange;
+    setCalculatedPrice(isNaN(finalPrice) ? numericBasePrice : finalPrice);
   }, [selectedSpecs, details, product.price]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -398,7 +404,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                     onClick={handleAddToCart}
                     disabled={!details?.inStock}
                   >
-                    Add to Cart - ${(calculatedPrice * quantity).toFixed(2)}
+                    Add to Cart - ${((typeof calculatedPrice === 'number' && !isNaN(calculatedPrice) ? calculatedPrice : 0) * quantity).toFixed(2)}
                   </Button>
                   <Button variant="outline" size="icon">
                     <Heart className="h-4 w-4" />
