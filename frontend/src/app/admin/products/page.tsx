@@ -648,10 +648,14 @@ export default function AdminProductsPage() {
         description: "",
         image: "",
         status: "active",
-        specifications: [{ key: '', value: '' }],
+        specifications: [{
+          name: "",
+          values: [{ name: '', priceChange: 0, originalPriceChange: 0 }]
+        }],
         shipping: "",
         images: [],
         featuredImage: "",
+        specImages: {},
         attributes: {},
         variantCombinations: []
       });
@@ -742,10 +746,14 @@ export default function AdminProductsPage() {
         description: "",
         image: "",
         status: "active",
-        specifications: [{ key: '', value: '' }],
+        specifications: [{
+          name: "",
+          values: [{ name: '', priceChange: 0, originalPriceChange: 0 }]
+        }],
         shipping: "",
         images: [],
         featuredImage: "",
+        specImages: {},
         attributes: {},
         variantCombinations: []
       });
@@ -962,6 +970,7 @@ export default function AdminProductsPage() {
                           shipping: product.shipping || '',
                           images: [],
                           featuredImage: product.image,
+                          specImages: {},
                           attributes: {},
                           variantCombinations: []
                         });
