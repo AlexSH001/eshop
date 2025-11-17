@@ -133,7 +133,8 @@ export async function fetchGroupedProducts(): Promise<Record<string, Product[]>>
       // Transform product data to match frontend expectations
       const dbImages = (product.images as unknown) as unknown[] | undefined;
       const featuredImage = (product as any).featured_image as string | null | undefined;
-      const resolvedImage = resolveProductImage(featuredImage, dbImages, product.id as number);
+      const specifications = (product as any).specifications;
+      const resolvedImage = resolveProductImage(featuredImage, dbImages, product.id as number, specifications);
 
       const transformedProduct: Product = {
         id: product.id as number,
@@ -211,16 +212,65 @@ export const normalizeImageUrl = (url: string): string => {
     return url;
 };
 
+// Resolve product image from first value of required specification
+export const resolveProductImageFromSpecs = (specifications: any): string | null => {
+    if (!specifications) return null;
+    
+    try {
+        // Parse specifications if it's a string
+        let spec = specifications;
+        if (typeof specifications === 'string') {
+            spec = JSON.parse(specifications);
+        }
+        
+        // Check if it has the new format with items and specImages
+        if (spec.items && Array.isArray(spec.items) && spec.items.length > 0) {
+            const firstItem = spec.items[0]; // Required specification
+            const specImages = spec.specImages || {};
+            
+            // Get images for the first value of the first (required) specification
+            if (firstItem.values && firstItem.values.length > 0) {
+                const firstValue = firstItem.values[0];
+                const valueName = typeof firstValue === 'string' ? firstValue : firstValue.name;
+                
+                if (valueName && specImages[firstItem.name] && specImages[firstItem.name][valueName]) {
+                    const valueImages = specImages[firstItem.name][valueName];
+                    if (Array.isArray(valueImages) && valueImages.length > 0) {
+                        const firstSpecImage = valueImages[0];
+                        if (firstSpecImage && isValidImageUrl(firstSpecImage)) {
+                            return normalizeImageUrl(firstSpecImage);
+                        }
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.warn('Error parsing specifications for image:', error);
+    }
+    
+    return null;
+};
+
 // Resolve product image with proper fallback logic
-export const resolveProductImage = (featuredImage: string | null | undefined, images: unknown[] | undefined, productId: number): string => {
+export const resolveProductImage = (featuredImage: string | null | undefined, images: unknown[] | undefined, productId: number, specifications?: any): string => {
     // Debug logging
     console.log('resolveProductImage called with:', {
         featuredImage,
         images,
-        productId
+        productId,
+        hasSpecifications: !!specifications
     });
     
-    // First try featured_image if it's valid
+    // First try to get image from first value of required specification
+    if (specifications) {
+        const specImage = resolveProductImageFromSpecs(specifications);
+        if (specImage) {
+            console.log('Using spec image from first value:', specImage);
+            return specImage;
+        }
+    }
+    
+    // Then try featured_image if it's valid
     if (featuredImage && isValidImageUrl(featuredImage)) {
         const normalizedUrl = normalizeImageUrl(featuredImage);
         console.log('Using featured image:', normalizedUrl);

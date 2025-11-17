@@ -381,7 +381,8 @@ export default function AdminProductsPage() {
           const images = p.images as unknown;
           const featuredImage = (p as any).featured_image as string | null | undefined;
           const dbImages = Array.isArray(images) ? images : undefined;
-          const resolvedImage = resolveProductImage(featuredImage, dbImages, p.id as number);
+          const specifications = (p as any).specifications;
+          const resolvedImage = resolveProductImage(featuredImage, dbImages, p.id as number, specifications);
 
           return {
             id: p.id as number,
@@ -478,7 +479,7 @@ export default function AdminProductsPage() {
           category: categories.find(cat => cat.id === Number(formData.categoryId))?.name || '',
           stock: product.stock,
           description: product.description,
-          image: resolveProductImage(product.featured_image, product.images, product.id),
+          image: resolveProductImage(product.featured_image, product.images, product.id, product.specifications),
           status: product.status,
           createdAt: product.created_at,
           sales: product.sales_count || 0,
@@ -582,7 +583,7 @@ export default function AdminProductsPage() {
               category: categories.find(cat => cat.id === Number(formData.categoryId))?.name || '',
               stock: product.stock,
               description: product.description,
-              image: resolveProductImage(product.featured_image, product.images, product.id),
+              image: resolveProductImage(product.featured_image, product.images, product.id, product.specifications),
               status: product.status,
               createdAt: product.created_at,
               sales: product.sales_count || 0,
