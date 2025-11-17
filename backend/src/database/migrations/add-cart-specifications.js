@@ -48,34 +48,64 @@ async function addCartSpecificationsColumn() {
     
     // Step 2: Remove UNIQUE constraints to allow same product with different specifications
     if (isPostgres) {
-      // Check and drop UNIQUE constraints
-      const constraints = await database.query(`
+      // First, get ALL UNIQUE constraints on cart_items table
+      const allConstraints = await database.query(`
         SELECT constraint_name 
         FROM information_schema.table_constraints 
         WHERE table_name = 'cart_items' 
         AND constraint_type = 'UNIQUE'
-        AND (constraint_name LIKE '%user_id%product_id%' OR constraint_name LIKE '%session_id%product_id%')
       `);
       
-      for (const constraint of constraints) {
-        try {
-          await database.execute(`ALTER TABLE cart_items DROP CONSTRAINT IF EXISTS ${constraint.constraint_name}`);
-          console.log(`✅ Dropped UNIQUE constraint: ${constraint.constraint_name}`);
-        } catch (error) {
-          console.warn(`⚠️ Could not drop constraint ${constraint.constraint_name}:`, error.message);
+      console.log(`Found ${allConstraints.length} UNIQUE constraint(s) on cart_items table`);
+      
+      // Get constraint columns to identify which ones involve user_id/product_id or session_id/product_id
+      for (const constraint of allConstraints) {
+        const constraintName = constraint.constraint_name || constraint.constraintName;
+        if (!constraintName) {
+          console.warn('⚠️ Skipping constraint with no name:', constraint);
+          continue;
+        }
+        
+        const constraintColumns = await database.query(`
+          SELECT column_name
+          FROM information_schema.key_column_usage
+          WHERE constraint_name = $1
+          AND table_name = 'cart_items'
+          ORDER BY ordinal_position
+        `, [constraintName]);
+        
+        const columns = constraintColumns.map(c => c.column_name || c.columnName);
+        const hasUserId = columns.includes('user_id');
+        const hasProductId = columns.includes('product_id');
+        const hasSessionId = columns.includes('session_id');
+        
+        // Drop constraints that involve (user_id, product_id) or (session_id, product_id)
+        if ((hasUserId && hasProductId) || (hasSessionId && hasProductId)) {
+          try {
+            await database.execute(`ALTER TABLE cart_items DROP CONSTRAINT IF EXISTS ${constraintName}`);
+            console.log(`✅ Dropped UNIQUE constraint: ${constraintName} (columns: ${columns.join(', ')})`);
+          } catch (error) {
+            console.warn(`⚠️ Could not drop constraint ${constraintName}:`, error.message);
+          }
+        } else {
+          console.log(`ℹ️ Skipping constraint ${constraintName} (columns: ${columns.join(', ')}) - not related to product_id`);
         }
       }
       
-      // Also try common constraint names
+      // Also try common constraint names as fallback
       const commonNames = [
         'cart_items_user_id_product_id_key',
         'cart_items_session_id_product_id_key',
         'cart_items_user_id_product_id_unique',
-        'cart_items_session_id_product_id_unique'
+        'cart_items_session_id_product_id_unique',
+        'cart_items_pkey' // Primary key, but check anyway
       ];
       
       for (const name of commonNames) {
         try {
+          // Skip primary key constraint
+          if (name === 'cart_items_pkey') continue;
+          
           await database.execute(`ALTER TABLE cart_items DROP CONSTRAINT IF EXISTS ${name}`);
           console.log(`✅ Dropped UNIQUE constraint: ${name}`);
         } catch (error) {
