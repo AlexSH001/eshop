@@ -107,17 +107,22 @@ export default function ProductQuickView({ product, children }: ProductQuickView
             const firstValue = initialSpecs[firstItem.name];
             const specImages = data.product.specifications.specImages || {};
             
-            // Collect all images from all values of the required specification
+            // Collect all images from all values of the required specification - maintain order based on value order
             const allValueImages: string[] = [];
-            if (specImages[firstItem.name]) {
-              Object.values(specImages[firstItem.name]).forEach((valueImages: any) => {
-                if (Array.isArray(valueImages)) {
-                  valueImages.forEach((img: string) => {
-                    const normalized = normalizeImageUrl(img);
-                    if (normalized && !allValueImages.includes(normalized)) {
-                      allValueImages.push(normalized);
-                    }
-                  });
+            if (specImages[firstItem.name] && firstItem.values) {
+              // Iterate through values in the order they appear in the specification
+              firstItem.values.forEach((value: any) => {
+                const valueName = typeof value === 'string' ? value : value.name;
+                if (valueName && specImages[firstItem.name][valueName]) {
+                  const valueImages = specImages[firstItem.name][valueName];
+                  if (Array.isArray(valueImages)) {
+                    valueImages.forEach((img: string) => {
+                      const normalized = normalizeImageUrl(img);
+                      if (normalized && !allValueImages.includes(normalized)) {
+                        allValueImages.push(normalized);
+                      }
+                    });
+                  }
                 }
               });
             }
@@ -205,17 +210,22 @@ export default function ProductQuickView({ product, children }: ProductQuickView
       const selectedValue = selectedSpecs[firstItem.name];
       const specImages = details.specifications.specImages || {};
       
-      // Update all spec images collection
+      // Update all spec images collection - maintain order based on value order in specification
       const allValueImages: string[] = [];
-      if (specImages[firstItem.name]) {
-        Object.values(specImages[firstItem.name]).forEach((valueImages: any) => {
-          if (Array.isArray(valueImages)) {
-            valueImages.forEach((img: string) => {
-              const normalized = normalizeImageUrl(img);
-              if (normalized && !allValueImages.includes(normalized)) {
-                allValueImages.push(normalized);
-              }
-            });
+      if (specImages[firstItem.name] && firstItem.values) {
+        // Iterate through values in the order they appear in the specification
+        firstItem.values.forEach((value: any) => {
+          const valueName = typeof value === 'string' ? value : value.name;
+          if (valueName && specImages[firstItem.name][valueName]) {
+            const valueImages = specImages[firstItem.name][valueName];
+            if (Array.isArray(valueImages)) {
+              valueImages.forEach((img: string) => {
+                const normalized = normalizeImageUrl(img);
+                if (normalized && !allValueImages.includes(normalized)) {
+                  allValueImages.push(normalized);
+                }
+              });
+            }
           }
         });
       }
