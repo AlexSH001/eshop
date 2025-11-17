@@ -3,7 +3,7 @@
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -113,15 +113,16 @@ export default function AdminDashboard() {
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [dataLoading, setDataLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const fetchingRef = useRef<boolean>(false);
 
-  // Fetch dashboard data
-  useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      fetchDashboardData();
+  // Memoized fetch function to prevent unnecessary re-renders
+  const fetchDashboardData = useCallback(async () => {
+    // Prevent concurrent duplicate requests
+    if (fetchingRef.current) {
+      return;
     }
-  }, [isAuthenticated, isLoading]);
-
-  const fetchDashboardData = async () => {
+    
+    fetchingRef.current = true;
     setDataLoading(true);
     setError(null);
     try {
@@ -182,8 +183,16 @@ export default function AdminDashboard() {
       console.error('Error fetching dashboard data:', err);
     } finally {
       setDataLoading(false);
+      fetchingRef.current = false;
     }
-  };
+  }, []);
+
+  // Fetch dashboard data
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      fetchDashboardData();
+    }
+  }, [isAuthenticated, isLoading, fetchDashboardData]);
 
   // Redirect if not authenticated
   useEffect(() => {

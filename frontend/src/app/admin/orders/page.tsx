@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,7 @@ export default function AdminOrdersPage() {
   const [status, setStatus] = useState<string>("");
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<Order | null>(null);
+  const fetchingRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -67,7 +68,13 @@ export default function AdminOrdersPage() {
   }, [isAuthenticated, isLoading, router]);
 
   // Fetch orders from backend
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
+    // Prevent concurrent duplicate requests
+    if (fetchingRef.current) {
+      return;
+    }
+    
+    fetchingRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -109,12 +116,15 @@ export default function AdminOrdersPage() {
       }
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
-  };
+  }, [router]);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    if (isAuthenticated && !isLoading) {
+      fetchOrders();
+    }
+  }, [isAuthenticated, isLoading, fetchOrders]);
 
   const handleEditOrder = async () => {
     if (!editingOrder) return;

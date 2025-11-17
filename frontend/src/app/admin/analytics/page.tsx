@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,7 @@ export default function AdminAnalyticsPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<string>('30');
+  const fetchingRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -86,7 +87,13 @@ export default function AdminAnalyticsPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  const fetchAnalyticsData = async () => {
+  const fetchAnalyticsData = useCallback(async () => {
+    // Prevent concurrent duplicate requests
+    if (fetchingRef.current) {
+      return;
+    }
+    
+    fetchingRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -130,14 +137,15 @@ export default function AdminAnalyticsPage() {
       toast.error('Failed to fetch analytics data');
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
-  };
+  }, [period]);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchAnalyticsData();
     }
-  }, [isAuthenticated, period]);
+  }, [isAuthenticated, fetchAnalyticsData]);
 
   const formatCurrency = (amount: number) => {
     // Try to get currency from settings, fallback to USD
