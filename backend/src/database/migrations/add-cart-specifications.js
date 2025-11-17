@@ -1,6 +1,11 @@
 // Migration script to add specifications column to cart_items table and remove UNIQUE constraints
-// Run this script: node backend/src/database/migrations/add-cart-specifications.js
+// 
+// Run this script:
+//   - In Docker Compose: docker-compose exec backend node src/database/migrations/add-cart-specifications.js
+//   - Standalone: node backend/src/database/migrations/add-cart-specifications.js
+//   - With env vars: DB_HOST=your_host DB_USER=user DB_PASSWORD=pass DB_NAME=dbname node src/database/migrations/add-cart-specifications.js
 
+require('dotenv').config();
 const { database } = require('../index');
 
 async function addCartSpecificationsColumn() {
