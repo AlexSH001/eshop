@@ -231,6 +231,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         body: JSON.stringify({
           productId: product.id,
           quantity: 1,
+          specifications: product.specifications || null,
         }),
       });
 
