@@ -22,7 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useEffect, useState } from "react";
 import { allCategories, bannerSlides } from "@/data/categories";
-import { fetchProducts, fetchGroupedProducts, Product, prepareProductForCart } from "@/lib/utils";
+import { fetchProducts, fetchGroupedProducts, Product } from "@/lib/utils";
 
 export default function Home() {
   const { addItem } = useCart();
@@ -357,13 +357,14 @@ export default function Home() {
                           <Button
                             size="sm"
                             className="w-full bg-gray-50 hover:bg-gray-800 touch-target mobile-tap"
-                            onClick={async () => {
-                              const productForCart = await prepareProductForCart(product.id, {
-                                ...product,
-                                category
-                              });
-                              addItem(productForCart);
-                            }}
+                            onClick={() => addItem({
+                              id: product.id,
+                              name: product.name,
+                              price: product.price,
+                              originalPrice: product.originalPrice,
+                              image: product.image,
+                              category: category
+                            })}
                           >
                             Add to Cart
                           </Button>

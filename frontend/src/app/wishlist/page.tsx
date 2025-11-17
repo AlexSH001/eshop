@@ -11,7 +11,6 @@ import UserDropdown from "@/components/UserDropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
-import { prepareProductForCart, Product } from "@/lib/utils";
 
 export default function WishlistPage() {
   const { isAuthenticated } = useAuth();
@@ -187,8 +186,8 @@ export default function WishlistPage() {
                     <Button
                       size="sm"
                       className="flex-1 bg-gray-50 hover:bg-gray-800"
-                      onClick={async () => {
-                        const productForCart = await prepareProductForCart(product.id, {
+                      onClick={() => {
+                        addItem({
                           id: product.id,
                           name: product.name,
                           price: product.price,
@@ -196,7 +195,6 @@ export default function WishlistPage() {
                           image: product.image,
                           category: product.category
                         });
-                        addItem(productForCart);
                       }}
                     >
                       <ShoppingCart className="h-4 w-4 mr-2" />
