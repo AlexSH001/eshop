@@ -93,6 +93,7 @@ type ProductFormData = {
   specImages: Record<string, Record<string, string[]>>; // specItemName -> specValue -> image URLs
   attributes: Record<string, VariantData>; // Variants: { color: { values: [{ name: "red", image: "...", price: 10 }] } }
   variantCombinations: VariantCombination[]; // Prices for specific combinations
+  descriptionImages: string[]; // Images for product description
 };
 
 // Helper to parse specifications - new structure
@@ -280,7 +281,8 @@ export default function AdminProductsPage() {
     featuredImage: "",
     specImages: {},
     attributes: {},
-    variantCombinations: []
+    variantCombinations: [],
+    descriptionImages: []
   });
   
   // Track which spec value we're currently uploading images for
@@ -531,6 +533,107 @@ export default function AdminProductsPage() {
     }
   };
 
+  const removeDescriptionImage = async (imageUrl: string) => {
+    try {
+      // Call backend to delete the image file
+      const res = await makeAuthenticatedRequest(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/upload/product-image`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ imageUrl })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`Failed to delete image: ${errorData.error || 'Unknown error'}`);
+      }
+
+      // Update form data to remove the description image
+      setFormData(prev => ({
+        ...prev,
+        descriptionImages: prev.descriptionImages.filter(img => img !== imageUrl)
+      }));
+
+      toast.success('Description image deleted successfully');
+    } catch (error) {
+      console.error('Error deleting description image:', error);
+      toast.error(`Failed to delete image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleDescriptionImageUpload = async (files: FileList) => {
+    setUploadingImages(true);
+    try {
+      // Validate required fields first
+      if (!formData.categoryId) {
+        toast.error('Please select a category before uploading images');
+        setUploadingImages(false);
+        return;
+      }
+      if (!formData.name || formData.name.trim() === '') {
+        toast.error('Please enter a product name before uploading images');
+        setUploadingImages(false);
+        return;
+      }
+
+      const uploadFormData = new FormData();
+      
+      // Append files
+      Array.from(files).forEach(file => {
+        uploadFormData.append('images', file);
+      });
+
+      // Add categoryId and productName to form data
+      const categoryId = String(formData.categoryId).trim();
+      const productName = formData.name.trim();
+      
+      uploadFormData.append('categoryId', categoryId);
+      uploadFormData.append('productName', productName);
+      uploadFormData.append('isDescriptionImage', 'true'); // Flag to indicate these are description images
+
+      const res = await makeAuthenticatedRequest(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/upload/product-images`, {
+        method: 'POST',
+        credentials: 'include',
+        body: uploadFormData
+      });
+
+      if (!res.ok) {
+        let errorData;
+        try {
+          const text = await res.text();
+          errorData = JSON.parse(text);
+        } catch (parseError) {
+          errorData = { error: `Server error: ${res.status} ${res.statusText}` };
+        }
+        throw new Error(`Upload failed: ${res.status} ${res.statusText} - ${errorData.error || 'Unknown error'}`);
+      }
+      
+      const data = await res.json();
+      
+      if (!data.files || !Array.isArray(data.files)) {
+        throw new Error('Invalid response format from server');
+      }
+      
+      const newImageUrls = data.files.map((file: any) => file.url);
+      
+      // Add images to descriptionImages array
+      setFormData(prev => ({
+        ...prev,
+        descriptionImages: [...prev.descriptionImages, ...newImageUrls]
+      }));
+      
+      toast.success(`${data.files.length} description image(s) uploaded successfully`);
+    } catch (err) {
+      console.error('Upload error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      toast.error(`Failed to upload images: ${errorMessage}`);
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
   const setFeaturedImage = (imageUrl: string) => {
     setFormData(prev => ({
       ...prev,
@@ -616,10 +719,11 @@ export default function AdminProductsPage() {
         specs[0].name = formData.name;
       }
       
-      // Build specifications object with items and specImages
+      // Build specifications object with items, specImages, and descriptionImages
       const specificationsData = {
         items: specs.filter(s => s.name && s.values.length > 0),
-        specImages: formData.specImages
+        specImages: formData.specImages,
+        descriptionImages: formData.descriptionImages
       };
       
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/products`, {
@@ -678,13 +782,14 @@ export default function AdminProductsPage() {
         }],
         shipping: "",
         images: [],
-        featuredImage: "",
-        specImages: {},
-        attributes: {},
-        variantCombinations: []
-      });
-      setVariantInputValues({});
-      toast.success('Product added successfully');
+          featuredImage: "",
+          specImages: {},
+          attributes: {},
+          variantCombinations: [],
+          descriptionImages: []
+        });
+        setVariantInputValues({});
+        toast.success('Product added successfully');
     } catch (err) {
       setError((err as Error).message || 'Unknown error');
       toast.error('Failed to add product');
@@ -704,10 +809,11 @@ export default function AdminProductsPage() {
         specs[0].name = formData.name;
       }
       
-      // Build specifications object with items and specImages
+      // Build specifications object with items, specImages, and descriptionImages
       const specificationsData = {
         items: specs.filter(s => s.name && s.values.length > 0),
-        specImages: formData.specImages
+        specImages: formData.specImages,
+        descriptionImages: formData.descriptionImages
       };
       
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/products/${editingProduct.id}`, {
@@ -777,12 +883,13 @@ export default function AdminProductsPage() {
         shipping: "",
         images: [],
         featuredImage: "",
-        specImages: {},
-        attributes: {},
-        variantCombinations: []
-      });
-      setVariantInputValues({});
-      toast.success('Product updated successfully');
+          specImages: {},
+          attributes: {},
+          variantCombinations: [],
+          descriptionImages: []
+        });
+        setVariantInputValues({});
+        toast.success('Product updated successfully');
     } catch (err) {
       setError((err as Error).message || 'Unknown error');
       toast.error('Failed to update product');
@@ -882,7 +989,8 @@ export default function AdminProductsPage() {
               featuredImage: "",
               specImages: {},
               attributes: {},
-              variantCombinations: []
+              variantCombinations: [],
+              descriptionImages: []
             });
             setVariantInputValues({});
             setIsAddModalOpen(true);
@@ -934,6 +1042,11 @@ export default function AdminProductsPage() {
                         });
                         if (res.ok) {
                           const { product: fullProduct } = await res.json();
+                          // Parse specifications to extract descriptionImages
+                          const parsedSpecs = typeof fullProduct.specifications === 'string' 
+                            ? JSON.parse(fullProduct.specifications) 
+                            : fullProduct.specifications || {};
+                          
                           setFormData({
                             name: fullProduct.name,
                             price: fullProduct.price.toString(),
@@ -947,9 +1060,10 @@ export default function AdminProductsPage() {
                             shipping: fullProduct.shipping || '',
                             images: fullProduct.images || [],
                             featuredImage: fullProduct.featured_image || '',
-                            specImages: fullProduct.specImages || {},
+                            specImages: parsedSpecs.specImages || {},
                             attributes: parseAttributes(fullProduct.attributes),
-                            variantCombinations: fullProduct.variant_combinations || []
+                            variantCombinations: fullProduct.variant_combinations || [],
+                            descriptionImages: parsedSpecs.descriptionImages || []
                           });
                           // Initialize variant input values
                           const inputValues: Record<string, string> = {};
@@ -974,7 +1088,8 @@ export default function AdminProductsPage() {
                             featuredImage: product.image,
                             specImages: {},
                             attributes: {},
-                            variantCombinations: []
+                            variantCombinations: [],
+                            descriptionImages: []
                           });
                           setVariantInputValues({});
                         }
@@ -996,7 +1111,8 @@ export default function AdminProductsPage() {
                           featuredImage: product.image,
                           specImages: {},
                           attributes: {},
-                          variantCombinations: []
+                          variantCombinations: [],
+                          descriptionImages: []
                         });
                         setVariantInputValues({});
                       }
@@ -1038,7 +1154,8 @@ export default function AdminProductsPage() {
               featuredImage: "",
               specImages: {},
               attributes: {},
-              variantCombinations: []
+              variantCombinations: [],
+              descriptionImages: []
             });
             setVariantInputValues({});
           }
@@ -1069,7 +1186,94 @@ export default function AdminProductsPage() {
                   id="description"
                   value={formData.description}
                   onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  className="mb-2"
                 />
+                <div className="space-y-2">
+                  <Label className="text-sm text-gray-600">Description Images</Label>
+                  <div 
+                    className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                      isDragOver 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(true);
+                    }}
+                    onDragEnter={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(false);
+                      const files = e.dataTransfer.files;
+                      if (files && files.length > 0) {
+                        handleDescriptionImageUpload(files);
+                      }
+                    }}
+                  >
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => e.target.files && handleDescriptionImageUpload(e.target.files)}
+                      className="hidden"
+                      id="description-image-upload"
+                      disabled={uploadingImages}
+                    />
+                    <label htmlFor="description-image-upload" className="cursor-pointer">
+                      <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                      <p className="mt-2 text-xs text-gray-600">
+                        {uploadingImages ? 'Uploading...' : 'Click to upload description images or drag and drop'}
+                      </p>
+                      <p className="text-xs text-gray-500">Images will be displayed in sequence below the description text</p>
+                    </label>
+                  </div>
+                  
+                  {/* Description Images Preview */}
+                  {formData.descriptionImages.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm">Description Images (in order)</Label>
+                      <div className="space-y-2">
+                        {formData.descriptionImages.map((imageUrl, index) => (
+                          <div key={index} className="relative group border rounded-lg p-2 bg-gray-50">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500 w-8">#{index + 1}</span>
+                              <img
+                                src={normalizeImageUrl(imageUrl)}
+                                alt={`Description image ${index + 1}`}
+                                className="h-24 w-auto object-contain rounded border bg-white"
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  removeDescriptionImage(imageUrl);
+                                }}
+                                className="ml-auto"
+                                title="Remove Image"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1647,7 +1851,94 @@ export default function AdminProductsPage() {
                   id="description"
                   value={formData.description}
                   onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  className="mb-2"
                 />
+                <div className="space-y-2">
+                  <Label className="text-sm text-gray-600">Description Images</Label>
+                  <div 
+                    className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                      isDragOver 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(true);
+                    }}
+                    onDragEnter={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragOver(false);
+                      const files = e.dataTransfer.files;
+                      if (files && files.length > 0) {
+                        handleDescriptionImageUpload(files);
+                      }
+                    }}
+                  >
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => e.target.files && handleDescriptionImageUpload(e.target.files)}
+                      className="hidden"
+                      id="description-image-upload-edit"
+                      disabled={uploadingImages}
+                    />
+                    <label htmlFor="description-image-upload-edit" className="cursor-pointer">
+                      <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                      <p className="mt-2 text-xs text-gray-600">
+                        {uploadingImages ? 'Uploading...' : 'Click to upload description images or drag and drop'}
+                      </p>
+                      <p className="text-xs text-gray-500">Images will be displayed in sequence below the description text</p>
+                    </label>
+                  </div>
+                  
+                  {/* Description Images Preview */}
+                  {formData.descriptionImages.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm">Description Images (in order)</Label>
+                      <div className="space-y-2">
+                        {formData.descriptionImages.map((imageUrl, index) => (
+                          <div key={index} className="relative group border rounded-lg p-2 bg-gray-50">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500 w-8">#{index + 1}</span>
+                              <img
+                                src={normalizeImageUrl(imageUrl)}
+                                alt={`Description image ${index + 1}`}
+                                className="h-24 w-auto object-contain rounded border bg-white"
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  removeDescriptionImage(imageUrl);
+                                }}
+                                className="ml-auto"
+                                title="Remove Image"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
