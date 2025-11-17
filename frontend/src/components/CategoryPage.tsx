@@ -9,10 +9,10 @@ import Header from "@/components/Header";
 import PriceDisplay from "@/components/PriceDisplay";
 import ProductQuickView from "@/components/ProductQuickView";
 import { useCart } from "@/contexts/CartContext";
+import { prepareProductForCart, fetchGroupedProducts, Product } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCategoryProducts } from "@/hooks/useCategoryProducts";
-import { fetchGroupedProducts, Product } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
 interface CategoryPageProps {
@@ -205,14 +205,13 @@ export default function CategoryPage({
                 <Button
                   size="sm"
                   className="w-full bg-gray-50 hover:bg-gray-800"
-                  onClick={() => addItem({
-                    id: product.id,
-                    name: product.name,
-                    price: product.price,
-                    originalPrice: product.originalPrice,
-                    image: product.image,
-                    category: categoryName
-                  })}
+                  onClick={async () => {
+                    const productForCart = await prepareProductForCart(product.id, {
+                      ...product,
+                      category: categoryName
+                    });
+                    addItem(productForCart);
+                  }}
                 >
                   Add to Cart
                 </Button>

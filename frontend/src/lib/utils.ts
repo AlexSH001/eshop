@@ -301,3 +301,176 @@ export const resolveProductImage = (featuredImage: string | null | undefined, im
     console.log('Using fallback image:', fallbackUrl);
     return fallbackUrl;
 };
+
+// Get default specifications (first value of each specification item)
+export const getDefaultSpecifications = (specifications: any): Record<string, string> => {
+    const defaultSpecs: Record<string, string> = {};
+    
+    if (!specifications) return defaultSpecs;
+    
+    try {
+        let spec = specifications;
+        if (typeof specifications === 'string') {
+            spec = JSON.parse(specifications);
+        }
+        
+        if (spec.items && Array.isArray(spec.items)) {
+            spec.items.forEach((item: any) => {
+                if (item.values && Array.isArray(item.values) && item.values.length > 0) {
+                    const firstValue = item.values[0];
+                    const valueName = typeof firstValue === 'string' ? firstValue : firstValue.name;
+                    if (valueName) {
+                        defaultSpecs[item.name] = valueName;
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.warn('Error parsing specifications for default values:', error);
+    }
+    
+    return defaultSpecs;
+};
+
+// Calculate price with specifications
+export const calculatePriceWithSpecs = (basePrice: number, specifications: any, selectedSpecs: Record<string, string>): number => {
+    let price = basePrice;
+    
+    if (!specifications || !selectedSpecs) return price;
+    
+    try {
+        let spec = specifications;
+        if (typeof specifications === 'string') {
+            spec = JSON.parse(specifications);
+        }
+        
+        if (spec.items && Array.isArray(spec.items)) {
+            spec.items.forEach((item: any) => {
+                const selectedValue = selectedSpecs[item.name];
+                if (selectedValue && item.values) {
+                    const value = item.values.find((v: any) => {
+                        const vName = typeof v === 'string' ? v : v.name;
+                        return vName === selectedValue;
+                    });
+                    if (value) {
+                        const priceChange = typeof value.priceChange === 'number' ? value.priceChange : 
+                                          (typeof value.priceChange === 'string' ? parseFloat(value.priceChange) : 0);
+                        if (!isNaN(priceChange)) {
+                            price += priceChange;
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.warn('Error calculating price with specifications:', error);
+    }
+    
+    return price;
+};
+
+// Get image for specific specification values
+export const getImageForSpecs = (specifications: any, selectedSpecs: Record<string, string>): string | null => {
+    if (!specifications || !selectedSpecs) return null;
+    
+    try {
+        let spec = specifications;
+        if (typeof specifications === 'string') {
+            spec = JSON.parse(specifications);
+        }
+        
+        if (spec.items && Array.isArray(spec.items) && spec.items.length > 0) {
+            const firstItem = spec.items[0]; // Required specification
+            const selectedValue = selectedSpecs[firstItem.name];
+            const specImages = spec.specImages || {};
+            
+            if (selectedValue && specImages[firstItem.name] && specImages[firstItem.name][selectedValue]) {
+                const valueImages = specImages[firstItem.name][selectedValue];
+                if (Array.isArray(valueImages) && valueImages.length > 0) {
+                    return normalizeImageUrl(valueImages[0]);
+                }
+            }
+        }
+    } catch (error) {
+        console.warn('Error getting image for specifications:', error);
+    }
+    
+    return null;
+};
+
+// Fetch product details and prepare for adding to cart with default specifications
+export const prepareProductForCart = async (productId: number, baseProduct: Product): Promise<{
+    id: number;
+    name: string;
+    price: number;
+    originalPrice?: number;
+    image: string;
+    category: string;
+    specifications?: Record<string, string>;
+}> => {
+    try {
+        // Fetch full product details
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/products/${productId}`);
+        if (!res.ok) {
+            // If fetch fails, return base product without specifications
+            return {
+                id: baseProduct.id,
+                name: baseProduct.name,
+                price: baseProduct.price,
+                originalPrice: baseProduct.originalPrice,
+                image: baseProduct.image,
+                category: baseProduct.category
+            };
+        }
+        
+        const data = await res.json();
+        const fullProduct = data.product;
+        
+        // Get default specifications (first value of each)
+        const defaultSpecs = getDefaultSpecifications(fullProduct.specifications);
+        
+        // Calculate price with default specifications
+        const calculatedPrice = calculatePriceWithSpecs(
+            fullProduct.price || baseProduct.price,
+            fullProduct.specifications,
+            defaultSpecs
+        );
+        
+        // Get image for default specifications
+        const specImage = getImageForSpecs(fullProduct.specifications, defaultSpecs);
+        const productImage = specImage || 
+                            resolveProductImage(
+                                fullProduct.featured_image,
+                                fullProduct.images,
+                                productId,
+                                fullProduct.specifications
+                            );
+        
+        // Build product name with specifications if any
+        const specString = Object.keys(defaultSpecs).length > 0
+            ? ` (${Object.entries(defaultSpecs).map(([key, value]) => `${key}: ${value}`).join(', ')})`
+            : '';
+        const productNameWithSpecs = `${fullProduct.name || baseProduct.name}${specString}`;
+        
+        return {
+            id: baseProduct.id,
+            name: productNameWithSpecs,
+            price: calculatedPrice,
+            originalPrice: fullProduct.original_price || baseProduct.originalPrice,
+            image: productImage,
+            category: baseProduct.category,
+            specifications: Object.keys(defaultSpecs).length > 0 ? defaultSpecs : undefined
+        };
+    } catch (error) {
+        console.warn('Error preparing product for cart, using base product:', error);
+        // Return base product if there's an error
+        return {
+            id: baseProduct.id,
+            name: baseProduct.name,
+            price: baseProduct.price,
+            originalPrice: baseProduct.originalPrice,
+            image: baseProduct.image,
+            category: baseProduct.category
+        };
+    }
+};
