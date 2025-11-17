@@ -103,12 +103,19 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
         return res.status(400).json({ error: 'Cart is empty' });
       }
 
-      orderItems = cartData.map(item => ({
-        productId: item.product_id,
-        name: item.name,
-        quantity: item.quantity,
-        price: item.price
-      }));
+      // Get product images for cart items (will use featured_image as fallback)
+      // Note: For specification-specific images, they should be provided in cartItems from frontend
+      orderItems = [];
+      for (const item of cartData) {
+        const product = await executeGet('SELECT featured_image FROM products WHERE id = $1', [item.product_id]);
+        orderItems.push({
+          productId: item.product_id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          image: product?.featured_image || null
+        });
+      }
     }
 
     console.log('Order items to process:', orderItems);
@@ -238,14 +245,15 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
 
     // Create order items and update product stock
     for (const item of orderItems) {
-      // Add order item
+      // Add order item with product_image
       await executeExecute(`
-        INSERT INTO order_items (order_id, product_id, product_name, quantity, price, total)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO order_items (order_id, product_id, product_name, product_image, quantity, price, total)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
       `, [
         orderId,
         item.productId,
         item.name,
+        item.image || null, // Use image from cart item, or null if not provided
         item.quantity,
         item.price,
         item.price * item.quantity
@@ -326,7 +334,7 @@ router.post('/', authenticateUser, createOrderValidation, async (req, res) => {
           quantity: item.quantity,
           price: item.price,
           total: item.total,
-          image: item.featured_image
+          image: item.product_image || item.featured_image // Use stored product_image, fallback to featured_image
         }))
       }
     });
@@ -474,7 +482,7 @@ router.get('/', paginationValidation, async (req, res) => {
           quantity: item.quantity,
           price: item.price,
           total: item.total,
-          image: item.featured_image
+          image: item.product_image || item.featured_image // Use stored product_image, fallback to featured_image
         }));
       }
     } catch (error) {
@@ -570,7 +578,7 @@ router.get('/authenticated', authenticateAdmin, paginationValidation, async (req
           quantity: item.quantity,
           price: item.price,
           total: item.total,
-          image: item.featured_image
+          image: item.product_image || item.featured_image // Use stored product_image, fallback to featured_image
         }));
       }
     } catch (error) {
@@ -612,27 +620,27 @@ router.get('/:id', idValidation, async (req, res) => {
   }
 
   // Get order items
-  const items = await database.query(`
-    SELECT oi.*, p.featured_image
-    FROM order_items oi
-    LEFT JOIN products p ON oi.product_id = p.id
-    WHERE oi.order_id = $1
-  `, [orderId]);
+      const items = await database.query(`
+        SELECT oi.*, p.featured_image
+        FROM order_items oi
+        LEFT JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = $1
+      `, [orderId]);
 
-  res.json({
-    order: {
-      ...order,
-      items: items.map(item => ({
-        id: item.id,
-        productId: item.product_id,
-        name: item.product_name,
-        quantity: item.quantity,
-        price: item.price,
-        total: item.total,
-        image: item.featured_image
-      }))
-    }
-  });
+      res.json({
+        order: {
+          ...order,
+          items: items.map(item => ({
+            id: item.id,
+            productId: item.product_id,
+            name: item.product_name,
+            quantity: item.quantity,
+            price: item.price,
+            total: item.total,
+            image: item.product_image || item.featured_image // Use stored product_image, fallback to featured_image
+          }))
+        }
+      });
 });
 
 // Admin: Update order status

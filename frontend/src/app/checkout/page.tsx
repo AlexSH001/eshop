@@ -208,7 +208,8 @@ export default function CheckoutPage() {
           productId: item.productId,
           name: item.name,
           quantity: item.quantity,
-          price: item.price
+          price: item.price,
+          image: item.image
         })),
         saveShippingAddress: saveContactAndAddress && isAuthenticated
       };
