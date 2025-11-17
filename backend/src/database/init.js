@@ -45,6 +45,30 @@ class Database {
           reject(err);
         } else {
           console.log('✅ Database schema initialized');
+          // Run migrations for existing databases
+          this.runMigrations().then(() => resolve()).catch((migrationErr) => {
+            console.warn('⚠️ Migration warning:', migrationErr.message);
+            resolve(); // Don't fail initialization if migration has issues
+          });
+        }
+      });
+    });
+  }
+
+  async runMigrations() {
+    return new Promise((resolve, reject) => {
+      // Add specifications column to cart_items if it doesn't exist
+      this.db.run(`ALTER TABLE cart_items ADD COLUMN specifications TEXT`, (err) => {
+        if (err) {
+          // Ignore if column already exists
+          if (err.message.includes('duplicate column name')) {
+            console.log('ℹ️ Specifications column already exists in cart_items table');
+            resolve();
+          } else {
+            reject(err);
+          }
+        } else {
+          console.log('✅ Added specifications column to cart_items table');
           resolve();
         }
       });

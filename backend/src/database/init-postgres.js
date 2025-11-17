@@ -24,11 +24,35 @@ class PostgresDatabase {
       console.log('📋 Initializing PostgreSQL schema...');
       await client.query(postgresSchema);
       console.log('✅ Database schema initialized');
+      
+      // Run migrations for existing databases
+      await this.runMigrations(client);
     } catch (error) {
       console.error('❌ Error initializing schema:', error);
       throw error;
     } finally {
       client.release();
+    }
+  }
+
+  async runMigrations(client) {
+    try {
+      // Check if specifications column exists in cart_items
+      const columnCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'cart_items' AND column_name = 'specifications'
+      `);
+      
+      if (columnCheck.rows.length === 0) {
+        await client.query(`ALTER TABLE cart_items ADD COLUMN specifications JSONB`);
+        console.log('✅ Added specifications column to cart_items table');
+      }
+    } catch (error) {
+      // Ignore if column already exists or other non-critical errors
+      if (!error.message.includes('already exists') && !error.message.includes('duplicate')) {
+        console.warn('⚠️ Migration warning:', error.message);
+      }
     }
   }
 
