@@ -73,6 +73,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
   // State for additional product details
   const [details, setDetails] = useState<ProductDetails | null>(null);
   const [images, setImages] = useState<string[]>([product.image]);
+  const [allSpecImages, setAllSpecImages] = useState<string[]>([]); // All images from all values of required spec
   const [isLoading, setIsLoading] = useState(false);
   const [selectedSpecs, setSelectedSpecs] = useState<SelectedSpecifications>({});
   const basePrice = typeof product.price === 'number' ? product.price : (typeof product.price === 'string' ? parseFloat(product.price) : 0);
@@ -90,28 +91,6 @@ export default function ProductQuickView({ product, children }: ProductQuickView
           if (!res.ok) throw new Error('Failed to fetch product details');
           const data = await res.json();
           setDetails(data.product);
-          const rawImages = data.product.images;
-          const featuredImage = data.product.featured_image;
-          
-          // Use the same resolution logic as other components
-          const primaryImage = resolveProductImage(featuredImage, rawImages, product.id);
-          
-          // Normalize all images for the gallery
-          const normalized: string[] = Array.isArray(rawImages)
-            ? rawImages.map((img: unknown) => {
-                if (typeof img === 'string') return normalizeImageUrl(img);
-                if (img && typeof img === 'object') {
-                  const anyImg = img as Record<string, unknown>;
-                  const url = (anyImg.image || anyImg.url || anyImg.src) as string | undefined;
-                  if (url && url.trim().length > 0) return normalizeImageUrl(url);
-                }
-                return '';
-              }).filter((u: string) => u && u.trim().length > 0)
-            : [];
-          
-          // Use primary image first, then other images
-          const allImages = [primaryImage, ...normalized.filter(img => img !== primaryImage)];
-          setImages(allImages.length > 0 ? allImages : [product.image]);
           
           // Initialize selected specifications with first value of each item
           if (data.product.specifications?.items && data.product.specifications.items.length > 0) {
@@ -123,16 +102,87 @@ export default function ProductQuickView({ product, children }: ProductQuickView
             });
             setSelectedSpecs(initialSpecs);
             
-            // Set initial images based on first specification selection
+            // Set initial images based on first specification selection (required spec)
             const firstItem = data.product.specifications.items[0];
             const firstValue = initialSpecs[firstItem.name];
             const specImages = data.product.specifications.specImages || {};
+            
+            // Collect all images from all values of the required specification
+            const allValueImages: string[] = [];
+            if (specImages[firstItem.name]) {
+              Object.values(specImages[firstItem.name]).forEach((valueImages: any) => {
+                if (Array.isArray(valueImages)) {
+                  valueImages.forEach((img: string) => {
+                    const normalized = normalizeImageUrl(img);
+                    if (normalized && !allValueImages.includes(normalized)) {
+                      allValueImages.push(normalized);
+                    }
+                  });
+                }
+              });
+            }
+            setAllSpecImages(allValueImages);
+            
             if (firstValue && specImages[firstItem.name] && specImages[firstItem.name][firstValue]) {
               const valueImages = specImages[firstItem.name][firstValue];
               if (valueImages.length > 0) {
                 setImages(valueImages.map((img: string) => normalizeImageUrl(img)));
+              } else {
+                // Fallback to default images if no spec images
+                const rawImages = data.product.images;
+                const featuredImage = data.product.featured_image;
+                const primaryImage = resolveProductImage(featuredImage, rawImages, product.id);
+                const normalized: string[] = Array.isArray(rawImages)
+                  ? rawImages.map((img: unknown) => {
+                      if (typeof img === 'string') return normalizeImageUrl(img);
+                      if (img && typeof img === 'object') {
+                        const anyImg = img as Record<string, unknown>;
+                        const url = (anyImg.image || anyImg.url || anyImg.src) as string | undefined;
+                        if (url && url.trim().length > 0) return normalizeImageUrl(url);
+                      }
+                      return '';
+                    }).filter((u: string) => u && u.trim().length > 0)
+                  : [];
+                const allImages = [primaryImage, ...normalized.filter(img => img !== primaryImage)];
+                setImages(allImages.length > 0 ? allImages : [product.image]);
               }
+            } else {
+              // Fallback to default images
+              const rawImages = data.product.images;
+              const featuredImage = data.product.featured_image;
+              const primaryImage = resolveProductImage(featuredImage, rawImages, product.id);
+              const normalized: string[] = Array.isArray(rawImages)
+                ? rawImages.map((img: unknown) => {
+                    if (typeof img === 'string') return normalizeImageUrl(img);
+                    if (img && typeof img === 'object') {
+                      const anyImg = img as Record<string, unknown>;
+                      const url = (anyImg.image || anyImg.url || anyImg.src) as string | undefined;
+                      if (url && url.trim().length > 0) return normalizeImageUrl(url);
+                    }
+                    return '';
+                  }).filter((u: string) => u && u.trim().length > 0)
+                : [];
+              const allImages = [primaryImage, ...normalized.filter(img => img !== primaryImage)];
+              setImages(allImages.length > 0 ? allImages : [product.image]);
             }
+          } else {
+            // No specifications, use default images
+            const rawImages = data.product.images;
+            const featuredImage = data.product.featured_image;
+            const primaryImage = resolveProductImage(featuredImage, rawImages, product.id);
+            const normalized: string[] = Array.isArray(rawImages)
+              ? rawImages.map((img: unknown) => {
+                  if (typeof img === 'string') return normalizeImageUrl(img);
+                  if (img && typeof img === 'object') {
+                    const anyImg = img as Record<string, unknown>;
+                    const url = (anyImg.image || anyImg.url || anyImg.src) as string | undefined;
+                    if (url && url.trim().length > 0) return normalizeImageUrl(url);
+                  }
+                  return '';
+                }).filter((u: string) => u && u.trim().length > 0)
+              : [];
+            const allImages = [primaryImage, ...normalized.filter(img => img !== primaryImage)];
+            setImages(allImages.length > 0 ? allImages : [product.image]);
           }
         } catch (error: unknown) {
           if (error instanceof Error) {
@@ -148,17 +198,34 @@ export default function ProductQuickView({ product, children }: ProductQuickView
     }
   }, [isOpen, product.id, product.image]);
   
-  // Update images when first specification changes
+  // Update images when first specification (required spec) changes
   useEffect(() => {
     if (details?.specifications?.items && details.specifications.items.length > 0) {
-      const firstItem = details.specifications.items[0];
+      const firstItem = details.specifications.items[0]; // Required specification
       const selectedValue = selectedSpecs[firstItem.name];
       const specImages = details.specifications.specImages || {};
+      
+      // Update all spec images collection
+      const allValueImages: string[] = [];
+      if (specImages[firstItem.name]) {
+        Object.values(specImages[firstItem.name]).forEach((valueImages: any) => {
+          if (Array.isArray(valueImages)) {
+            valueImages.forEach((img: string) => {
+              const normalized = normalizeImageUrl(img);
+              if (normalized && !allValueImages.includes(normalized)) {
+                allValueImages.push(normalized);
+              }
+            });
+          }
+        });
+      }
+      setAllSpecImages(allValueImages);
       
       if (selectedValue && specImages[firstItem.name] && specImages[firstItem.name][selectedValue]) {
         const valueImages = specImages[firstItem.name][selectedValue];
         if (valueImages.length > 0) {
           setImages(valueImages.map((img: string) => normalizeImageUrl(img)));
+          setSelectedImage(0); // Reset to first image
           return;
         }
       }
@@ -171,6 +238,7 @@ export default function ProductQuickView({ product, children }: ProductQuickView
     } else {
       setImages([product.image]);
     }
+    setSelectedImage(0); // Reset to first image
   }, [selectedSpecs, details, product.image]);
   
   // Calculate price based on selected specifications
@@ -222,8 +290,43 @@ export default function ProductQuickView({ product, children }: ProductQuickView
         name: productNameWithSpecs,
         price: calculatedPrice,
         image: images[0] || product.image,
-        category: product.category
+        category: product.category,
+        specifications: selectedSpecs
       });
+    }
+  };
+
+  // Handle clicking on an image to change the first specification value
+  const handleImageClick = (imageIndex: number) => {
+    if (!details?.specifications?.items || details.specifications.items.length === 0) {
+      setSelectedImage(imageIndex);
+      return;
+    }
+
+    const firstItem = details.specifications.items[0]; // Required specification
+    const specImages = details.specifications.specImages || {};
+    const firstItemImages = specImages[firstItem.name] || {};
+    
+    // Use allSpecImages if available, otherwise use images
+    const imageToFind = allSpecImages.length > 0 ? allSpecImages[imageIndex] : images[imageIndex];
+
+    // Find which value this image belongs to
+    for (const [valueName, valueImages] of Object.entries(firstItemImages)) {
+      const normalizedValueImages = (valueImages as string[]).map((img: string) => normalizeImageUrl(img));
+      if (normalizedValueImages.includes(imageToFind)) {
+        // This image belongs to this value, update the selection
+        setSelectedSpecs(prev => ({
+          ...prev,
+          [firstItem.name]: valueName
+        }));
+        // The images will update via useEffect, and we'll find the correct index
+        return;
+      }
+    }
+
+    // If image doesn't belong to any spec value, just select it (shouldn't happen normally)
+    if (images.includes(imageToFind)) {
+      setSelectedImage(images.indexOf(imageToFind));
     }
   };
 
@@ -293,23 +396,35 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                   )}
                 </div>
 
-                {/* Thumbnail Images */}
+                {/* Thumbnail Images - Display all images from all values of required spec, clicking changes spec selection */}
                 <div className="flex space-x-2 overflow-x-auto">
-                  {images.map((image: string, index: number) => (
-                    <button
-                      key={index}
-                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
-                        selectedImage === index ? 'border-black' : 'border-gray-200'
-                      }`}
-                      onClick={() => setSelectedImage(index)}
-                    >
-                      <img
-                        src={image}
-                        alt={`${product.name} ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
+                  {(allSpecImages.length > 0 ? allSpecImages : images).map((image: string, index: number) => {
+                    // Check if this image is in the currently selected value's images
+                    const isInCurrentSelection = images.includes(image);
+                    const imageIndex = images.indexOf(image);
+                    const displayIndex = allSpecImages.length > 0 ? allSpecImages.indexOf(image) : index;
+                    
+                    return (
+                      <button
+                        key={displayIndex}
+                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
+                          isInCurrentSelection && imageIndex === selectedImage 
+                            ? 'border-black border-2' 
+                            : isInCurrentSelection
+                            ? 'border-blue-500 border-2'
+                            : 'border-gray-200 hover:border-gray-400 opacity-60'
+                        }`}
+                        onClick={() => handleImageClick(displayIndex)}
+                        title={isInCurrentSelection ? 'Currently selected' : 'Click to select this variant'}
+                      >
+                        <img
+                          src={image}
+                          alt={`${product.name} ${displayIndex + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -417,9 +532,8 @@ export default function ProductQuickView({ product, children }: ProductQuickView
 
               {/* Product Info Tabs */}
               <Tabs defaultValue="details" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="specs">Specifications</TabsTrigger>
                   <TabsTrigger value="shipping">Shipping</TabsTrigger>
                 </TabsList>
 
@@ -445,15 +559,6 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                   )}
                 </TabsContent>
 
-                <TabsContent value="specs" className="space-y-2">
-                  {Object.entries(details?.specifications ?? {}).map(([key, value]) => (
-                    <div key={key} className="flex justify-between py-2 border-b border-gray-100 last:border-0">
-                      <span className="text-sm font-medium text-gray-600">{key}:</span>
-                      <span className="text-sm text-gray-900">{value as string}</span>
-                    </div>
-                  ))}
-                </TabsContent>
-
                 <TabsContent value="shipping" className="space-y-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
@@ -470,6 +575,11 @@ export default function ProductQuickView({ product, children }: ProductQuickView
                         <p className="text-xs text-gray-600">Easy returns and exchanges</p>
                       </div>
                     </div>
+                    {details?.shipping && (
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-600">{details.shipping}</p>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
               </Tabs>

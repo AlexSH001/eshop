@@ -72,7 +72,18 @@ export default function ShoppingCartSheet({ children }: ShoppingCartSheetProps) 
                       className="w-16 h-16 object-cover rounded-md flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0 mr-4">
-                      <h3 className="font-medium text-sm leading-tight mb-2 break-words">{item.name}</h3>
+                      <h3 className="font-medium text-sm leading-tight mb-1 break-words">
+                        {item.name.split(' (')[0]}
+                      </h3>
+                      {item.specifications && Object.keys(item.specifications).length > 0 && (
+                        <div className="text-xs text-gray-600 mb-2">
+                          {Object.entries(item.specifications).map(([key, value]) => (
+                            <span key={key} className="mr-2">
+                              <span className="font-medium">{key}:</span> {value}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 mb-2">
                         <PriceDisplay price={item.price} className="font-bold text-purple-600" />
                         {item.originalPrice && (

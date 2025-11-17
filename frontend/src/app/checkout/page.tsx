@@ -426,7 +426,16 @@ export default function CheckoutPage() {
                         className="h-16 w-16 rounded-lg object-cover"
                       />
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{item.name}</h3>
+                        <h3 className="font-medium text-gray-900">{item.name.split(' (')[0]}</h3>
+                        {item.specifications && Object.keys(item.specifications).length > 0 && (
+                          <div className="text-xs text-gray-600 mt-1">
+                            {Object.entries(item.specifications).map(([key, value]) => (
+                              <span key={key} className="mr-2">
+                                <span className="font-medium">{key}:</span> {value}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         <p className="text-sm text-gray-500">{item.category}</p>
                         <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                       </div>
