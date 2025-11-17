@@ -250,7 +250,75 @@ router.post('/items', optionalAuth, addToCartValidation, async (req, res) => {
       });
     }
   } catch (error) {
-    if (error.code === '23505') { // SQLITE_CONSTRAINT_UNIQUE or PostgreSQL unique violation
+    // Check if it's a unique constraint violation
+    // This might happen if UNIQUE constraints still exist in the database
+    if (error.code === '23505' || error.code === 'SQLITE_CONSTRAINT_UNIQUE' || 
+        error.message?.includes('UNIQUE constraint') || error.message?.includes('duplicate key')) {
+      // If we get here, it means the UNIQUE constraint still exists
+      // Try to find existing item and update it instead
+      console.warn('UNIQUE constraint violation detected. This may indicate constraints need to be removed.');
+      
+      // Try to find the existing item
+      let existingItem;
+      if (userId) {
+        existingItem = await database.get(
+          'SELECT * FROM cart_items WHERE user_id = $1 AND product_id = $2',
+          [userId, productId]
+        );
+      } else {
+        existingItem = await database.get(
+          'SELECT * FROM cart_items WHERE session_id = $1 AND product_id = $2',
+          [sessionId, productId]
+        );
+      }
+      
+      if (existingItem) {
+        // Check if specifications match
+        if (specsEqual(existingItem.specifications, specsJson)) {
+          // Same specifications, update quantity
+          const newQuantity = existingItem.quantity + quantity;
+          if (product.stock < newQuantity) {
+            return res.status(400).json({
+              error: 'Insufficient stock for requested quantity',
+              currentQuantity: existingItem.quantity,
+              requestedQuantity: quantity,
+              availableStock: product.stock
+            });
+          }
+          
+          const dbType = database.getType() || process.env.DB_CLIENT || 'sqlite3';
+          const isPostgres = dbType === 'pg' || dbType === 'postgres' || dbType === 'postgresql';
+          
+          if (isPostgres) {
+            await database.execute(
+              'UPDATE cart_items SET quantity = $1, specifications = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+              [newQuantity, specsJson, existingItem.id]
+            );
+          } else {
+            await database.execute(
+              'UPDATE cart_items SET quantity = $1, specifications = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+              [newQuantity, specsJson, existingItem.id]
+            );
+          }
+          
+          return res.json({
+            message: 'Cart item updated successfully',
+            sessionId: sessionId || undefined,
+            item: {
+              id: existingItem.id,
+              productId,
+              quantity: newQuantity
+            }
+          });
+        } else {
+          // Different specifications but UNIQUE constraint prevents adding
+          return res.status(409).json({ 
+            error: 'Item already in cart. Please remove UNIQUE constraints from cart_items table to allow different specifications.',
+            hint: 'Run migration script: node backend/src/database/migrations/add-cart-specifications.js'
+          });
+        }
+      }
+      
       return res.status(409).json({ error: 'Item already in cart' });
     }
     throw error;

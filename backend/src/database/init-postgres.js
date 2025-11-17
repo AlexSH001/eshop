@@ -48,6 +48,40 @@ class PostgresDatabase {
         await client.query(`ALTER TABLE cart_items ADD COLUMN specifications JSONB`);
         console.log('✅ Added specifications column to cart_items table');
       }
+      
+      // Remove UNIQUE constraints to allow same product with different specifications
+      const constraints = await client.query(`
+        SELECT constraint_name 
+        FROM information_schema.table_constraints 
+        WHERE table_name = 'cart_items' 
+        AND constraint_type = 'UNIQUE'
+        AND (constraint_name LIKE '%user_id%product_id%' OR constraint_name LIKE '%session_id%product_id%')
+      `);
+      
+      for (const constraint of constraints) {
+        try {
+          await client.query(`ALTER TABLE cart_items DROP CONSTRAINT IF EXISTS ${constraint.constraint_name}`);
+          console.log(`✅ Dropped UNIQUE constraint: ${constraint.constraint_name}`);
+        } catch (error) {
+          // Ignore if constraint doesn't exist
+        }
+      }
+      
+      // Also try common constraint names
+      const commonNames = [
+        'cart_items_user_id_product_id_key',
+        'cart_items_session_id_product_id_key',
+        'cart_items_user_id_product_id_unique',
+        'cart_items_session_id_product_id_unique'
+      ];
+      
+      for (const name of commonNames) {
+        try {
+          await client.query(`ALTER TABLE cart_items DROP CONSTRAINT IF EXISTS ${name}`);
+        } catch (error) {
+          // Ignore if constraint doesn't exist
+        }
+      }
     } catch (error) {
       // Ignore if column already exists or other non-critical errors
       if (!error.message.includes('already exists') && !error.message.includes('duplicate')) {
