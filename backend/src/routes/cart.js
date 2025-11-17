@@ -157,9 +157,10 @@ router.post('/items', optionalAuth, addToCartValidation, async (req, res) => {
     });
   }
 
+  // Serialize specifications for storage (defined outside try block for catch block access)
+  const specsJson = specifications ? JSON.stringify(specifications) : null;
+
   try {
-    // Serialize specifications for storage
-    const specsJson = specifications ? JSON.stringify(specifications) : null;
     
     // Check if item already exists in cart with same productId AND same specifications
     let existingItems;
